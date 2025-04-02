@@ -5,6 +5,36 @@
 
 @layer base {
   :root {
+    --background: 260 25% 10%;
+    --foreground: 210 40% 98%;
+
+    --card: 260 25% 15%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 260 25% 15%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 260 50% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 260 30% 25%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 252 80% 65%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 260 30% 25%;
+    --input: 260 30% 25%;
+    --ring: 250 50% 60%;
+  }
+
+  .light {
     --background: 260 25% 98%;
     --foreground: 222.2 84% 4.9%;
 
@@ -35,58 +65,36 @@
 
     --radius: 0.75rem;
   }
-
-  .dark {
-    --background: 260 25% 10%;
-    --foreground: 210 40% 98%;
-
-    --card: 260 25% 15%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 260 25% 15%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 260 50% 50%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 260 30% 25%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 252 80% 65%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 260 30% 25%;
-    --input: 260 30% 25%;
-    --ring: 250 50% 60%;
-  }
 }
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-border selection:bg-primary/10 selection:text-primary;
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
   }
 }
 
 @layer components {
   .magic-card {
-    @apply relative overflow-hidden rounded-lg border bg-card text-card-foreground shadow transition-all hover:shadow-md;
+    @apply relative overflow-hidden rounded-lg border bg-card text-card-foreground shadow-md transition-all;
   }
   
   .magic-card-hover {
-    @apply hover:-translate-y-1 hover:shadow-lg transition-all duration-300;
+    @apply hover:-translate-y-1 hover:shadow-xl transition-all duration-300;
   }
   
   .magic-gradient-bg {
     @apply bg-gradient-to-br from-magic-purple to-magic-lightPurple;
+  }
+
+  .glass-morphism {
+    @apply backdrop-blur-xl bg-black/20 border border-white/10 shadow-lg;
+  }
+  
+  .text-gradient {
+    @apply bg-gradient-to-br from-white via-white/90 to-white/70 bg-clip-text text-transparent;
   }
 }

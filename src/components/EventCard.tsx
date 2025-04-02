@@ -1,30 +1,30 @@
 
 import * as dateFns from 'date-fns';
-import { CalendarClock, MapPin, Users, CreditCard } from 'lucide-react';
+import { CalendarClock, MapPin, Users, CreditCard, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Event, EventFormat } from '@/types';
 
 const formatColors: Record<EventFormat, string> = {
-  'Standard': 'bg-blue-100 text-blue-700',
-  'Modern': 'bg-purple-100 text-purple-700',
-  'Legacy': 'bg-amber-100 text-amber-700',
-  'Commander': 'bg-green-100 text-green-700',
-  'Pioneer': 'bg-red-100 text-red-700',
-  'Vintage': 'bg-gray-100 text-gray-700',
-  'Draft': 'bg-indigo-100 text-indigo-700',
-  'Sealed': 'bg-emerald-100 text-emerald-700',
-  'Prerelease': 'bg-yellow-100 text-yellow-700',
-  'Other': 'bg-slate-100 text-slate-700'
+  'Standard': 'bg-blue-900/50 text-blue-200 border-blue-700/50',
+  'Modern': 'bg-purple-900/50 text-purple-200 border-purple-700/50',
+  'Legacy': 'bg-amber-900/50 text-amber-200 border-amber-700/50',
+  'Commander': 'bg-green-900/50 text-green-200 border-green-700/50',
+  'Pioneer': 'bg-red-900/50 text-red-200 border-red-700/50',
+  'Vintage': 'bg-gray-900/50 text-gray-200 border-gray-700/50',
+  'Draft': 'bg-indigo-900/50 text-indigo-200 border-indigo-700/50',
+  'Sealed': 'bg-emerald-900/50 text-emerald-200 border-emerald-700/50',
+  'Prerelease': 'bg-yellow-900/50 text-yellow-200 border-yellow-700/50',
+  'Other': 'bg-slate-900/50 text-slate-200 border-slate-700/50'
 };
 
 const typeColors: Record<string, string> = {
-  'Tournament': 'bg-magic-purple/10 text-magic-purple border-magic-purple/30',
-  'Casual Play': 'bg-green-100 text-green-700',
-  'Championship': 'bg-red-100 text-red-700',
-  'League': 'bg-blue-100 text-blue-700',
-  'Special Event': 'bg-amber-100 text-amber-700'
+  'Tournament': 'bg-magic-purple/20 text-magic-lightPurple border-magic-purple/50',
+  'Casual Play': 'bg-green-900/30 text-green-200 border-green-700/50',
+  'Championship': 'bg-red-900/30 text-red-200 border-red-700/50',
+  'League': 'bg-blue-900/30 text-blue-200 border-blue-700/50',
+  'Special Event': 'bg-amber-900/30 text-amber-200 border-amber-700/50'
 };
 
 interface EventCardProps {
@@ -39,8 +39,15 @@ const EventCard = ({ event, className = '' }: EventCardProps) => {
 
   return (
     <Link to={`/events/${event.id}`}>
-      <Card className={`magic-card magic-card-hover h-full ${className}`}>
-        <CardHeader className="pb-2">
+      <Card className={`magic-card magic-card-hover h-full ${className} border-border/50 bg-card/50 backdrop-blur-sm`}>
+        <CardHeader className="pb-2 relative">
+          {event.featured && (
+            <div className="absolute -top-1 -right-1">
+              <Badge variant="default" className="bg-amber-600 text-white">
+                <Star className="h-3 w-3 mr-1 fill-current" /> Featured
+              </Badge>
+            </div>
+          )}
           <div className="flex flex-wrap gap-2 mb-2">
             <Badge variant="outline" className={typeColors[event.type] || ''}>
               {event.type}
@@ -49,18 +56,18 @@ const EventCard = ({ event, className = '' }: EventCardProps) => {
               {event.format}
             </Badge>
           </div>
-          <CardTitle className="text-lg line-clamp-1">{event.title}</CardTitle>
-          <CardDescription className="line-clamp-2">{event.description}</CardDescription>
+          <CardTitle className="text-lg line-clamp-1 text-gradient font-bold">{event.title}</CardTitle>
+          <CardDescription className="line-clamp-2 text-muted-foreground/90">{event.description}</CardDescription>
         </CardHeader>
         <CardContent className="pb-2">
           <div className="space-y-2 text-sm">
             <div className="flex items-start">
-              <CalendarClock className="h-4 w-4 mr-2 mt-0.5 text-muted-foreground" />
-              <span>{formatDate(event.startDate)}</span>
+              <CalendarClock className="h-4 w-4 mr-2 mt-0.5 text-primary" />
+              <span className="text-foreground/80">{formatDate(event.startDate)}</span>
             </div>
             <div className="flex items-start">
-              <MapPin className="h-4 w-4 mr-2 mt-0.5 text-muted-foreground" />
-              <span className="line-clamp-1">{event.location.name}, {event.location.city}</span>
+              <MapPin className="h-4 w-4 mr-2 mt-0.5 text-primary" />
+              <span className="line-clamp-1 text-foreground/80">{event.location.name}, {event.location.city}</span>
             </div>
           </div>
         </CardContent>
