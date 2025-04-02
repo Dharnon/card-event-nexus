@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -261,7 +260,7 @@ const CreateEventForm = () => {
                           )}
                         >
                           {field.value ? (
-                            format(field.value, "PPP", { locale: es })
+                            dateFns.format(field.value, "PPP", { locale: es })
                           ) : (
                             <span>Pick a date</span>
                           )}
