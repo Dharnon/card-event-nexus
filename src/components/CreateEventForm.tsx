@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { format } from 'date-fns';
+import * as dateFns from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CalendarIcon, Clock } from 'lucide-react';
 import { 
@@ -43,8 +43,8 @@ const locationOptions = [
 const formSchema = z.object({
   title: z.string().min(5, { message: 'Title must be at least 5 characters' }),
   description: z.string().min(20, { message: 'Description must be at least 20 characters' }),
-  format: z.enum(formatOptions),
-  type: z.enum(typeOptions),
+  format: z.enum(['Standard', 'Modern', 'Legacy', 'Commander', 'Pioneer', 'Vintage', 'Draft', 'Sealed', 'Prerelease', 'Other'] as const),
+  type: z.enum(['Tournament', 'Casual Play', 'Championship', 'League', 'Special Event'] as const),
   date: z.date({ required_error: 'Please select a date' }),
   time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, { message: 'Please enter a valid time in 24h format' }),
   duration: z.string().min(1, { message: 'Please enter the duration' }),

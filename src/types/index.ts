@@ -38,6 +38,7 @@ export interface Event {
   maxParticipants?: number;
   currentParticipants?: number;
   image?: string;
+  featured?: boolean;
   createdBy: string; // Store ID
   createdAt: string; // ISO date string
   updatedAt: string; // ISO date string

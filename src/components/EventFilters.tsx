@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import * as dateFns from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -30,7 +29,7 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
-import { useMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const formatOptions: EventFormat[] = [
   'Standard', 'Modern', 'Legacy', 'Commander', 'Pioneer', 'Vintage', 'Draft', 'Sealed', 'Prerelease', 'Other'
@@ -51,7 +50,7 @@ const EventFilters = () => {
   const [format, setFormat] = useState<EventFormat | undefined>(undefined);
   const [type, setType] = useState<EventType | undefined>(undefined);
   const [date, setDate] = useState<Date | undefined>(undefined);
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
   
   const handleSearch = () => {
     const filters: EventFiltersType = {
