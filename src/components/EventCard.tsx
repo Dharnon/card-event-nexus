@@ -1,5 +1,5 @@
 
-import { format, parseISO } from 'date-fns';
+import * as dateFns from 'date-fns';
 import { CalendarClock, MapPin, Users, CreditCard } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
@@ -34,7 +34,7 @@ interface EventCardProps {
 
 const EventCard = ({ event, className = '' }: EventCardProps) => {
   const formatDate = (dateString: string) => {
-    return format(parseISO(dateString), 'MMM d, yyyy • h:mm a');
+    return dateFns.format(dateFns.parseISO(dateString), 'MMM d, yyyy • h:mm a');
   };
 
   return (

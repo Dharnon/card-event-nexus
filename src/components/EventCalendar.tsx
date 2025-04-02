@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO, addMonths, subMonths } from 'date-fns';
+import * as dateFns from 'date-fns';
 import { es } from 'date-fns/locale';
 import { 
   Calendar, 
@@ -26,21 +26,21 @@ const EventCalendar = ({ events }: EventCalendarProps) => {
   const navigate = useNavigate();
   
   const nextMonth = () => {
-    setCurrentMonth(addMonths(currentMonth, 1));
+    setCurrentMonth(dateFns.addMonths(currentMonth, 1));
   };
   
   const prevMonth = () => {
-    setCurrentMonth(subMonths(currentMonth, 1));
+    setCurrentMonth(dateFns.subMonths(currentMonth, 1));
   };
   
-  const daysInMonth = eachDayOfInterval({
-    start: startOfMonth(currentMonth),
-    end: endOfMonth(currentMonth),
+  const daysInMonth = dateFns.eachDayOfInterval({
+    start: dateFns.startOfMonth(currentMonth),
+    end: dateFns.endOfMonth(currentMonth),
   });
   
   const getEventsForDay = (day: Date) => {
     return events.filter(event => 
-      isSameDay(parseISO(event.startDate), day)
+      dateFns.isSameDay(dateFns.parseISO(event.startDate), day)
     );
   };
   
@@ -66,7 +66,7 @@ const EventCalendar = ({ events }: EventCalendarProps) => {
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <span className="text-md font-medium">
-                {format(currentMonth, 'MMMM yyyy', { locale: es })}
+                {dateFns.format(currentMonth, 'MMMM yyyy', { locale: es })}
               </span>
               <Button variant="outline" size="icon" onClick={nextMonth}>
                 <ChevronRight className="h-4 w-4" />
@@ -85,7 +85,7 @@ const EventCalendar = ({ events }: EventCalendarProps) => {
           
           <div className="grid grid-cols-7 gap-1">
             {/* Empty cells for days of the week before the first day of the month */}
-            {Array.from({ length: startOfMonth(currentMonth).getDay() }).map((_, i) => (
+            {Array.from({ length: dateFns.startOfMonth(currentMonth).getDay() }).map((_, i) => (
               <div key={`empty-start-${i}`} className="h-16 rounded-md" />
             ))}
             
@@ -93,8 +93,8 @@ const EventCalendar = ({ events }: EventCalendarProps) => {
             {daysInMonth.map(day => {
               const dayEvents = getEventsForDay(day);
               const hasEvents = dayEvents.length > 0;
-              const isSelected = selectedDate ? isSameDay(day, selectedDate) : false;
-              const isToday = isSameDay(day, new Date());
+              const isSelected = selectedDate ? dateFns.isSameDay(day, selectedDate) : false;
+              const isToday = dateFns.isSameDay(day, new Date());
               
               return (
                 <Dialog key={day.toISOString()}>
@@ -107,7 +107,7 @@ const EventCalendar = ({ events }: EventCalendarProps) => {
                       onClick={() => handleDateClick(day)}
                     >
                       <span className={`text-sm ${isSelected ? "text-primary-foreground" : "text-foreground"}`}>
-                        {format(day, 'd')}
+                        {dateFns.format(day, 'd')}
                       </span>
                       
                       {hasEvents && (
@@ -131,7 +131,7 @@ const EventCalendar = ({ events }: EventCalendarProps) => {
                     <DialogContent className="max-w-xl max-h-[80vh] overflow-y-auto">
                       <DialogHeader>
                         <DialogTitle>
-                          Events on {format(day, 'EEEE d MMMM, yyyy', { locale: es })}
+                          Events on {dateFns.format(day, 'EEEE d MMMM, yyyy', { locale: es })}
                         </DialogTitle>
                         <DialogDescription>
                           {dayEvents.length} event{dayEvents.length !== 1 ? 's' : ''} scheduled for this day
@@ -154,7 +154,7 @@ const EventCalendar = ({ events }: EventCalendarProps) => {
             })}
             
             {/* Empty cells for days of the week after the last day of the month */}
-            {Array.from({ length: 6 - endOfMonth(currentMonth).getDay() }).map((_, i) => (
+            {Array.from({ length: 6 - dateFns.endOfMonth(currentMonth).getDay() }).map((_, i) => (
               <div key={`empty-end-${i}`} className="h-16 rounded-md" />
             ))}
           </div>

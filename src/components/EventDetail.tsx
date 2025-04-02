@@ -1,5 +1,5 @@
 
-import { format, parseISO } from 'date-fns';
+import * as dateFns from 'date-fns';
 import { es } from 'date-fns/locale';
 import { 
   CalendarClock, 
@@ -50,11 +50,11 @@ const EventDetail = ({ event }: EventDetailProps) => {
   const { user } = useAuth();
   
   const formatDate = (dateString: string) => {
-    return format(parseISO(dateString), 'EEEE d MMMM, yyyy • h:mm a', { locale: es });
+    return dateFns.format(dateFns.parseISO(dateString), 'EEEE d MMMM, yyyy • h:mm a', { locale: es });
   };
   
   const formatTime = (dateString: string) => {
-    return format(parseISO(dateString), 'h:mm a');
+    return dateFns.format(dateFns.parseISO(dateString), 'h:mm a');
   };
 
   const handleRegister = () => {
@@ -173,7 +173,7 @@ const EventDetail = ({ event }: EventDetailProps) => {
         <div className="flex items-center justify-between">
           <div className="flex items-center text-sm text-muted-foreground">
             <Calendar className="h-4 w-4 mr-1" />
-            <span>Added on {format(parseISO(event.createdAt), 'PP')}</span>
+            <span>Added on {dateFns.format(dateFns.parseISO(event.createdAt), 'PP')}</span>
           </div>
           
           {!isFull && (

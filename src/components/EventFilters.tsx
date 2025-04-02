@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { format } from 'date-fns';
+import * as dateFns from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Calendar as CalendarIcon, Search, X, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -155,7 +155,7 @@ const EventFilters = () => {
                 )}
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {date ? format(date, "PPP", { locale: es }) : <span>Select date</span>}
+                {date ? dateFns.format(date, "PPP", { locale: es }) : <span>Select date</span>}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="center">
