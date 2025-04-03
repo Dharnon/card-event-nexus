@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Event, EventFormat } from '@/types';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 const formatColors: Record<EventFormat, string> = {
   'Standard': 'bg-blue-900/50 text-blue-200 border-blue-700/50',
@@ -38,12 +39,21 @@ const EventCard = ({ event, className = '' }: EventCardProps) => {
   };
 
   return (
-    <Link to={`/events/${event.id}`}>
-      <Card className={`magic-card magic-card-hover h-full ${className} border-border/50 bg-card/50 backdrop-blur-sm`}>
-        <CardHeader className="pb-2 relative">
+    <Link to={`/events/${event.id}`} className="block h-full">
+      <Card className={`magic-card magic-card-hover shine-effect h-full ${className} border-border/50 glass-morphism`}>
+        {event.image && (
+          <AspectRatio ratio={16/9}>
+            <img 
+              src={event.image} 
+              alt={event.title} 
+              className="object-cover rounded-t-lg w-full"
+            />
+          </AspectRatio>
+        )}
+        <CardHeader className={`pb-2 relative ${event.image ? 'pt-3' : 'pt-4'}`}>
           {event.featured && (
-            <div className="absolute -top-1 -right-1">
-              <Badge variant="default" className="bg-amber-600 text-white">
+            <div className="absolute -top-1 -right-1 z-10">
+              <Badge variant="default" className="bg-amber-600 text-white shadow-lg">
                 <Star className="h-3 w-3 mr-1 fill-current" /> Featured
               </Badge>
             </div>
@@ -79,7 +89,7 @@ const EventCard = ({ event, className = '' }: EventCardProps) => {
                 {event.currentParticipants ?? 0}/{event.maxParticipants ?? '∞'}
               </span>
             </div>
-            {event.price && event.price > 0 && (
+            {event.price !== undefined && event.price > 0 && (
               <div className="flex items-center">
                 <CreditCard className="h-4 w-4 mr-1" />
                 <span>{event.price}€</span>
