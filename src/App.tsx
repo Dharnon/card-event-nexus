@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { EventProvider } from "@/context/EventContext";
-import { useEffect } from "react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import HomePage from "./pages/HomePage";
 import EventsPage from "./pages/EventsPage";
 import CalendarPage from "./pages/CalendarPage";
@@ -19,16 +19,14 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const App = () => {
-  // Set dark mode as default
-  useEffect(() => {
-    document.documentElement.classList.add('dark');
-  }, []);
-
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <EventProvider>
           <TooltipProvider>
+            <div className="fixed top-4 right-4 z-50">
+              <ThemeToggle />
+            </div>
             <Toaster />
             <Sonner />
             <BrowserRouter>

@@ -5,6 +5,7 @@
 
 @layer base {
   :root {
+    /* Dark mode defaults */
     --background: 260 25% 10%;
     --foreground: 210 40% 98%;
 
@@ -35,35 +36,33 @@
   }
 
   .light {
-    --background: 260 25% 98%;
-    --foreground: 222.2 84% 4.9%;
-
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
+    --card-foreground: 240 10% 3.9%;
+    
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
+    --popover-foreground: 240 10% 3.9%;
+    
     --primary: 260 50% 50%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 260 30% 92%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 252 80% 75%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
+    --primary-foreground: 0 0% 98%;
+    
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 250 50% 50%;
-
-    --radius: 0.75rem;
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 5.9% 10%;
   }
 }
 
@@ -77,6 +76,7 @@
   }
 }
 
+/* Existing custom classes */
 @layer components {
   .magic-card {
     @apply relative overflow-hidden rounded-lg border bg-card text-card-foreground shadow-md transition-all;
@@ -91,64 +91,10 @@
   }
 
   .glass-morphism {
-    @apply backdrop-blur-xl bg-black/20 border border-white/10 shadow-lg;
+    @apply backdrop-blur-xl bg-white/10 border border-white/10 shadow-lg;
   }
   
   .text-gradient {
     @apply bg-gradient-to-br from-white via-white/90 to-white/70 bg-clip-text text-transparent;
-  }
-  
-  /* Nuevos estilos */
-  .card-hover {
-    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
-  }
-  
-  .animated-bg {
-    @apply relative overflow-hidden;
-  }
-  
-  .animated-bg::before {
-    @apply content-[''] absolute inset-0 bg-gradient-to-br from-magic-purple/40 to-magic-blue/30 opacity-30;
-    animation: gradientMove 15s ease infinite;
-  }
-  
-  @keyframes gradientMove {
-    0% {
-      background-position: 0% 50%;
-    }
-    50% {
-      background-position: 100% 50%;
-    }
-    100% {
-      background-position: 0% 50%;
-    }
-  }
-  
-  .shine-effect {
-    position: relative;
-    overflow: hidden;
-  }
-  
-  .shine-effect::after {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: linear-gradient(
-      to bottom right,
-      rgba(255, 255, 255, 0) 0%,
-      rgba(255, 255, 255, 0.05) 40%,
-      rgba(255, 255, 255, 0.1) 50%,
-      rgba(255, 255, 255, 0.05) 60%,
-      rgba(255, 255, 255, 0) 100%
-    );
-    transform: rotate(30deg);
-    transition: transform 0.5s;
-  }
-  
-  .shine-effect:hover::after {
-    transform: rotate(30deg) translate(30%, 30%);
   }
 }
