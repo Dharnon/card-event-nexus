@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { EventProvider } from "@/context/EventContext";
-import { ThemeToggle } from "@/components/ThemeToggle";
+// Remove ThemeToggle import
 import HomePage from "./pages/HomePage";
 import EventsPage from "./pages/EventsPage";
 import CalendarPage from "./pages/CalendarPage";
@@ -24,9 +24,7 @@ const App = () => {
       <AuthProvider>
         <EventProvider>
           <TooltipProvider>
-            <div className="fixed top-4 right-4 z-50">
-              <ThemeToggle />
-            </div>
+            {/* Remove ThemeToggle div */}
             <Toaster />
             <Sonner />
             <BrowserRouter>
