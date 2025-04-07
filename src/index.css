@@ -1,11 +1,12 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* Light mode defaults */
-    --background: 0 0% 100%;
+    /* Refined light mode colors */
+    --background: 220 25% 97%;
     --foreground: 240 10% 3.9%;
 
     --card: 0 0% 100%;
@@ -14,7 +15,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
 
-    --primary: 240 5.9% 10%;
+    --primary: 262 70% 61%;
     --primary-foreground: 0 0% 98%;
 
     --secondary: 240 4.8% 95.9%;
@@ -23,15 +24,15 @@
     --muted: 240 4.8% 95.9%;
     --muted-foreground: 240 3.8% 46.1%;
 
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
+    --accent: 262 70% 95%;
+    --accent-foreground: 262 70% 61%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
+    --ring: 262 70% 61%;
   }
 }
 
@@ -43,11 +44,27 @@
   body {
     @apply bg-background text-foreground antialiased;
   }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold tracking-tight;
+  }
+  
+  h1 {
+    @apply text-4xl md:text-5xl lg:text-6xl;
+  }
+  
+  h2 {
+    @apply text-3xl md:text-4xl;
+  }
+  
+  h3 {
+    @apply text-2xl md:text-3xl;
+  }
 }
 
 @layer components {
   .magic-card {
-    @apply relative overflow-hidden rounded-3xl border bg-card text-card-foreground shadow-md transition-all;
+    @apply relative overflow-hidden rounded-3xl border border-border/40 bg-card text-card-foreground shadow-lg transition-all;
   }
   
   .magic-card-hover {
@@ -59,10 +76,38 @@
   }
 
   .glass-morphism {
-    @apply backdrop-blur-xl bg-white/10 border border-white/10 shadow-lg rounded-3xl;
+    @apply backdrop-blur-xl bg-white/80 border border-white/20 shadow-lg rounded-3xl;
   }
   
   .text-gradient {
-    @apply bg-gradient-to-br from-white via-white/90 to-white/70 bg-clip-text text-transparent;
+    @apply bg-gradient-to-br from-magic-purple via-magic-lightPurple to-magic-blue bg-clip-text text-transparent;
+  }
+  
+  .shine-effect {
+    @apply relative overflow-hidden;
+  }
+  
+  .shine-effect::after {
+    @apply content-[''] absolute -top-[100%] -right-[100%] w-[50%] h-[200%] opacity-0 rotate-30 bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none transition-all duration-700 ease-out;
+  }
+  
+  .shine-effect:hover::after {
+    @apply opacity-100 -top-[50%] -right-[50%] transition-all duration-700;
+  }
+  
+  .float {
+    @apply animate-float;
+  }
+  
+  @keyframes float {
+    0% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+    100% {
+      transform: translateY(0px);
+    }
   }
 }

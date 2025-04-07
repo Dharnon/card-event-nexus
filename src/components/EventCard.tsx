@@ -21,11 +21,11 @@ const formatColors: Record<EventFormat, string> = {
 };
 
 const typeColors: Record<string, string> = {
-  'Tournament': 'bg-magic-purple/20 text-magic-lightPurple border-magic-purple/50',
-  'Casual Play': 'bg-green-900/30 text-green-200 border-green-700/50',
-  'Championship': 'bg-red-900/30 text-red-200 border-red-700/50',
-  'League': 'bg-blue-900/30 text-blue-200 border-blue-700/50',
-  'Special Event': 'bg-amber-900/30 text-amber-200 border-amber-700/50'
+  'Tournament': 'bg-magic-purple/20 text-magic-purple border-magic-purple/30',
+  'Casual Play': 'bg-green-900/20 text-green-700 border-green-700/30',
+  'Championship': 'bg-red-900/20 text-red-700 border-red-700/30',
+  'League': 'bg-blue-900/20 text-blue-700 border-blue-700/30',
+  'Special Event': 'bg-amber-900/20 text-amber-700 border-amber-700/30'
 };
 
 interface EventCardProps {
@@ -39,34 +39,34 @@ const EventCard = ({ event, className = '' }: EventCardProps) => {
   };
 
   return (
-    <Link to={`/events/${event.id}`} className="block h-full">
-      <Card className={`magic-card magic-card-hover shine-effect h-full ${className} border-border/50 glass-morphism rounded-2xl overflow-hidden`}>
+    <Link to={`/events/${event.id}`} className="block h-full group">
+      <Card className={`magic-card magic-card-hover h-full ${className} border-border/50 bg-card/80 shadow-lg backdrop-blur-sm group-hover:shadow-xl transition-all duration-300`}>
         {event.image && (
           <AspectRatio ratio={16/9}>
             <img 
               src={event.image} 
               alt={event.title} 
-              className="object-cover w-full rounded-t-3xl"
+              className="object-cover w-full rounded-t-3xl transition-transform duration-500 group-hover:scale-105"
             />
           </AspectRatio>
         )}
-        <CardHeader className={`pb-2 relative ${event.image ? 'pt-3' : 'pt-4'} rounded-b-3xl`}>
+        <CardHeader className={`pb-2 relative ${event.image ? 'pt-3' : 'pt-4'}`}>
           {event.featured && (
             <div className="absolute -top-1 -right-1 z-10">
-              <Badge variant="default" className="bg-amber-600 text-white shadow-lg rounded-full">
+              <Badge variant="default" className="bg-amber-600 text-white shadow-md rounded-full">
                 <Star className="h-3 w-3 mr-1 fill-current" /> Featured
               </Badge>
             </div>
           )}
           <div className="flex flex-wrap gap-2 mb-2">
-            <Badge variant="outline" className={`${typeColors[event.type] || ''} rounded-full`}>
+            <Badge variant="outline" className={`${typeColors[event.type] || ''} rounded-full shadow-sm`}>
               {event.type}
             </Badge>
-            <Badge variant="outline" className={`${formatColors[event.format] || ''} rounded-full`}>
+            <Badge variant="outline" className={`${formatColors[event.format] || ''} rounded-full shadow-sm`}>
               {event.format}
             </Badge>
           </div>
-          <CardTitle className="text-lg line-clamp-1 text-gradient font-bold">{event.title}</CardTitle>
+          <CardTitle className="text-lg line-clamp-1 font-bold group-hover:text-primary transition-colors">{event.title}</CardTitle>
           <CardDescription className="line-clamp-2 text-muted-foreground/90">{event.description}</CardDescription>
         </CardHeader>
         <CardContent className="pb-2">
@@ -81,7 +81,7 @@ const EventCard = ({ event, className = '' }: EventCardProps) => {
             </div>
           </div>
         </CardContent>
-        <CardFooter className="pt-0 rounded-b-3xl">
+        <CardFooter className="pt-0">
           <div className="flex items-center justify-between w-full text-sm text-muted-foreground">
             <div className="flex items-center">
               <Users className="h-4 w-4 mr-1" />
@@ -103,4 +103,3 @@ const EventCard = ({ event, className = '' }: EventCardProps) => {
 };
 
 export default EventCard;
-

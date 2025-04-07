@@ -1,7 +1,7 @@
 
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { CalendarDays, Search, Store, Users, Sparkles, MapPin, Clock } from 'lucide-react';
+import { CalendarDays, Search, Store, Users, Sparkles, MapPin, Clock, Star, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import Navbar from '@/components/Navbar';
@@ -26,14 +26,17 @@ const HomePage = () => {
       <Navbar />
       <main className="flex-grow">
         {/* Hero Section with Animated Background */}
-        <section className="relative overflow-hidden">
+        <section className="relative overflow-hidden py-10 md:py-16 lg:py-24">
           <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1614066737967-8213e250be9d?q=80&w=1974&auto=format&fit=crop')] bg-cover bg-center opacity-20"></div>
           <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background to-background"></div>
           
-          <div className="relative py-20 md:py-32">
+          <div className="relative">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+              <span className="inline-block px-3 py-1 text-sm font-medium text-primary bg-primary/10 rounded-full shadow-sm mb-4">
+                Find Local Magic: The Gathering Events
+              </span>
               <h1 className="text-4xl md:text-6xl font-bold text-gradient mb-6 tracking-tight">
-                Discover Magic: The Gathering Events
+                Discover <span className="text-gradient">Magic: The Gathering</span> Events Near You
               </h1>
               <p className="text-xl text-foreground/80 mb-8 max-w-3xl mx-auto">
                 Find tournaments, casual play sessions, and special events in your area. 
@@ -41,31 +44,41 @@ const HomePage = () => {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link to="/events">
-                  <Button size="lg" className="bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20">
+                  <Button size="lg" variant="gradient" className="shine-effect shadow-lg">
                     <Search className="mr-2 h-5 w-5" />
                     Browse Events
                   </Button>
                 </Link>
                 <Link to="/calendar">
-                  <Button size="lg" variant="outline" className="bg-background/50 backdrop-blur-sm text-foreground border-primary hover:bg-primary/10">
+                  <Button size="lg" variant="outline" className="border-primary/30 bg-background/50 backdrop-blur-sm text-foreground hover:bg-primary/10">
                     <CalendarDays className="mr-2 h-5 w-5" />
                     View Calendar
                   </Button>
                 </Link>
               </div>
+              
+              {/* Floating decorative cards */}
+              <div className="hidden lg:block">
+                <div className="absolute -right-20 top-0 w-64 h-64 transform rotate-12 float opacity-70">
+                  <img src="https://images.unsplash.com/photo-1627646791838-1b7088e0c7f5?q=80&w=500&auto=format&fit=crop" className="rounded-3xl shadow-xl" alt="Decorative" />
+                </div>
+                <div className="absolute -left-16 top-32 w-48 h-48 transform -rotate-6 float opacity-70 delay-150">
+                  <img src="https://images.unsplash.com/photo-1500587363180-2ff67baebbdc?q=80&w=500&auto=format&fit=crop" className="rounded-3xl shadow-xl" alt="Decorative" />
+                </div>
+              </div>
             </div>
           </div>
           
           {/* Feature cards */}
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 md:-mt-16 relative z-10">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16 md:mt-24 relative z-10">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <Card className="magic-card glass-morphism shadow-xl transform transition-all hover:translate-y-[-5px]">
                 <CardContent className="p-6">
-                  <div className="flex items-start">
-                    <div className="bg-primary/20 p-3 rounded-lg mr-4">
-                      <Search className="h-6 w-6 text-primary" />
+                  <div className="flex flex-col items-center md:items-start md:flex-row md:space-x-4">
+                    <div className="bg-gradient-to-br from-magic-purple to-magic-lightPurple p-4 rounded-2xl mb-4 md:mb-0">
+                      <Search className="h-6 w-6 text-white" />
                     </div>
-                    <div>
+                    <div className="text-center md:text-left">
                       <h3 className="font-semibold text-lg mb-2">Find Events</h3>
                       <p className="text-muted-foreground">
                         Discover tournaments and casual play opportunities in your area. Filter by format, location, and date.
@@ -77,11 +90,11 @@ const HomePage = () => {
               
               <Card className="magic-card glass-morphism shadow-xl transform transition-all hover:translate-y-[-5px]">
                 <CardContent className="p-6">
-                  <div className="flex items-start">
-                    <div className="bg-primary/20 p-3 rounded-lg mr-4">
-                      <Users className="h-6 w-6 text-primary" />
+                  <div className="flex flex-col items-center md:items-start md:flex-row md:space-x-4">
+                    <div className="bg-gradient-to-br from-magic-purple to-magic-lightPurple p-4 rounded-2xl mb-4 md:mb-0">
+                      <Users className="h-6 w-6 text-white" />
                     </div>
-                    <div>
+                    <div className="text-center md:text-left">
                       <h3 className="font-semibold text-lg mb-2">Join the Community</h3>
                       <p className="text-muted-foreground">
                         Register for events, connect with other players, and become part of the Magic community.
@@ -93,11 +106,11 @@ const HomePage = () => {
               
               <Card className="magic-card glass-morphism shadow-xl transform transition-all hover:translate-y-[-5px]">
                 <CardContent className="p-6">
-                  <div className="flex items-start">
-                    <div className="bg-primary/20 p-3 rounded-lg mr-4">
-                      <Store className="h-6 w-6 text-primary" />
+                  <div className="flex flex-col items-center md:items-start md:flex-row md:space-x-4">
+                    <div className="bg-gradient-to-br from-magic-purple to-magic-lightPurple p-4 rounded-2xl mb-4 md:mb-0">
+                      <Store className="h-6 w-6 text-white" />
                     </div>
-                    <div>
+                    <div className="text-center md:text-left">
                       <h3 className="font-semibold text-lg mb-2">For Stores</h3>
                       <p className="text-muted-foreground">
                         Are you a store owner? Create and manage your Magic events to attract more players to your venue.
@@ -112,23 +125,26 @@ const HomePage = () => {
         
         {/* Featured Event Section */}
         {featuredEvents.length > 0 && (
-          <section className="py-16 bg-secondary/30">
+          <section className="py-16 bg-accent/30">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="mb-8">
+                <span className="inline-block px-3 py-1 text-sm font-medium text-primary bg-primary/10 rounded-full shadow-sm mb-2">
+                  Don't Miss
+                </span>
                 <h2 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
                   <Sparkles className="h-6 w-6 text-amber-500" /> Featured Event
                 </h2>
-                <p className="text-muted-foreground">Don't miss this special event</p>
+                <p className="text-muted-foreground">Special events you don't want to miss</p>
               </div>
               
-              <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-center glass-morphism p-6 rounded-xl">
+              <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-center glass-morphism p-6 rounded-xl shadow-xl border border-white/20">
                 <div className="lg:col-span-2">
-                  <AspectRatio ratio={16/9} className="bg-muted rounded-lg overflow-hidden">
+                  <AspectRatio ratio={16/9} className="bg-muted rounded-lg overflow-hidden shadow-lg">
                     {featuredEvents[0].image ? (
                       <img 
                         src={featuredEvents[0].image} 
                         alt={featuredEvents[0].title} 
-                        className="object-cover w-full h-full"
+                        className="object-cover w-full h-full transform hover:scale-105 transition-transform duration-500"
                       />
                     ) : (
                       <div className="w-full h-full bg-muted flex items-center justify-center">
@@ -141,19 +157,22 @@ const HomePage = () => {
                   <h3 className="text-2xl font-bold mb-3">{featuredEvents[0].title}</h3>
                   <p className="text-foreground/80 mb-4 line-clamp-3">{featuredEvents[0].description}</p>
                   
-                  <div className="grid grid-cols-2 gap-4 mb-6">
-                    <div className="flex items-center">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                    <div className="flex items-center p-3 rounded-xl bg-card/50 shadow-sm">
                       <Clock className="h-5 w-5 text-primary mr-2" />
                       <span>{new Date(featuredEvents[0].startDate).toLocaleDateString()}</span>
                     </div>
-                    <div className="flex items-center">
+                    <div className="flex items-center p-3 rounded-xl bg-card/50 shadow-sm">
                       <MapPin className="h-5 w-5 text-primary mr-2" />
                       <span>{featuredEvents[0].location.city}</span>
                     </div>
                   </div>
                   
                   <Link to={`/events/${featuredEvents[0].id}`}>
-                    <Button className="w-full sm:w-auto">View Details</Button>
+                    <Button variant="gradient" className="shine-effect shadow-lg">
+                      View Details
+                      <ArrowRight className="ml-1 h-4 w-4" />
+                    </Button>
                   </Link>
                 </div>
               </div>
@@ -166,11 +185,17 @@ const HomePage = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center mb-8">
               <div>
+                <span className="inline-block px-3 py-1 text-sm font-medium text-primary bg-primary/10 rounded-full shadow-sm mb-2">
+                  Coming Soon
+                </span>
                 <h2 className="text-2xl md:text-3xl font-bold">Upcoming Events</h2>
                 <p className="text-muted-foreground">Don't miss these events happening soon</p>
               </div>
               <Link to="/events">
-                <Button variant="outline" className="backdrop-blur-sm hover:bg-primary/10">View All Events</Button>
+                <Button variant="outline" className="border-primary/30 backdrop-blur-sm hover:bg-primary/10">
+                  View All Events
+                  <ArrowRight className="ml-1 h-4 w-4" />
+                </Button>
               </Link>
             </div>
             
@@ -191,10 +216,13 @@ const HomePage = () => {
                 ))}
               </div>
             ) : (
-              <div className="glass-morphism text-center py-16 rounded-xl">
+              <div className="glass-morphism text-center py-16 rounded-xl shadow-xl">
+                <Star className="h-10 w-10 text-primary/60 mx-auto mb-4" />
                 <p className="text-muted-foreground mb-4">No upcoming events found</p>
                 <Link to="/events">
-                  <Button variant="outline" className="backdrop-blur-sm hover:bg-primary/10">Browse all events</Button>
+                  <Button variant="outline" className="border-primary/30 backdrop-blur-sm hover:bg-primary/10">
+                    Browse all events
+                  </Button>
                 </Link>
               </div>
             )}
@@ -203,7 +231,7 @@ const HomePage = () => {
         
         {/* Call to Action */}
         <section className="relative py-16 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-magic-purple/30 to-magic-lightPurple/30 opacity-50"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-magic-purple/20 to-magic-lightPurple/20 opacity-50"></div>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to join the gathering?</h2>
             <p className="text-lg text-foreground/80 mb-8 max-w-2xl mx-auto">
@@ -211,14 +239,21 @@ const HomePage = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/login">
-                <Button size="lg" className="shadow-lg shadow-primary/20">Get Started</Button>
+                <Button size="lg" variant="gradient" className="shadow-lg shine-effect">Get Started</Button>
               </Link>
               <Link to="/events">
-                <Button size="lg" variant="outline" className="bg-background/50 backdrop-blur-sm hover:bg-primary/10">
+                <Button size="lg" variant="outline" className="border-primary/30 bg-background/50 backdrop-blur-sm hover:bg-primary/10">
                   Browse Events
                 </Button>
               </Link>
             </div>
+          </div>
+          
+          {/* Decorative elements */}
+          <div className="hidden md:block">
+            <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-magic-purple/10 backdrop-blur-xl rounded-full"></div>
+            <div className="absolute -bottom-5 right-40 w-24 h-24 bg-magic-lightPurple/10 backdrop-blur-xl rounded-full"></div>
+            <div className="absolute top-10 right-10 w-32 h-32 bg-magic-blue/10 backdrop-blur-xl rounded-full"></div>
           </div>
         </section>
       </main>

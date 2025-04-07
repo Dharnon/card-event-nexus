@@ -62,7 +62,7 @@ export default {
           ring: 'hsl(var(--sidebar-ring))'
         },
         magic: {
-          purple: '#6E59A5',
+          purple: '#7856E3',
           lightPurple: '#9b87f5',
           blue: '#0EA5E9',
           green: '#10B981',
@@ -107,7 +107,8 @@ export default {
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
-        'pulse-subtle': 'pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+        'pulse-subtle': 'pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'float': 'float 6s ease-in-out infinite'
       }
     }
   },
