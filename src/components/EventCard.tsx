@@ -40,29 +40,29 @@ const EventCard = ({ event, className = '' }: EventCardProps) => {
 
   return (
     <Link to={`/events/${event.id}`} className="block h-full">
-      <Card className={`magic-card magic-card-hover shine-effect h-full ${className} border-border/50 glass-morphism`}>
+      <Card className={`magic-card magic-card-hover shine-effect h-full ${className} border-border/50 glass-morphism rounded-2xl overflow-hidden`}>
         {event.image && (
           <AspectRatio ratio={16/9}>
             <img 
               src={event.image} 
               alt={event.title} 
-              className="object-cover rounded-t-lg w-full"
+              className="object-cover w-full rounded-t-3xl"
             />
           </AspectRatio>
         )}
-        <CardHeader className={`pb-2 relative ${event.image ? 'pt-3' : 'pt-4'}`}>
+        <CardHeader className={`pb-2 relative ${event.image ? 'pt-3' : 'pt-4'} rounded-b-3xl`}>
           {event.featured && (
             <div className="absolute -top-1 -right-1 z-10">
-              <Badge variant="default" className="bg-amber-600 text-white shadow-lg">
+              <Badge variant="default" className="bg-amber-600 text-white shadow-lg rounded-full">
                 <Star className="h-3 w-3 mr-1 fill-current" /> Featured
               </Badge>
             </div>
           )}
           <div className="flex flex-wrap gap-2 mb-2">
-            <Badge variant="outline" className={typeColors[event.type] || ''}>
+            <Badge variant="outline" className={`${typeColors[event.type] || ''} rounded-full`}>
               {event.type}
             </Badge>
-            <Badge variant="outline" className={formatColors[event.format] || ''}>
+            <Badge variant="outline" className={`${formatColors[event.format] || ''} rounded-full`}>
               {event.format}
             </Badge>
           </div>
@@ -81,7 +81,7 @@ const EventCard = ({ event, className = '' }: EventCardProps) => {
             </div>
           </div>
         </CardContent>
-        <CardFooter className="pt-0">
+        <CardFooter className="pt-0 rounded-b-3xl">
           <div className="flex items-center justify-between w-full text-sm text-muted-foreground">
             <div className="flex items-center">
               <Users className="h-4 w-4 mr-1" />
@@ -103,3 +103,4 @@ const EventCard = ({ event, className = '' }: EventCardProps) => {
 };
 
 export default EventCard;
+

@@ -47,7 +47,7 @@
 
 @layer components {
   .magic-card {
-    @apply relative overflow-hidden rounded-lg border bg-card text-card-foreground shadow-md transition-all;
+    @apply relative overflow-hidden rounded-3xl border bg-card text-card-foreground shadow-md transition-all;
   }
   
   .magic-card-hover {
@@ -59,7 +59,7 @@
   }
 
   .glass-morphism {
-    @apply backdrop-blur-xl bg-white/10 border border-white/10 shadow-lg;
+    @apply backdrop-blur-xl bg-white/10 border border-white/10 shadow-lg rounded-3xl;
   }
   
   .text-gradient {
