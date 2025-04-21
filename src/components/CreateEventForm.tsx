@@ -79,7 +79,7 @@ const CreateEventForm = () => {
       title: '',
       description: '',
       format: 'Standard',
-      type: 'Tournament',
+      type: 'tournament',  // Fixed: now uses lowercase 'tournament' to match EventType
       time: '18:00',
       duration: '4',
       locationName: user?.role === 'store' ? `Magic Store ${user.name}` : '',

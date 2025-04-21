@@ -2,15 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Card as MagicCard } from '@/types';
+import { Card as MagicCard, CardSearchInputProps } from '@/types';
 import { searchCardByName, ScryfallCard, getCardImageUrl } from '@/services/ScryfallService';
 import { useDebounce } from '@/hooks/useDebounce';
 
-interface CardSearchInputProps {
-  onAddCard: (card: MagicCard) => void;
-}
-
-const CardSearchInput: React.FC<CardSearchInputProps> = ({ onAddCard }) => {
+const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeholder = "Search for a card..." }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<ScryfallCard[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -58,7 +54,7 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onAddCard }) => {
       imageUrl: getCardImageUrl(selectedCard),
     };
     
-    onAddCard(newCard);
+    onCardSelect(newCard); // Using the onCardSelect prop correctly
     setSelectedCard(null);
     setQuantity(1);
   };
@@ -67,7 +63,7 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onAddCard }) => {
     <div className="space-y-4">
       <div className="relative">
         <Input
-          placeholder="Buscar carta..."
+          placeholder={placeholder}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
