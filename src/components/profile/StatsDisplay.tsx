@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getUserStats, getUserGames } from '@/services/ProfileService';
@@ -12,7 +11,7 @@ const StatsDisplay = () => {
   // Fetch user stats and games
   const { data: stats, isLoading: isStatsLoading } = useQuery({
     queryKey: ['userStats'],
-    queryFn: getUserStats,
+    queryFn: () => getUserStats(),
   });
   
   const { data: games = [], isLoading: isGamesLoading } = useQuery({
