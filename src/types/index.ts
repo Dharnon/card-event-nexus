@@ -54,3 +54,57 @@ export interface Store {
   logo?: string;
   description?: string;
 }
+
+// New types for user profile section
+
+export interface Card {
+  id: string;
+  name: string;
+  quantity: number;
+  scryfallId?: string;
+  imageUrl?: string;
+}
+
+export interface Deck {
+  id: string;
+  name: string;
+  format: EventFormat;
+  cards: Card[];
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GameResult {
+  id: string;
+  win: boolean;
+  opponentDeckName: string;
+  opponentDeckFormat?: EventFormat;
+  notes?: string;
+  deckUsed: string; // Deck ID
+  eventId?: string; // Optional link to an event
+  date: string; // ISO date string
+}
+
+export interface UserEvent {
+  id: string;
+  name: string;
+  date: string; // ISO date string
+  games: GameResult[];
+  userId: string;
+}
+
+export interface UserStats {
+  totalGames: number;
+  wins: number;
+  losses: number;
+  winRate: number;
+  statsByFormat: {
+    [format in EventFormat]?: {
+      totalGames: number;
+      wins: number;
+      losses: number;
+      winRate: number;
+    }
+  };
+}
