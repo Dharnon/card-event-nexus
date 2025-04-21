@@ -1,7 +1,10 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card as MagicCard } from '@/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { searchCardByName, getCardImageUrl, ScryfallCard } from '@/services/ScryfallService';
+import { useDebounce } from '@/hooks/useDebounce';
 
 interface CardListProps {
   cards: MagicCard[];
@@ -47,14 +50,42 @@ const getCardType = (cardName: string): string => {
 
 const CardList: React.FC<CardListProps> = ({ cards }) => {
   const [view, setView] = useState<'list' | 'gallery'>('list');
+  const [cardImages, setCardImages] = useState<Record<string, string>>({});
   
+  // Load card images from Scryfall
+  useEffect(() => {
+    const loadCardImages = async () => {
+      for (const card of cards) {
+        if (!cardImages[card.name]) {
+          try {
+            const searchResults = await searchCardByName(card.name);
+            if (searchResults.length > 0) {
+              const imageUrl = getCardImageUrl(searchResults[0], 'normal');
+              setCardImages(prev => ({
+                ...prev,
+                [card.name]: imageUrl
+              }));
+            }
+          } catch (error) {
+            console.error(`Error loading image for ${card.name}:`, error);
+          }
+        }
+      }
+    };
+
+    loadCardImages();
+  }, [cards]);
+
   // Group cards by type
   const cardsByType: CardsByType = cards.reduce((acc, card) => {
     const type = getCardType(card.name);
     if (!acc[type]) {
       acc[type] = [];
     }
-    acc[type].push(card);
+    acc[type].push({
+      ...card,
+      imageUrl: cardImages[card.name]
+    });
     return acc;
   }, {} as CardsByType);
   
@@ -100,7 +131,23 @@ const CardList: React.FC<CardListProps> = ({ cards }) => {
                     {cards.map((card) => (
                       <tr key={card.id} className="border-t hover:bg-muted/50">
                         <td className="p-2 text-center w-16">{card.quantity}</td>
-                        <td className="p-2">{card.name}</td>
+                        <td className="p-2">
+                          <HoverCard>
+                            <HoverCardTrigger asChild>
+                              <span className="cursor-help">{card.name}</span>
+                            </HoverCardTrigger>
+                            <HoverCardContent className="w-auto p-0">
+                              {cardImages[card.name] && (
+                                <img 
+                                  src={cardImages[card.name]} 
+                                  alt={card.name}
+                                  className="rounded-lg"
+                                  style={{ maxWidth: '240px' }}
+                                />
+                              )}
+                            </HoverCardContent>
+                          </HoverCard>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -113,9 +160,14 @@ const CardList: React.FC<CardListProps> = ({ cards }) => {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {cards.map((card) => (
             <div key={card.id} className="rounded-md overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
-              {card.imageUrl ? (
+              {cardImages[card.name] ? (
                 <div className="relative">
-                  <img src={card.imageUrl} alt={card.name} className="w-full h-auto" />
+                  <img 
+                    src={cardImages[card.name]} 
+                    alt={card.name} 
+                    className="w-full h-auto"
+                    loading="lazy"
+                  />
                   <div className="absolute top-0 left-0 bg-background/80 text-foreground px-2 py-1 rounded-br-md">
                     {card.quantity}
                   </div>
