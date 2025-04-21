@@ -3,6 +3,7 @@ export interface Card {
   name: string;
   quantity: number;
   imageUrl?: string;
+  scryfallId?: string;
 }
 
 export type EventFormat =
@@ -79,7 +80,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'user' | 'admin' | 'store';
+  role: UserRole;
   avatarUrl?: string;
 }
 
@@ -103,4 +104,35 @@ export interface DeckPhoto {
   url: string;
   caption: string;
   date: string;
+}
+
+export interface Event {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  location: string;
+  format: EventFormat;
+  capacity: number;
+  registeredPlayers: number;
+  image?: string;
+  type: EventType;
+  price?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type EventType = 
+  | "tournament"
+  | "casual"
+  | "prerelease"
+  | "draft"
+  | "championship"
+  | "other";
+
+export type UserRole = 'user' | 'admin' | 'store';
+
+export interface CardSearchInputProps {
+  onCardSelect: (card: Card) => void;
+  placeholder?: string;
 }

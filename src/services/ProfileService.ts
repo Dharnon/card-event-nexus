@@ -1,3 +1,4 @@
+
 import { Deck, GameResult, UserEvent, UserStats, EventFormat, Card, SideboardGuide, DeckPhoto } from '@/types';
 
 // Mock user ID for demonstration purposes
@@ -241,6 +242,7 @@ export const preloadSampleData = () => {
       opponentDeckFormat: 'Modern',
       notes: 'Countered key threats',
       deckUsed: 'deck-1',
+      eventId: 'event-1', // Add missing eventId
       date: '2023-04-10T18:30:00Z',
     },
     {
@@ -250,6 +252,7 @@ export const preloadSampleData = () => {
       opponentDeckFormat: 'Modern',
       notes: 'Too much discard',
       deckUsed: 'deck-1',
+      eventId: 'event-1', // Add missing eventId
       date: '2023-04-11T19:45:00Z',
     },
     {
@@ -258,6 +261,7 @@ export const preloadSampleData = () => {
       opponentDeckName: 'White Weenie',
       opponentDeckFormat: 'Standard',
       deckUsed: 'deck-2',
+      eventId: 'event-2', // Add missing eventId
       date: '2023-04-15T14:20:00Z',
     },
   ];

@@ -8,7 +8,7 @@ import { Deck, EventFormat, Card as MagicCard, SideboardGuide, DeckPhoto } from 
 import { PlusCircle } from 'lucide-react';
 import DeckForm from './DeckForm';
 import CardList from './CardList';
-import SideboardGuide from './SideboardGuide';
+import SideboardGuideComponent from './SideboardGuide';
 import DeckPhotoGallery from './DeckPhotoGallery';
 
 const DeckManager = () => {
@@ -19,13 +19,11 @@ const DeckManager = () => {
   
   const queryClient = useQueryClient();
   
-  // Fetch user decks
   const { data: decks = [], isLoading } = useQuery({
     queryKey: ['userDecks'],
     queryFn: () => getUserDecks(),
   });
   
-  // Create new deck mutation
   const createDeckMutation = useMutation({
     mutationFn: createDeck,
     onSuccess: () => {
@@ -34,7 +32,6 @@ const DeckManager = () => {
     },
   });
   
-  // Update deck mutation
   const updateDeckMutation = useMutation({
     mutationFn: ({ deckId, updates }: { deckId: string; updates: Partial<Deck> }) =>
       updateDeck(deckId, updates),
@@ -44,7 +41,6 @@ const DeckManager = () => {
     },
   });
   
-  // Delete deck mutation
   const deleteDeckMutation = useMutation({
     mutationFn: deleteDeck,
     onSuccess: () => {
@@ -53,7 +49,6 @@ const DeckManager = () => {
     },
   });
   
-  // Handle form submission for new deck
   const handleCreateDeck = (name: string, format: EventFormat, cards: MagicCard[]) => {
     createDeckMutation.mutate({
       name,
@@ -62,7 +57,6 @@ const DeckManager = () => {
     });
   };
   
-  // Handle form submission for updating deck
   const handleUpdateDeck = (deckId: string, name: string, format: EventFormat, cards: MagicCard[]) => {
     updateDeckMutation.mutate({
       deckId,
@@ -74,7 +68,6 @@ const DeckManager = () => {
     });
   };
   
-  // Handle sideboard guide save
   const handleSaveSideboardGuide = (guide: SideboardGuide) => {
     if (!selectedDeck) return;
     
@@ -86,7 +79,6 @@ const DeckManager = () => {
     });
   };
 
-  // Handle photos save
   const handleSavePhotos = (photos: DeckPhoto[]) => {
     if (!selectedDeck) return;
     
@@ -98,21 +90,18 @@ const DeckManager = () => {
     });
   };
   
-  // Handle deck deletion
   const handleDeleteDeck = (deckId: string) => {
     if (window.confirm('¿Estás seguro de que quieres eliminar este mazo?')) {
       deleteDeckMutation.mutate(deckId);
     }
   };
   
-  // Select a deck to view details
   const handleSelectDeck = (deck: Deck) => {
     setSelectedDeck(deck);
     setIsAddingDeck(false);
     setEditingDeck(null);
   };
   
-  // Cancel form
   const handleCancelForm = () => {
     setIsAddingDeck(false);
     setEditingDeck(null);
@@ -122,7 +111,6 @@ const DeckManager = () => {
     return <div className="flex justify-center my-8">Cargando mazos...</div>;
   }
   
-  // Show deck form (create or edit)
   if (isAddingDeck || editingDeck) {
     return (
       <DeckForm 
@@ -136,7 +124,6 @@ const DeckManager = () => {
     );
   }
   
-  // Show selected deck details
   if (selectedDeck) {
     return (
       <div className="space-y-6">
@@ -181,7 +168,7 @@ const DeckManager = () => {
             
             <TabsContent value="sideboard">
               <div className="mt-6">
-                <SideboardGuide 
+                <SideboardGuideComponent 
                   deckId={selectedDeck.id} 
                   initialGuide={selectedDeck.sideboardGuide}
                   onSave={handleSaveSideboardGuide}
@@ -204,7 +191,6 @@ const DeckManager = () => {
     );
   }
   
-  // Show deck list
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">

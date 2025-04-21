@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,10 +5,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { SideboardGuide as SideboardGuideType, Matchup } from '@/types';
+import { SideboardGuide as SideboardGuideType, Matchup, Card as MagicCard } from '@/types';
 import { Edit, Eye, FileText, Trash } from 'lucide-react';
 import CardSearchInput from './CardSearchInput';
-import { Card as MagicCard } from '@/types';
 
 interface SideboardGuideProps {
   deckId: string;
@@ -17,7 +15,7 @@ interface SideboardGuideProps {
   onSave: (guide: SideboardGuideType) => void;
 }
 
-const SideboardGuide: React.FC<SideboardGuideProps> = ({ deckId, initialGuide, onSave }) => {
+const SideboardGuideComponent: React.FC<SideboardGuideProps> = ({ deckId, initialGuide, onSave }) => {
   const [isEditing, setIsEditing] = useState(!initialGuide);
   const [guide, setGuide] = useState<SideboardGuideType>(initialGuide || {
     id: `guide-${Date.now()}`,
@@ -296,7 +294,6 @@ const SideboardGuide: React.FC<SideboardGuideProps> = ({ deckId, initialGuide, o
           </div>
         </div>
       ) : (
-        // View mode
         <div className="space-y-6">
           <Card>
             <CardHeader>
@@ -396,4 +393,4 @@ const SideboardGuide: React.FC<SideboardGuideProps> = ({ deckId, initialGuide, o
   );
 };
 
-export default SideboardGuide;
+export default SideboardGuideComponent;
