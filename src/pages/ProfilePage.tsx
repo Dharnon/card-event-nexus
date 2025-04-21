@@ -6,6 +6,8 @@ import DeckManager from '@/components/profile/DeckManager';
 import StatsDisplay from '@/components/profile/StatsDisplay';
 import EventTracker from '@/components/profile/EventTracker';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const ProfilePage = () => {
   const { user } = useAuth();
@@ -34,15 +36,10 @@ const ProfilePage = () => {
             </p>
           </div>
           
-          <div className="flex items-center space-x-4">
-            <div className="rounded-full w-12 h-12 bg-primary flex items-center justify-center text-white text-lg font-bold">
-              {user.name.charAt(0)}
-            </div>
-            <div>
-              <p className="font-medium">{user.name}</p>
-              <p className="text-muted-foreground text-sm">{user.email}</p>
-            </div>
-          </div>
+          <Button variant="outline" onClick={() => navigate('/')} className="flex items-center gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Volver a la app
+          </Button>
         </div>
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

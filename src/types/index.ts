@@ -1,69 +1,21 @@
-
-export type UserRole = 'user' | 'admin' | 'store';
-
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: UserRole;
-  avatarUrl?: string;
-}
-
-export type EventFormat = 'Standard' | 'Modern' | 'Legacy' | 'Commander' | 'Pioneer' | 'Vintage' | 'Draft' | 'Sealed' | 'Prerelease' | 'Other';
-
-export type EventType = 'Tournament' | 'Casual Play' | 'Championship' | 'League' | 'Special Event';
-
-export interface EventLocation {
-  name: string;
-  address: string;
-  city: string;
-  postalCode?: string;
-  country: string;
-  coordinates?: {
-    lat: number;
-    lng: number;
-  };
-}
-
-export interface Event {
-  id: string;
-  title: string;
-  description: string;
-  format: EventFormat;
-  type: EventType;
-  startDate: string; // ISO date string
-  endDate?: string; // ISO date string
-  location: EventLocation;
-  price?: number;
-  maxParticipants?: number;
-  currentParticipants?: number;
-  image?: string;
-  featured?: boolean;
-  createdBy: string; // Store ID
-  createdAt: string; // ISO date string
-  updatedAt: string; // ISO date string
-}
-
-export interface Store {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  website?: string;
-  location: EventLocation;
-  logo?: string;
-  description?: string;
-}
-
-// New types for user profile section
-
 export interface Card {
   id: string;
   name: string;
   quantity: number;
-  scryfallId?: string;
   imageUrl?: string;
 }
+
+export type EventFormat =
+  | "Standard"
+  | "Modern"
+  | "Legacy"
+  | "Commander"
+  | "Pioneer"
+  | "Vintage"
+  | "Draft"
+  | "Sealed"
+  | "Prerelease"
+  | "Other";
 
 export interface Deck {
   id: string;
@@ -73,23 +25,25 @@ export interface Deck {
   userId: string;
   createdAt: string;
   updatedAt: string;
+  sideboardGuide?: SideboardGuide;
+  photos?: DeckPhoto[];
 }
 
 export interface GameResult {
   id: string;
   win: boolean;
   opponentDeckName: string;
-  opponentDeckFormat?: EventFormat;
+  opponentDeckFormat: EventFormat;
+  deckUsed: string;
   notes?: string;
-  deckUsed: string; // Deck ID
-  eventId?: string; // Optional link to an event
-  date: string; // ISO date string
+  eventId: string;
+  date: string;
 }
 
 export interface UserEvent {
   id: string;
   name: string;
-  date: string; // ISO date string
+  date: string;
   games: GameResult[];
   userId: string;
 }
@@ -100,11 +54,53 @@ export interface UserStats {
   losses: number;
   winRate: number;
   statsByFormat: {
-    [format in EventFormat]?: {
+    [format: string]: {
       totalGames: number;
       wins: number;
       losses: number;
       winRate: number;
-    }
+    };
   };
+}
+
+export interface ScryfallCard {
+  name: string;
+  image_uris: {
+    small: string;
+    normal: string;
+    large: string;
+    png: string;
+    art_crop: string;
+    border_crop: string;
+  };
+}
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: 'user' | 'admin' | 'store';
+  avatarUrl?: string;
+}
+
+export interface SideboardGuide {
+  id: string;
+  deckId: string;
+  mainNotes: string;
+  matchups: Matchup[];
+}
+
+export interface Matchup {
+  id: string;
+  name: string;
+  strategy: string;
+  cardsToSideIn: Card[];
+  cardsToSideOut: Card[];
+}
+
+export interface DeckPhoto {
+  id: string;
+  url: string;
+  caption: string;
+  date: string;
 }

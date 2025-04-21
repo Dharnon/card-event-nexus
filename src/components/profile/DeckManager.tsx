@@ -1,18 +1,21 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getUserDecks, createDeck, updateDeck, deleteDeck } from '@/services/ProfileService';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Deck, EventFormat, Card as MagicCard } from '@/types';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Deck, EventFormat, Card as MagicCard, SideboardGuide, DeckPhoto } from '@/types';
 import { PlusCircle } from 'lucide-react';
 import DeckForm from './DeckForm';
 import CardList from './CardList';
+import SideboardGuide from './SideboardGuide';
+import DeckPhotoGallery from './DeckPhotoGallery';
 
 const DeckManager = () => {
   const [isAddingDeck, setIsAddingDeck] = useState(false);
   const [editingDeck, setEditingDeck] = useState<Deck | null>(null);
   const [selectedDeck, setSelectedDeck] = useState<Deck | null>(null);
+  const [selectedTab, setSelectedTab] = useState<'cards' | 'sideboard' | 'photos'>('cards');
   
   const queryClient = useQueryClient();
   
@@ -67,6 +70,30 @@ const DeckManager = () => {
         name,
         format,
         cards,
+      },
+    });
+  };
+  
+  // Handle sideboard guide save
+  const handleSaveSideboardGuide = (guide: SideboardGuide) => {
+    if (!selectedDeck) return;
+    
+    updateDeckMutation.mutate({
+      deckId: selectedDeck.id,
+      updates: {
+        sideboardGuide: guide,
+      },
+    });
+  };
+
+  // Handle photos save
+  const handleSavePhotos = (photos: DeckPhoto[]) => {
+    if (!selectedDeck) return;
+    
+    updateDeckMutation.mutate({
+      deckId: selectedDeck.id,
+      updates: {
+        photos: photos,
       },
     });
   };
@@ -138,10 +165,40 @@ const DeckManager = () => {
             </span>
           </div>
           
-          <div className="mt-6">
-            <h3 className="text-xl font-semibold mb-4">Lista de cartas</h3>
-            <CardList cards={selectedDeck.cards} />
-          </div>
+          <Tabs value={selectedTab} onValueChange={(tab) => setSelectedTab(tab as any)} className="mt-6">
+            <TabsList>
+              <TabsTrigger value="cards">Cartas</TabsTrigger>
+              <TabsTrigger value="sideboard">Guía de Sideboard</TabsTrigger>
+              <TabsTrigger value="photos">Fotos</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="cards">
+              <div className="mt-6">
+                <h3 className="text-xl font-semibold mb-4">Lista de cartas</h3>
+                <CardList cards={selectedDeck.cards} />
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="sideboard">
+              <div className="mt-6">
+                <SideboardGuide 
+                  deckId={selectedDeck.id} 
+                  initialGuide={selectedDeck.sideboardGuide}
+                  onSave={handleSaveSideboardGuide}
+                />
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="photos">
+              <div className="mt-6">
+                <DeckPhotoGallery 
+                  deckId={selectedDeck.id}
+                  initialPhotos={selectedDeck.photos}
+                  onSave={handleSavePhotos}
+                />
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     );

@@ -1,5 +1,4 @@
-
-import { Deck, GameResult, UserEvent, UserStats, EventFormat, Card } from '@/types';
+import { Deck, GameResult, UserEvent, UserStats, EventFormat, Card, SideboardGuide, DeckPhoto } from '@/types';
 
 // Mock user ID for demonstration purposes
 const CURRENT_USER_ID = '1';
@@ -191,6 +190,32 @@ export const preloadSampleData = () => {
       userId: CURRENT_USER_ID,
       createdAt: '2023-01-15T12:00:00Z',
       updatedAt: '2023-02-10T15:30:00Z',
+      sideboardGuide: {
+        id: 'guide-1',
+        deckId: 'deck-1',
+        mainNotes: 'This deck focuses on controlling the board and countering key spells.',
+        matchups: [
+          {
+            id: 'matchup-1',
+            name: 'Red Aggro',
+            strategy: 'Counter their burn spells and remove early creatures.',
+            cardsToSideIn: [
+              { id: 'sidein-1', name: 'Engineered Explosives', quantity: 2 }
+            ],
+            cardsToSideOut: [
+              { id: 'sideout-1', name: 'Cryptic Command', quantity: 2 }
+            ]
+          }
+        ]
+      },
+      photos: [
+        {
+          id: 'photo-1',
+          url: 'https://images.unsplash.com/photo-1529154166925-574a0236a4f4?q=80&w=600',
+          caption: 'Tournament deck setup',
+          date: '2023-04-01T10:00:00Z'
+        }
+      ]
     },
     {
       id: 'deck-2',

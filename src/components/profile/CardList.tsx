@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card as MagicCard } from '@/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
