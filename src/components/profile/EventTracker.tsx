@@ -1,11 +1,12 @@
 
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getUserEvents, createUserEvent, updateUserEvent, deleteUserEvent, createGameResult } from '@/services/ProfileService';
+import { getUserEvents, createUserEvent, updateUserEvent, deleteUserEvent, createGameResult, getUserGames } from '@/services/ProfileService';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar, Plus, ChevronRight } from "lucide-react";
+import { Calendar, Plus, ChevronRight, Trophy } from "lucide-react";
 import { EventFormat, UserEvent, GameResult } from '@/types';
+import { toast } from "sonner";
 import EventForm from './EventForm';
 import GameResultForm from './GameResultForm';
 
@@ -24,15 +25,15 @@ const EventTracker = () => {
   });
   
   // Fetch game results for the selected event
-  const { data: eventGames = [] } = useQuery({
-    queryKey: ['eventGames', selectedEvent?.id],
-    queryFn: () => {
-      // This is a simplified version that doesn't actually fetch the games
-      // In a real app, you'd fetch the games for the selected event
-      return [];
-    },
-    enabled: !!selectedEvent,
+  const { data: allGames = [] } = useQuery({
+    queryKey: ['userGames'],
+    queryFn: () => getUserGames(),
   });
+  
+  // Filter games for the selected event
+  const eventGames = selectedEvent 
+    ? allGames.filter(game => game.eventId === selectedEvent.id)
+    : [];
   
   // Create new event mutation
   const createEventMutation = useMutation({
@@ -40,6 +41,7 @@ const EventTracker = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['userEvents'] });
       setIsAddingEvent(false);
+      toast.success("Evento creado con éxito");
     },
   });
   
@@ -49,8 +51,8 @@ const EventTracker = () => {
       updateUserEvent(eventId, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['userEvents'] });
-      queryClient.invalidateQueries({ queryKey: ['eventGames', selectedEvent?.id] });
       setEditingEvent(null);
+      toast.success("Evento actualizado con éxito");
     },
   });
   
@@ -60,6 +62,7 @@ const EventTracker = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['userEvents'] });
       if (selectedEvent) setSelectedEvent(null);
+      toast.success("Evento eliminado con éxito");
     },
   });
   
@@ -67,9 +70,10 @@ const EventTracker = () => {
   const createGameMutation = useMutation({
     mutationFn: createGameResult,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['eventGames', selectedEvent?.id] });
+      queryClient.invalidateQueries({ queryKey: ['userGames'] });
       queryClient.invalidateQueries({ queryKey: ['userStats'] });
       setIsAddingGame(false);
+      toast.success("Resultado de partida guardado con éxito");
     },
   });
   
@@ -117,6 +121,14 @@ const EventTracker = () => {
     setIsAddingEvent(false);
     setEditingEvent(null);
     setIsAddingGame(false);
+  };
+  
+  // Format match score for display
+  const formatMatchScore = (game: GameResult) => {
+    if (!game.matchScore) return game.win ? 'Victoria' : 'Derrota';
+    
+    const { playerWins, opponentWins } = game.matchScore;
+    return `${playerWins}-${opponentWins}`;
   };
   
   if (isLoading) {
@@ -211,11 +223,19 @@ const EventTracker = () => {
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                             game.win ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                           }`}>
-                            {game.win ? 'Victoria' : 'Derrota'}
+                            {game.win ? 'Victoria' : 'Derrota'}{' '}
+                            {game.matchScore && (
+                              <span className="ml-1 flex items-center">
+                                <Trophy className="h-3 w-3 mr-1" /> 
+                                {formatMatchScore(game)}
+                              </span>
+                            )}
                           </span>
                         </td>
                         <td className="p-3">{game.opponentDeckName}</td>
-                        <td className="p-3">{game.deckUsed}</td>
+                        <td className="p-3">
+                          {decks?.find(d => d.id === game.deckUsed)?.name || game.deckUsed}
+                        </td>
                         <td className="p-3">{game.notes || '-'}</td>
                       </tr>
                     ))}

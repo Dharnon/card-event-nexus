@@ -109,7 +109,7 @@ const DeckForm: React.FC<DeckFormProps> = ({ deck, onSubmit, onCancel }) => {
           <div className="pt-4">
             <Label>Cartas</Label>
             <div className="mt-2">
-              <CardSearchInput onAddCard={handleAddCard} />
+              <CardSearchInput onCardSelect={handleAddCard} placeholder="Buscar carta..." />
             </div>
             
             {cards.length > 0 && (

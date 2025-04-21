@@ -1,14 +1,15 @@
+
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getUserStats, getUserGames } from '@/services/ProfileService';
+import { getUserStats, getUserGames, getUserDecks } from '@/services/ProfileService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { EventFormat } from '@/types';
-import { Calendar } from "lucide-react"
+import { Calendar, Trophy } from "lucide-react"
 
 const StatsDisplay = () => {
-  // Fetch user stats and games
+  // Fetch user stats, games, and decks
   const { data: stats, isLoading: isStatsLoading } = useQuery({
     queryKey: ['userStats'],
     queryFn: () => getUserStats(),
@@ -19,7 +20,12 @@ const StatsDisplay = () => {
     queryFn: () => getUserGames(),
   });
   
-  const isLoading = isStatsLoading || isGamesLoading;
+  const { data: decks = [], isLoading: isDecksLoading } = useQuery({
+    queryKey: ['userDecks'],
+    queryFn: () => getUserDecks(),
+  });
+  
+  const isLoading = isStatsLoading || isGamesLoading || isDecksLoading;
   
   if (isLoading) {
     return <div className="flex justify-center my-8">Cargando estadísticas...</div>;
@@ -46,6 +52,20 @@ const StatsDisplay = () => {
   const recentGames = [...games]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 5);
+  
+  // Format match score for display
+  const formatMatchScore = (game) => {
+    if (!game.matchScore) return '';
+    
+    const { playerWins, opponentWins } = game.matchScore;
+    return `${playerWins}-${opponentWins}`;
+  };
+  
+  // Get deck name from id
+  const getDeckName = (deckId) => {
+    const deck = decks.find(d => d.id === deckId);
+    return deck ? deck.name : deckId;
+  };
   
   return (
     <div className="space-y-6">
@@ -159,16 +179,25 @@ const StatsDisplay = () => {
             <div className="divide-y">
               {recentGames.map((game) => (
                 <div key={game.id} className="py-3 flex justify-between items-center">
-                  <div>
+                  <div className="flex items-center gap-2">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                       game.win ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                     }`}>
                       {game.win ? 'Victoria' : 'Derrota'}
+                      {game.matchScore && (
+                        <span className="ml-1 flex items-center">
+                          <Trophy className="h-3 w-3 mx-1" /> 
+                          {formatMatchScore(game)}
+                        </span>
+                      )}
                     </span>
-                    <span className="ml-2">vs {game.opponentDeckName}</span>
+                    <span>vs {game.opponentDeckName}</span>
                   </div>
-                  <div className="text-sm text-muted-foreground">
-                    {new Date(game.date).toLocaleDateString()}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">{getDeckName(game.deckUsed)}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {new Date(game.date).toLocaleDateString()}
+                    </span>
                   </div>
                 </div>
               ))}

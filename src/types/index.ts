@@ -1,3 +1,4 @@
+
 export interface Card {
   id: string;
   name: string;
@@ -39,6 +40,13 @@ export interface GameResult {
   notes?: string;
   eventId: string;
   date: string;
+  matchScore?: MatchScore; // Added match score tracking
+}
+
+// New interface to track match scores (best of 3)
+export interface MatchScore {
+  playerWins: number; // 0-2
+  opponentWins: number; // 0-2
 }
 
 export interface UserEvent {

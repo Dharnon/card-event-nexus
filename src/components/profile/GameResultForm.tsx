@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getUserDecks } from '@/services/ProfileService';
-import { GameResult, EventFormat } from '@/types';
+import { GameResult, EventFormat, MatchScore } from '@/types';
+import { Trophy } from "lucide-react";
 
 interface GameResultFormProps {
   eventId: string;
@@ -22,12 +23,21 @@ const GameResultForm: React.FC<GameResultFormProps> = ({ eventId, onSubmit, onCa
   const [opponentDeckFormat, setOpponentDeckFormat] = useState<EventFormat>('Standard');
   const [deckUsed, setDeckUsed] = useState('');
   const [notes, setNotes] = useState('');
+  const [playerWins, setPlayerWins] = useState<number>(2);
+  const [opponentWins, setOpponentWins] = useState<number>(0);
   
   // Fetch user's decks for selection
   const { data: decks = [], isLoading } = useQuery({
     queryKey: ['userDecks'],
     queryFn: () => getUserDecks(),
   });
+  
+  // Update win/loss state based on match score
+  const updateWinState = (playerW: number, opponentW: number) => {
+    setPlayerWins(playerW);
+    setOpponentWins(opponentW);
+    setWin(playerW > opponentW);
+  };
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,14 +51,20 @@ const GameResultForm: React.FC<GameResultFormProps> = ({ eventId, onSubmit, onCa
       return;
     }
     
+    const matchScore: MatchScore = {
+      playerWins,
+      opponentWins
+    };
+    
     const gameResult: Omit<GameResult, 'id'> = {
-      win,
+      win: playerWins > opponentWins,
       opponentDeckName,
       opponentDeckFormat,
       deckUsed,
       notes: notes.trim() || undefined,
       eventId,
       date: new Date().toISOString(),
+      matchScore
     };
     
     onSubmit(gameResult);
@@ -62,23 +78,40 @@ const GameResultForm: React.FC<GameResultFormProps> = ({ eventId, onSubmit, onCa
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>Resultado</Label>
-            <div className="flex space-x-2">
+            <Label>Resultado del Match (Mejor de 3)</Label>
+            <div className="grid grid-cols-3 gap-2">
               <Button
                 type="button"
-                variant={win ? "default" : "outline"}
-                className={win ? "bg-magic-green hover:bg-magic-green/90" : ""}
-                onClick={() => setWin(true)}
+                variant={playerWins === 2 && opponentWins === 0 ? "default" : "outline"}
+                className={playerWins === 2 && opponentWins === 0 ? "bg-magic-green hover:bg-magic-green/90" : ""}
+                onClick={() => updateWinState(2, 0)}
               >
-                Victoria
+                2-0
               </Button>
               <Button
                 type="button"
-                variant={!win ? "default" : "outline"}
-                className={!win ? "bg-magic-red hover:bg-magic-red/90" : ""}
-                onClick={() => setWin(false)}
+                variant={playerWins === 2 && opponentWins === 1 ? "default" : "outline"}
+                className={playerWins === 2 && opponentWins === 1 ? "bg-magic-green hover:bg-magic-green/90" : ""}
+                onClick={() => updateWinState(2, 1)}
               >
-                Derrota
+                2-1
+              </Button>
+              <Button
+                type="button"
+                variant={playerWins === 1 && opponentWins === 2 ? "default" : "outline"}
+                className={playerWins === 1 && opponentWins === 2 ? "bg-magic-red hover:bg-magic-red/90" : ""}
+                onClick={() => updateWinState(1, 2)}
+              >
+                1-2
+              </Button>
+              <Button
+                type="button"
+                variant={playerWins === 0 && opponentWins === 2 ? "default" : "outline"}
+                className={playerWins === 0 && opponentWins === 2 ? "bg-magic-red hover:bg-magic-red/90" : ""}
+                onClick={() => updateWinState(0, 2)}
+                className="col-span-3"
+              >
+                0-2
               </Button>
             </div>
           </div>
