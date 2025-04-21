@@ -1,10 +1,9 @@
-
 import * as dateFns from 'date-fns';
 import { CalendarClock, MapPin, Users, CreditCard, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Event, EventFormat } from '@/types';
+import { Event, EventFormat, EventType } from '@/types';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 const formatColors: Record<EventFormat, string> = {
@@ -21,11 +20,21 @@ const formatColors: Record<EventFormat, string> = {
 };
 
 const typeColors: Record<string, string> = {
-  'Tournament': 'bg-magic-purple/20 text-magic-purple border-magic-purple/30',
-  'Casual Play': 'bg-green-900/20 text-green-700 border-green-700/30',
-  'Championship': 'bg-red-900/20 text-red-700 border-red-700/30',
-  'League': 'bg-blue-900/20 text-blue-700 border-blue-700/30',
-  'Special Event': 'bg-amber-900/20 text-amber-700 border-amber-700/30'
+  'tournament': 'bg-magic-purple/20 text-magic-purple border-magic-purple/30',
+  'casual': 'bg-green-900/20 text-green-700 border-green-700/30',
+  'championship': 'bg-red-900/20 text-red-700 border-red-700/30',
+  'draft': 'bg-blue-900/20 text-blue-700 border-blue-700/30',
+  'prerelease': 'bg-amber-900/20 text-amber-700 border-amber-700/30',
+  'other': 'bg-slate-900/20 text-slate-700 border-slate-700/30'
+};
+
+const typeLabels: Record<EventType, string> = {
+  'tournament': 'Tournament',
+  'casual': 'Casual Play',
+  'championship': 'Championship',
+  'draft': 'Draft',
+  'prerelease': 'Prerelease',
+  'other': 'Other'
 };
 
 interface EventCardProps {
@@ -60,7 +69,7 @@ const EventCard = ({ event, className = '' }: EventCardProps) => {
           )}
           <div className="flex flex-wrap gap-2 mb-2">
             <Badge variant="outline" className={`${typeColors[event.type] || ''} rounded-full shadow-sm`}>
-              {event.type}
+              {typeLabels[event.type]}
             </Badge>
             <Badge variant="outline" className={`${formatColors[event.format] || ''} rounded-full shadow-sm`}>
               {event.format}

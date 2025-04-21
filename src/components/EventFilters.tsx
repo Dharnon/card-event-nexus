@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import * as dateFns from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -36,8 +37,17 @@ const formatOptions: EventFormat[] = [
 ];
 
 const typeOptions: EventType[] = [
-  'Tournament', 'Casual Play', 'Championship', 'League', 'Special Event'
+  'tournament', 'casual', 'championship', 'draft', 'prerelease', 'other'
 ];
+
+const typeLabels: Record<EventType, string> = {
+  'tournament': 'Tournament',
+  'casual': 'Casual Play',
+  'championship': 'Championship',
+  'draft': 'Draft',
+  'prerelease': 'Prerelease',
+  'other': 'Other'
+};
 
 const locationOptions = [
   'Madrid', 'Barcelona', 'Valencia', 'Sevilla', 'Bilbao'

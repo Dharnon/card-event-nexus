@@ -1,4 +1,3 @@
-
 import * as dateFns from 'date-fns';
 import { es } from 'date-fns/locale';
 import { 
@@ -18,7 +17,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
-import { Event, EventFormat } from '@/types';
+import { Event, EventFormat, EventType } from '@/types';
 
 interface EventDetailProps {
   event: Event;
@@ -38,11 +37,21 @@ const formatColors: Record<EventFormat, string> = {
 };
 
 const typeColors: Record<string, string> = {
-  'Tournament': 'bg-magic-purple/10 text-magic-purple border-magic-purple/30',
-  'Casual Play': 'bg-green-100 text-green-700',
-  'Championship': 'bg-red-100 text-red-700',
-  'League': 'bg-blue-100 text-blue-700',
-  'Special Event': 'bg-amber-100 text-amber-700'
+  'tournament': 'bg-magic-purple/10 text-magic-purple border-magic-purple/30',
+  'casual': 'bg-green-100 text-green-700',
+  'championship': 'bg-red-100 text-red-700',
+  'draft': 'bg-blue-100 text-blue-700',
+  'prerelease': 'bg-amber-100 text-amber-700',
+  'other': 'bg-slate-100 text-slate-700'
+};
+
+const typeLabels: Record<EventType, string> = {
+  'tournament': 'Tournament',
+  'casual': 'Casual Play',
+  'championship': 'Championship',
+  'draft': 'Draft',
+  'prerelease': 'Prerelease',
+  'other': 'Other'
 };
 
 const EventDetail = ({ event }: EventDetailProps) => {
@@ -86,7 +95,7 @@ const EventDetail = ({ event }: EventDetailProps) => {
       <CardHeader>
         <div className="flex flex-wrap gap-2 mb-2">
           <Badge variant="outline" className={typeColors[event.type] || ''}>
-            {event.type}
+            {typeLabels[event.type]}
           </Badge>
           <Badge variant="outline" className={formatColors[event.format] || ''}>
             {event.format}

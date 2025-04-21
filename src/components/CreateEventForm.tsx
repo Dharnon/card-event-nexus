@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -32,8 +33,17 @@ const formatOptions: EventFormat[] = [
 ];
 
 const typeOptions: EventType[] = [
-  'Tournament', 'Casual Play', 'Championship', 'League', 'Special Event'
+  'tournament', 'casual', 'championship', 'draft', 'prerelease', 'other'
 ];
+
+const typeLabels: Record<EventType, string> = {
+  'tournament': 'Tournament',
+  'casual': 'Casual Play',
+  'championship': 'Championship',
+  'draft': 'Draft',
+  'prerelease': 'Prerelease',
+  'other': 'Other'
+};
 
 const locationOptions = [
   'Madrid', 'Barcelona', 'Valencia', 'Sevilla', 'Bilbao'
@@ -43,7 +53,7 @@ const formSchema = z.object({
   title: z.string().min(5, { message: 'Title must be at least 5 characters' }),
   description: z.string().min(20, { message: 'Description must be at least 20 characters' }),
   format: z.enum(['Standard', 'Modern', 'Legacy', 'Commander', 'Pioneer', 'Vintage', 'Draft', 'Sealed', 'Prerelease', 'Other'] as const),
-  type: z.enum(['Tournament', 'Casual Play', 'Championship', 'League', 'Special Event'] as const),
+  type: z.enum(['tournament', 'casual', 'championship', 'draft', 'prerelease', 'other'] as const),
   date: z.date({ required_error: 'Please select a date' }),
   time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, { message: 'Please enter a valid time in 24h format' }),
   duration: z.string().min(1, { message: 'Please enter the duration' }),

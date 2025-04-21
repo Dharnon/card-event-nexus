@@ -1,3 +1,4 @@
+
 export interface Card {
   id: string;
   name: string;
@@ -106,18 +107,29 @@ export interface DeckPhoto {
   date: string;
 }
 
+export interface EventLocation {
+  name: string;
+  address: string;
+  city: string;
+  postalCode?: string;
+  country: string;
+}
+
 export interface Event {
   id: string;
   title: string;
   description: string;
-  date: string;
-  location: string;
   format: EventFormat;
-  capacity: number;
-  registeredPlayers: number;
-  image?: string;
   type: EventType;
+  startDate: string;
+  endDate?: string;
+  location: EventLocation;
   price?: number;
+  maxParticipants?: number;
+  currentParticipants?: number;
+  image?: string;
+  featured?: boolean;
+  createdBy?: string;
   createdAt: string;
   updatedAt: string;
 }

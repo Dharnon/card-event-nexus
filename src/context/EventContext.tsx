@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Event, EventFormat, EventType } from '@/types';
+import { Event, EventFormat, EventType, EventLocation } from '@/types';
 import { format, parseISO, addDays, addHours } from 'date-fns';
 
 interface EventContextType {
@@ -44,7 +44,7 @@ const generateMockEvents = (): Event[] => {
   const mockEvents: Event[] = [];
   
   const formats: EventFormat[] = ['Standard', 'Modern', 'Legacy', 'Commander', 'Pioneer', 'Draft', 'Sealed', 'Prerelease'];
-  const types: EventType[] = ['Tournament', 'Casual Play', 'Championship', 'League', 'Special Event'];
+  const types: EventType[] = ['tournament', 'casual', 'championship', 'draft', 'prerelease'];
   const cities = ['Madrid', 'Barcelona', 'Valencia', 'Sevilla', 'Bilbao'];
   const storeIds = ['1', '2', '3'];
   
@@ -63,7 +63,7 @@ const generateMockEvents = (): Event[] => {
     mockEvents.push({
       id: eventId,
       title: `${format} ${type} - ${city}`,
-      description: `Join us for an exciting ${format} ${type.toLowerCase()} event! Players of all skill levels are welcome.`,
+      description: `Join us for an exciting ${format} ${type} event! Players of all skill levels are welcome.`,
       format,
       type,
       startDate: startDate.toISOString(),

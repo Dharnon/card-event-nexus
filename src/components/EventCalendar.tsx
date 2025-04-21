@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import * as dateFns from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -22,11 +21,21 @@ interface EventCalendarProps {
 
 // Define colors for different event types
 const typeColors: Record<EventType, { bg: string, color: string }> = {
-  'Tournament': { bg: 'bg-magic-purple', color: 'text-white' },
-  'Casual Play': { bg: 'bg-green-600', color: 'text-white' },
-  'Championship': { bg: 'bg-red-600', color: 'text-white' },
-  'League': { bg: 'bg-blue-600', color: 'text-white' },
-  'Special Event': { bg: 'bg-amber-600', color: 'text-white' }
+  'tournament': { bg: 'bg-magic-purple', color: 'text-white' },
+  'casual': { bg: 'bg-green-600', color: 'text-white' },
+  'championship': { bg: 'bg-red-600', color: 'text-white' },
+  'draft': { bg: 'bg-blue-600', color: 'text-white' },
+  'prerelease': { bg: 'bg-amber-600', color: 'text-white' },
+  'other': { bg: 'bg-slate-600', color: 'text-white' }
+};
+
+const typeLabels: Record<EventType, string> = {
+  'tournament': 'Tournament',
+  'casual': 'Casual Play',
+  'championship': 'Championship',
+  'draft': 'Draft',
+  'prerelease': 'Prerelease',
+  'other': 'Other'
 };
 
 const EventCalendar = ({ events }: EventCalendarProps) => {
@@ -140,11 +149,11 @@ const EventCalendar = ({ events }: EventCalendarProps) => {
                                     <div 
                                       className={`text-[10px] rounded-sm px-1 py-0.5 truncate w-full ${typeColors[type].bg} ${typeColors[type].color}`}
                                     >
-                                      {type}
+                                      {typeLabels[type]}
                                     </div>
                                   </TooltipTrigger>
                                   <TooltipContent side="bottom">
-                                    <p>{dayEvents.filter(e => e.type === type).length} {type} events</p>
+                                    <p>{dayEvents.filter(e => e.type === type).length} {typeLabels[type]} events</p>
                                   </TooltipContent>
                                 </Tooltip>
                               </TooltipProvider>
@@ -197,7 +206,7 @@ const EventCalendar = ({ events }: EventCalendarProps) => {
               {Object.entries(typeColors).map(([type, colors]) => (
                 <div key={type} className="flex items-center">
                   <div className={`w-3 h-3 rounded-sm ${colors.bg} mr-1`}></div>
-                  <span className="text-xs">{type}</span>
+                  <span className="text-xs">{typeLabels[type as EventType]}</span>
                 </div>
               ))}
             </div>
