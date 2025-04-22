@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,13 +25,11 @@ const GameResultForm: React.FC<GameResultFormProps> = ({ eventId, onSubmit, onCa
   const [playerWins, setPlayerWins] = useState<number>(2);
   const [opponentWins, setOpponentWins] = useState<number>(0);
   
-  // Fetch user's decks for selection
   const { data: decks = [], isLoading } = useQuery({
     queryKey: ['userDecks'],
     queryFn: () => getUserDecks(),
   });
   
-  // Update win/loss state based on match score
   const updateWinState = (playerW: number, opponentW: number) => {
     setPlayerWins(playerW);
     setOpponentWins(opponentW);
@@ -107,9 +104,8 @@ const GameResultForm: React.FC<GameResultFormProps> = ({ eventId, onSubmit, onCa
               <Button
                 type="button"
                 variant={playerWins === 0 && opponentWins === 2 ? "default" : "outline"}
-                className={playerWins === 0 && opponentWins === 2 ? "bg-magic-red hover:bg-magic-red/90" : ""}
+                className={`${playerWins === 0 && opponentWins === 2 ? "bg-magic-red hover:bg-magic-red/90" : ""} col-span-3`}
                 onClick={() => updateWinState(0, 2)}
-                className="col-span-3"
               >
                 0-2
               </Button>
