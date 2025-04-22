@@ -24,6 +24,7 @@ const GameResultForm: React.FC<GameResultFormProps> = ({ eventId, onSubmit, onCa
   const [notes, setNotes] = useState('');
   const [playerWins, setPlayerWins] = useState<number>(2);
   const [opponentWins, setOpponentWins] = useState<number>(0);
+  const [isPlaying, setIsPlaying] = useState(false);
   
   const { data: decks = [], isLoading } = useQuery({
     queryKey: ['userDecks'],
@@ -67,6 +68,17 @@ const GameResultForm: React.FC<GameResultFormProps> = ({ eventId, onSubmit, onCa
     onSubmit(gameResult);
   };
   
+  if (isPlaying) {
+    return (
+      <div className="space-y-6">
+        <GameLifeTracker 
+          deckId={deckUsed}
+          onGameEnd={() => setIsPlaying(false)}
+        />
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <Card className="magic-card">
@@ -184,9 +196,18 @@ const GameResultForm: React.FC<GameResultFormProps> = ({ eventId, onSubmit, onCa
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancelar
           </Button>
-          <Button type="submit">
-            Guardar partida
-          </Button>
+          <div className="space-x-2">
+            <Button 
+              type="button" 
+              variant="outline"
+              onClick={() => setIsPlaying(true)}
+            >
+              Comenzar Partida
+            </Button>
+            <Button type="submit">
+              Guardar partida
+            </Button>
+          </div>
         </CardFooter>
       </Card>
     </form>
