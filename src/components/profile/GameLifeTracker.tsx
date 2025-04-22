@@ -5,6 +5,16 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Plus, Minus } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
+import SideboardGuideComponent from './SideboardGuide';
+import { useQuery } from '@tanstack/react-query';
+import { getDeckById } from '@/services/ProfileService';
 
 interface LifeChange {
   player: 'player' | 'opponent';
@@ -23,6 +33,11 @@ const GameLifeTracker: React.FC<GameLifeTrackerProps> = ({ deckId, onGameEnd }) 
   const [lifeHistory, setLifeHistory] = useState<LifeChange[]>([]);
   const [showSideboard, setShowSideboard] = useState(false);
   const isMobile = useIsMobile();
+
+  const { data: deck } = useQuery({
+    queryKey: ['deck', deckId],
+    queryFn: () => getDeckById(deckId),
+  });
 
   const updateLife = (player: 'player' | 'opponent', amount: number) => {
     const change: LifeChange = {
@@ -156,13 +171,31 @@ const GameLifeTracker: React.FC<GameLifeTrackerProps> = ({ deckId, onGameEnd }) 
 
       {/* Control buttons at the bottom */}
       <div className="flex justify-between gap-4 mb-4">
-        <Button 
-          variant="outline" 
-          className="flex-1"
-          onClick={() => setShowSideboard(!showSideboard)}
-        >
-          Sideboard
-        </Button>
+        <Drawer>
+          <DrawerTrigger asChild>
+            <Button variant="outline" className="flex-1">
+              Sideboard
+            </Button>
+          </DrawerTrigger>
+          <DrawerContent>
+            <DrawerHeader>
+              <DrawerTitle>Guía de Sideboard</DrawerTitle>
+            </DrawerHeader>
+            <div className="px-4 pb-4">
+              {deck?.sideboardGuide ? (
+                <SideboardGuideComponent
+                  deckId={deckId}
+                  initialGuide={deck.sideboardGuide}
+                  onSave={() => {}} // Read-only mode during game
+                />
+              ) : (
+                <p className="text-center text-muted-foreground py-4">
+                  Este mazo no tiene guía de sideboard
+                </p>
+              )}
+            </div>
+          </DrawerContent>
+        </Drawer>
         <Button 
           variant="default"
           className="flex-1"
