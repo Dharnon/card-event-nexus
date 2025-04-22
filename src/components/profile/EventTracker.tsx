@@ -1,11 +1,11 @@
 
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getUserEvents, createUserEvent, updateUserEvent, deleteUserEvent, createGameResult, getUserGames } from '@/services/ProfileService';
+import { getUserEvents, createUserEvent, updateUserEvent, deleteUserEvent, createGameResult, getUserGames, getUserDecks } from '@/services/ProfileService';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar, Plus, ChevronRight, Trophy } from "lucide-react";
-import { EventFormat, UserEvent, GameResult } from '@/types';
+import { EventFormat, UserEvent, GameResult, Deck } from '@/types';
 import { toast } from "sonner";
 import EventForm from './EventForm';
 import GameResultForm from './GameResultForm';
@@ -28,6 +28,12 @@ const EventTracker = () => {
   const { data: allGames = [] } = useQuery({
     queryKey: ['userGames'],
     queryFn: () => getUserGames(),
+  });
+  
+  // Fetch user decks for displaying deck names
+  const { data: decks = [] } = useQuery({
+    queryKey: ['userDecks'],
+    queryFn: () => getUserDecks(),
   });
   
   // Filter games for the selected event
