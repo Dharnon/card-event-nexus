@@ -10,6 +10,7 @@ import { getUserDecks } from '@/services/ProfileService';
 import { GameResult, EventFormat, MatchScore } from '@/types';
 import { Trophy } from "lucide-react";
 import GameLifeTracker from './GameLifeTracker';
+import { useToast } from "@/hooks/use-toast";
 
 interface GameResultFormProps {
   eventId: string;
@@ -69,6 +70,20 @@ const GameResultForm: React.FC<GameResultFormProps> = ({ eventId, onSubmit, onCa
     onSubmit(gameResult);
   };
   
+  const { toast } = useToast();
+
+  const handleStartGame = () => {
+    if (!deckUsed) {
+      toast({
+        title: "Selecciona un mazo",
+        description: "Debes seleccionar un mazo antes de comenzar la partida",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsPlaying(true);
+  };
+
   if (isPlaying) {
     return (
       <div className="space-y-6">
@@ -87,6 +102,28 @@ const GameResultForm: React.FC<GameResultFormProps> = ({ eventId, onSubmit, onCa
           <CardTitle>Añadir Resultado de Partida</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="deck-used">Tu Mazo</Label>
+            <Select value={deckUsed} onValueChange={setDeckUsed}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecciona tu mazo" />
+              </SelectTrigger>
+              <SelectContent>
+                {isLoading ? (
+                  <SelectItem value="" disabled>Cargando mazos...</SelectItem>
+                ) : decks.length === 0 ? (
+                  <SelectItem value="" disabled>No tienes mazos</SelectItem>
+                ) : (
+                  decks.map((deck) => (
+                    <SelectItem key={deck.id} value={deck.id}>
+                      {deck.name} ({deck.format})
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+          
           <div className="space-y-2">
             <Label>Resultado del Match (Mejor de 3)</Label>
             <div className="grid grid-cols-3 gap-2">
@@ -161,28 +198,6 @@ const GameResultForm: React.FC<GameResultFormProps> = ({ eventId, onSubmit, onCa
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="deck-used">Tu Mazo</Label>
-            <Select value={deckUsed} onValueChange={setDeckUsed}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecciona tu mazo" />
-              </SelectTrigger>
-              <SelectContent>
-                {isLoading ? (
-                  <SelectItem value="" disabled>Cargando mazos...</SelectItem>
-                ) : decks.length === 0 ? (
-                  <SelectItem value="" disabled>No tienes mazos</SelectItem>
-                ) : (
-                  decks.map((deck) => (
-                    <SelectItem key={deck.id} value={deck.id}>
-                      {deck.name} ({deck.format})
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="space-y-2">
             <Label htmlFor="notes">Notas (opcional)</Label>
             <Textarea 
               id="notes" 
@@ -201,7 +216,7 @@ const GameResultForm: React.FC<GameResultFormProps> = ({ eventId, onSubmit, onCa
             <Button 
               type="button" 
               variant="outline"
-              onClick={() => setIsPlaying(true)}
+              onClick={handleStartGame}
             >
               Comenzar Partida
             </Button>
