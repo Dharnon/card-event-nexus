@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, Minus } from 'lucide-react';
+import { ArrowDown, ArrowUp, Skull, Zap } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
   Drawer,
@@ -19,6 +18,7 @@ import { getDeckById } from '@/services/ProfileService';
 interface LifeChange {
   player: 'player' | 'opponent';
   amount: number;
+  type: 'fetch' | 'creature' | 'spell';
   timestamp: string;
 }
 
@@ -39,10 +39,11 @@ const GameLifeTracker: React.FC<GameLifeTrackerProps> = ({ deckId, onGameEnd }) 
     queryFn: () => getDeckById(deckId),
   });
 
-  const updateLife = (player: 'player' | 'opponent', amount: number) => {
+  const updateLife = (player: 'player' | 'opponent', amount: number, type: 'fetch' | 'creature' | 'spell') => {
     const change: LifeChange = {
       player,
       amount,
+      type,
       timestamp: new Date().toLocaleTimeString()
     };
     
@@ -55,54 +56,81 @@ const GameLifeTracker: React.FC<GameLifeTrackerProps> = ({ deckId, onGameEnd }) 
     }
   };
 
+  const DamageButtons = ({ player }: { player: 'player' | 'opponent' }) => {
+    const isOpponent = player === 'opponent';
+    return (
+      <div className={`grid grid-cols-3 gap-2 w-full ${isOpponent ? 'transform rotate-180' : ''}`}>
+        <div className="flex flex-col gap-2">
+          <Button 
+            variant="outline"
+            onClick={() => updateLife(player, -1, 'fetch')}
+            className="h-12"
+          >
+            <ArrowDown className="h-4 w-4 mr-1" />
+            Fetch -1
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={() => updateLife(player, -3, 'fetch')}
+            className="h-12"
+          >
+            <ArrowDown className="h-4 w-4 mr-1" />
+            Fetch -3
+          </Button>
+        </div>
+        <div className="flex flex-col gap-2">
+          <Button 
+            variant="outline"
+            onClick={() => updateLife(player, -2, 'creature')}
+            className="h-12"
+          >
+            <Skull className="h-4 w-4 mr-1" />
+            -2
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={() => updateLife(player, -3, 'creature')}
+            className="h-12"
+          >
+            <Skull className="h-4 w-4 mr-1" />
+            -3
+          </Button>
+        </div>
+        <div className="flex flex-col gap-2">
+          <Button 
+            variant="outline"
+            onClick={() => updateLife(player, -2, 'spell')}
+            className="h-12"
+          >
+            <Zap className="h-4 w-4 mr-1" />
+            -2
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={() => updateLife(player, -3, 'spell')}
+            className="h-12"
+          >
+            <Zap className="h-4 w-4 mr-1" />
+            -3
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="flex flex-col h-[calc(100vh-6rem)] max-w-md mx-auto">
-      {/* Opponent's life counter - at the top, rotated for them */}
       <Card className="glass-morphism mb-4 transform rotate-180">
         <CardContent className="p-4">
           <div className="flex flex-col items-center">
             <span className="text-4xl font-bold mb-4 transform rotate-180">
               {opponentLife}
             </span>
-            <div className="flex justify-center gap-4 w-full transform rotate-180">
-              <Button 
-                variant="outline" 
-                size="lg" 
-                onClick={() => updateLife('opponent', -1)}
-                className="h-16 w-16 text-xl"
-              >
-                <Minus className="h-6 w-6" />
-              </Button>
-              <Button 
-                size="lg" 
-                variant="outline" 
-                onClick={() => updateLife('opponent', +1)}
-                className="h-16 w-16 text-xl"
-              >
-                <Plus className="h-6 w-6" />
-              </Button>
-            </div>
-            <div className="grid grid-cols-2 gap-4 mt-4 w-full transform rotate-180">
-              <Button 
-                variant="outline"
-                onClick={() => updateLife('opponent', -5)}
-                className="text-lg"
-              >
-                -5
-              </Button>
-              <Button 
-                variant="outline"
-                onClick={() => updateLife('opponent', +5)}
-                className="text-lg"
-              >
-                +5
-              </Button>
-            </div>
+            <DamageButtons player="opponent" />
           </div>
         </CardContent>
       </Card>
 
-      {/* Life history in the middle */}
       <Card className="glass-morphism flex-grow mb-4 overflow-hidden">
         <CardContent className="p-4 h-full">
           <ScrollArea className="h-full w-full rounded-md">
@@ -114,9 +142,8 @@ const GameLifeTracker: React.FC<GameLifeTrackerProps> = ({ deckId, onGameEnd }) 
                 }`}
               >
                 <span className="text-sm">
-                  {change.timestamp} - 
-                  {change.player === 'player' ? 'Tú' : 'Oponente'}:
-                  {change.amount > 0 ? '+' : ''}{change.amount}
+                  {change.timestamp} - {change.player === 'player' ? 'Tú' : 'Oponente'}:{' '}
+                  {change.amount > 0 ? '+' : ''}{change.amount} ({change.type})
                 </span>
               </div>
             ))}
@@ -124,52 +151,17 @@ const GameLifeTracker: React.FC<GameLifeTrackerProps> = ({ deckId, onGameEnd }) 
         </CardContent>
       </Card>
 
-      {/* Player's life counter - at the bottom */}
       <Card className="glass-morphism mb-4">
         <CardContent className="p-4">
           <div className="flex flex-col items-center">
             <span className="text-4xl font-bold mb-4">
               {playerLife}
             </span>
-            <div className="flex justify-center gap-4 w-full">
-              <Button 
-                variant="outline" 
-                size="lg" 
-                onClick={() => updateLife('player', -1)}
-                className="h-16 w-16 text-xl"
-              >
-                <Minus className="h-6 w-6" />
-              </Button>
-              <Button 
-                size="lg" 
-                variant="outline" 
-                onClick={() => updateLife('player', +1)}
-                className="h-16 w-16 text-xl"
-              >
-                <Plus className="h-6 w-6" />
-              </Button>
-            </div>
-            <div className="grid grid-cols-2 gap-4 mt-4 w-full">
-              <Button 
-                variant="outline"
-                onClick={() => updateLife('player', -5)}
-                className="text-lg"
-              >
-                -5
-              </Button>
-              <Button 
-                variant="outline"
-                onClick={() => updateLife('player', +5)}
-                className="text-lg"
-              >
-                +5
-              </Button>
-            </div>
+            <DamageButtons player="player" />
           </div>
         </CardContent>
       </Card>
 
-      {/* Control buttons at the bottom */}
       <div className="flex justify-between gap-4 mb-4">
         <Drawer>
           <DrawerTrigger asChild>
