@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { getUserDecks } from '@/services/ProfileService';
 import { GameResult, EventFormat, MatchScore } from '@/types';
 import { Trophy } from "lucide-react";
+import GameLifeTracker from './GameLifeTracker';
 
 interface GameResultFormProps {
   eventId: string;
