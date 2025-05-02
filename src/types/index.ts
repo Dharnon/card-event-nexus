@@ -1,4 +1,3 @@
-
 export interface Card {
   id: string;
   name: string;
@@ -29,6 +28,7 @@ export interface Deck {
   updatedAt: string;
   sideboardGuide?: SideboardGuide;
   photos?: DeckPhoto[];
+  cardBackgroundUrl?: string; // Added this property for the deck card background
 }
 
 export interface GameResult {
@@ -154,4 +154,11 @@ export type UserRole = 'user' | 'admin' | 'store';
 export interface CardSearchInputProps {
   onCardSelect: (card: Card) => void;
   placeholder?: string;
+}
+
+// Update the CardList props to include the onCardSelect and selectedCardUrl properties
+export interface CardListProps {
+  cards: Card[];
+  onCardSelect?: (card: Card) => void;
+  selectedCardUrl?: string;
 }
