@@ -22,10 +22,20 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     return prefersDark ? 'dark' : 'light';
   });
 
+  // Apply theme with transition
   useEffect(() => {
     const root = window.document.documentElement;
+    
+    // Add transition class before changing theme
+    root.classList.add('transition-colors', 'duration-300');
+    
+    // Remove existing theme classes
     root.classList.remove('light', 'dark');
+    
+    // Add new theme class
     root.classList.add(theme);
+    
+    // Store theme in localStorage
     localStorage.setItem('theme', theme);
   }, [theme]);
 

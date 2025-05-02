@@ -1,3 +1,4 @@
+
 import * as dateFns from 'date-fns';
 import { CalendarClock, MapPin, Users, CreditCard, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -7,25 +8,25 @@ import { Event, EventFormat, EventType } from '@/types';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 const formatColors: Record<EventFormat, string> = {
-  'Standard': 'bg-blue-900/50 text-blue-200 border-blue-700/50',
-  'Modern': 'bg-purple-900/50 text-purple-200 border-purple-700/50',
-  'Legacy': 'bg-amber-900/50 text-amber-200 border-amber-700/50',
-  'Commander': 'bg-green-900/50 text-green-200 border-green-700/50',
-  'Pioneer': 'bg-red-900/50 text-red-200 border-red-700/50',
-  'Vintage': 'bg-gray-900/50 text-gray-200 border-gray-700/50',
-  'Draft': 'bg-indigo-900/50 text-indigo-200 border-indigo-700/50',
-  'Sealed': 'bg-emerald-900/50 text-emerald-200 border-emerald-700/50',
-  'Prerelease': 'bg-yellow-900/50 text-yellow-200 border-yellow-700/50',
-  'Other': 'bg-slate-900/50 text-slate-200 border-slate-700/50'
+  'Standard': 'bg-blue-900/50 text-blue-200 border-blue-700/50 dark:bg-blue-700/30',
+  'Modern': 'bg-purple-900/50 text-purple-200 border-purple-700/50 dark:bg-purple-700/30',
+  'Legacy': 'bg-amber-900/50 text-amber-200 border-amber-700/50 dark:bg-amber-700/30',
+  'Commander': 'bg-green-900/50 text-green-200 border-green-700/50 dark:bg-green-700/30',
+  'Pioneer': 'bg-red-900/50 text-red-200 border-red-700/50 dark:bg-red-700/30',
+  'Vintage': 'bg-gray-900/50 text-gray-200 border-gray-700/50 dark:bg-gray-700/30',
+  'Draft': 'bg-indigo-900/50 text-indigo-200 border-indigo-700/50 dark:bg-indigo-700/30',
+  'Sealed': 'bg-emerald-900/50 text-emerald-200 border-emerald-700/50 dark:bg-emerald-700/30',
+  'Prerelease': 'bg-yellow-900/50 text-yellow-200 border-yellow-700/50 dark:bg-yellow-700/30',
+  'Other': 'bg-slate-900/50 text-slate-200 border-slate-700/50 dark:bg-slate-700/30'
 };
 
 const typeColors: Record<string, string> = {
-  'tournament': 'bg-magic-purple/20 text-magic-purple border-magic-purple/30',
-  'casual': 'bg-green-900/20 text-green-700 border-green-700/30',
-  'championship': 'bg-red-900/20 text-red-700 border-red-700/30',
-  'draft': 'bg-blue-900/20 text-blue-700 border-blue-700/30',
-  'prerelease': 'bg-amber-900/20 text-amber-700 border-amber-700/30',
-  'other': 'bg-slate-900/20 text-slate-700 border-slate-700/30'
+  'tournament': 'bg-magic-purple/20 text-magic-purple border-magic-purple/30 dark:text-magic-lightPurple',
+  'casual': 'bg-green-900/20 text-green-700 border-green-700/30 dark:text-green-400',
+  'championship': 'bg-red-900/20 text-red-700 border-red-700/30 dark:text-red-400',
+  'draft': 'bg-blue-900/20 text-blue-700 border-blue-700/30 dark:text-blue-400',
+  'prerelease': 'bg-amber-900/20 text-amber-700 border-amber-700/30 dark:text-amber-400',
+  'other': 'bg-slate-900/20 text-slate-700 border-slate-700/30 dark:text-slate-400'
 };
 
 const typeLabels: Record<EventType, string> = {
@@ -49,14 +50,16 @@ const EventCard = ({ event, className = '' }: EventCardProps) => {
 
   return (
     <Link to={`/events/${event.id}`} className="block h-full group">
-      <Card className={`magic-card magic-card-hover h-full ${className} border-border/50 bg-card/80 shadow-lg backdrop-blur-sm group-hover:shadow-xl transition-all duration-300`}>
+      <Card className={`enhanced-card h-full ${className}`}>
         {event.image && (
           <AspectRatio ratio={16/9}>
-            <img 
-              src={event.image} 
-              alt={event.title} 
-              className="object-cover w-full rounded-t-3xl transition-transform duration-500 group-hover:scale-105"
-            />
+            <div className="h-full w-full overflow-hidden rounded-t-3xl">
+              <img 
+                src={event.image} 
+                alt={event.title} 
+                className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
+              />
+            </div>
           </AspectRatio>
         )}
         <CardHeader className={`pb-2 relative ${event.image ? 'pt-3' : 'pt-4'}`}>

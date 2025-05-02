@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { CalendarDays, Menu, X, LogIn, User, Store, Shield, LogOut } from 'lucide-react';
@@ -24,7 +25,7 @@ const Navbar = () => {
   };
 
   const isActive = (path: string) => {
-    return location.pathname === path ? 'text-primary font-medium' : 'text-foreground hover:text-primary';
+    return location.pathname === path;
   };
 
   const getUserIcon = () => {
@@ -49,46 +50,50 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="sticky top-0 z-50 bg-card/80 backdrop-blur-xl shadow-sm border-b border-border/50">
+    <nav className="sticky top-0 z-50 bg-card/80 backdrop-blur-xl shadow-sm border-b border-border/30 transition-all duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link to="/" className="flex items-center shine-effect">
-              <CalendarDays className="h-8 w-8 text-primary" />
+            <Link to="/" className="flex items-center shine-effect group">
+              <div className="bg-primary/10 p-2 rounded-full transition-all duration-300 group-hover:bg-primary/20">
+                <CalendarDays className="h-7 w-7 text-primary" />
+              </div>
               <span className="ml-2 text-xl font-bold text-gradient">MagicEvents</span>
             </Link>
           </div>
           
           <div className="hidden md:flex items-center space-x-1">
-            <Link to="/" className={`${isActive('/')} px-3 py-2 rounded-md text-sm font-medium transition-colors`}>
+            <Link to="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>
               Home
             </Link>
-            <Link to="/events" className={`${isActive('/events')} px-3 py-2 rounded-md text-sm font-medium transition-colors`}>
+            <Link to="/events" className={`nav-link ${isActive('/events') ? 'active' : ''}`}>
               Events
             </Link>
-            <Link to="/calendar" className={`${isActive('/calendar')} px-3 py-2 rounded-md text-sm font-medium transition-colors`}>
+            <Link to="/calendar" className={`nav-link ${isActive('/calendar') ? 'active' : ''}`}>
               Calendar
             </Link>
             
             {user?.role === 'store' && (
-              <Link to="/create-event" className={`${isActive('/create-event')} px-3 py-2 rounded-md text-sm font-medium transition-colors`}>
+              <Link to="/create-event" className={`nav-link ${isActive('/create-event') ? 'active' : ''}`}>
                 Create Event
               </Link>
             )}
             
             {user?.role === 'admin' && (
-              <Link to="/admin" className={`${isActive('/admin')} px-3 py-2 rounded-md text-sm font-medium transition-colors`}>
+              <Link to="/admin" className={`nav-link ${isActive('/admin') ? 'active' : ''}`}>
                 Admin Dashboard
               </Link>
             )}
             
-            <ThemeToggle />
+            <div className="ml-2">
+              <ThemeToggle />
+            </div>
             
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="ml-2 relative h-8 w-8 rounded-full">
-                    <Avatar className="h-8 w-8 bg-primary text-primary-foreground">
+                  <Button variant="ghost" className="ml-2 relative h-8 w-8 rounded-full overflow-hidden ring-2 ring-primary/20 hover:ring-primary/40 transition-all">
+                    <Avatar className="h-8 w-8 bg-primary/90 text-primary-foreground">
                       {user.avatarUrl ? (
                         <AvatarImage src={user.avatarUrl} alt={user.name} />
                       ) : (
@@ -97,7 +102,7 @@ const Navbar = () => {
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuContent className="w-56 mt-1" align="end" forceMount>
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none">{user.name}</p>
@@ -128,7 +133,7 @@ const Navbar = () => {
               </DropdownMenu>
             ) : (
               <Link to="/login">
-                <Button variant="default" size="sm" className="ml-2 shadow-md shadow-primary/20">
+                <Button variant="default" size="sm" className="ml-2 shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all">
                   <LogIn className="mr-2 h-4 w-4" />
                   Log in
                 </Button>
@@ -138,7 +143,7 @@ const Navbar = () => {
           
           <div className="md:hidden flex items-center">
             <ThemeToggle />
-            <button onClick={toggleMenu} className="text-foreground hover:text-primary ml-2">
+            <button onClick={toggleMenu} className="text-foreground hover:text-primary ml-2 p-2 rounded-full hover:bg-primary/10 transition-colors">
               {isMenuOpen ? (
                 <X className="h-6 w-6" />
               ) : (
@@ -151,25 +156,25 @@ const Navbar = () => {
       
       {/* Mobile menu */}
       {isMenuOpen && (
-        <div className="md:hidden bg-card/95 backdrop-blur-xl pb-4 px-4 border-b border-border/50">
+        <div className="md:hidden bg-card/95 backdrop-blur-xl pb-4 px-4 border-b border-border/30 animate-in slide-in-from-top duration-300">
           <div className="flex flex-col space-y-1 pt-1">
             <Link 
               to="/" 
-              className={`${isActive('/')} px-3 py-2 rounded-md text-base font-medium`}
+              className={`px-3 py-3 rounded-md text-base font-medium ${isActive('/') ? 'text-primary bg-primary/10' : 'hover:bg-primary/5'}`}
               onClick={() => setIsMenuOpen(false)}
             >
               Home
             </Link>
             <Link 
               to="/events" 
-              className={`${isActive('/events')} px-3 py-2 rounded-md text-base font-medium`}
+              className={`px-3 py-3 rounded-md text-base font-medium ${isActive('/events') ? 'text-primary bg-primary/10' : 'hover:bg-primary/5'}`}
               onClick={() => setIsMenuOpen(false)}
             >
               Events
             </Link>
             <Link 
               to="/calendar" 
-              className={`${isActive('/calendar')} px-3 py-2 rounded-md text-base font-medium`}
+              className={`px-3 py-3 rounded-md text-base font-medium ${isActive('/calendar') ? 'text-primary bg-primary/10' : 'hover:bg-primary/5'}`}
               onClick={() => setIsMenuOpen(false)}
             >
               Calendar
@@ -178,7 +183,7 @@ const Navbar = () => {
             {user?.role === 'store' && (
               <Link 
                 to="/create-event" 
-                className={`${isActive('/create-event')} px-3 py-2 rounded-md text-base font-medium`}
+                className={`px-3 py-3 rounded-md text-base font-medium ${isActive('/create-event') ? 'text-primary bg-primary/10' : 'hover:bg-primary/5'}`}
                 onClick={() => setIsMenuOpen(false)}
               >
                 Create Event
@@ -188,7 +193,7 @@ const Navbar = () => {
             {user?.role === 'admin' && (
               <Link 
                 to="/admin" 
-                className={`${isActive('/admin')} px-3 py-2 rounded-md text-base font-medium`}
+                className={`px-3 py-3 rounded-md text-base font-medium ${isActive('/admin') ? 'text-primary bg-primary/10' : 'hover:bg-primary/5'}`}
                 onClick={() => setIsMenuOpen(false)}
               >
                 Admin Dashboard
@@ -197,9 +202,9 @@ const Navbar = () => {
             
             {user ? (
               <>
-                <div className="px-3 py-3 mt-2 border-t border-border/50">
+                <div className="px-3 py-4 mt-2 border-t border-border/30 rounded-md">
                   <div className="flex items-center">
-                    <Avatar className="h-10 w-10 bg-primary text-primary-foreground mr-3">
+                    <Avatar className="h-10 w-10 bg-primary/90 text-primary-foreground mr-3 border-2 border-primary/30">
                       {user.avatarUrl ? (
                         <AvatarImage src={user.avatarUrl} alt={user.name} />
                       ) : (
@@ -217,7 +222,7 @@ const Navbar = () => {
                 </div>
                 <Link 
                   to="/profile" 
-                  className="text-foreground hover:text-primary px-3 py-2 rounded-md text-base font-medium"
+                  className="px-3 py-3 rounded-md text-base font-medium hover:bg-primary/5"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Profile
@@ -225,7 +230,7 @@ const Navbar = () => {
                 {user.role === 'store' && (
                   <Link 
                     to="/my-events" 
-                    className="text-foreground hover:text-primary px-3 py-2 rounded-md text-base font-medium"
+                    className="px-3 py-3 rounded-md text-base font-medium hover:bg-primary/5"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     My Events
@@ -236,7 +241,7 @@ const Navbar = () => {
                     logout();
                     setIsMenuOpen(false);
                   }}
-                  className="text-left text-destructive hover:bg-destructive/10 px-3 py-2 rounded-md text-base font-medium flex items-center w-full"
+                  className="text-left text-destructive hover:bg-destructive/10 px-3 py-3 rounded-md text-base font-medium flex items-center w-full"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
                   Log out

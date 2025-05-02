@@ -12,15 +12,16 @@ const ThemeToggle = () => {
       variant="ghost" 
       size="icon" 
       onClick={toggleTheme} 
-      className="rounded-full"
+      className="rounded-full relative overflow-hidden group"
       title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
     >
-      {theme === 'light' ? (
-        <Moon className="h-5 w-5" />
-      ) : (
-        <Sun className="h-5 w-5" />
-      )}
       <span className="sr-only">Toggle theme</span>
+      <span className={`absolute inset-0 transition-opacity duration-300 flex items-center justify-center ${theme === 'light' ? 'opacity-0' : 'opacity-100'}`}>
+        <Sun className="h-5 w-5 text-amber-300" />
+      </span>
+      <span className={`absolute inset-0 transition-opacity duration-300 flex items-center justify-center ${theme === 'light' ? 'opacity-100' : 'opacity-0'}`}>
+        <Moon className="h-5 w-5 text-indigo-400" />
+      </span>
     </Button>
   );
 };

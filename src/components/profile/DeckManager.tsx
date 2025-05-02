@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getUserDecks, createDeck, updateDeck, deleteDeck } from '@/services/ProfileService';
@@ -5,17 +6,19 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Deck, EventFormat, Card as MagicCard, SideboardGuide, DeckPhoto } from '@/types';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, ImageIcon } from 'lucide-react';
 import DeckForm from './DeckForm';
 import CardList from './CardList';
 import SideboardGuideComponent from './SideboardGuide';
 import DeckPhotoGallery from './DeckPhotoGallery';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 const DeckManager = () => {
   const [isAddingDeck, setIsAddingDeck] = useState(false);
   const [editingDeck, setEditingDeck] = useState<Deck | null>(null);
   const [selectedDeck, setSelectedDeck] = useState<Deck | null>(null);
   const [selectedTab, setSelectedTab] = useState<'cards' | 'sideboard' | 'photos'>('cards');
+  const [selectedCardAsBackground, setSelectedCardAsBackground] = useState<{ [key: string]: string }>({});
   
   const queryClient = useQueryClient();
   
@@ -49,21 +52,23 @@ const DeckManager = () => {
     },
   });
   
-  const handleCreateDeck = (name: string, format: EventFormat, cards: MagicCard[]) => {
+  const handleCreateDeck = (name: string, format: EventFormat, cards: MagicCard[], cardBackgroundUrl?: string) => {
     createDeckMutation.mutate({
       name,
       format,
       cards,
+      cardBackgroundUrl
     });
   };
   
-  const handleUpdateDeck = (deckId: string, name: string, format: EventFormat, cards: MagicCard[]) => {
+  const handleUpdateDeck = (deckId: string, name: string, format: EventFormat, cards: MagicCard[], cardBackgroundUrl?: string) => {
     updateDeckMutation.mutate({
       deckId,
       updates: {
         name,
         format,
         cards,
+        cardBackgroundUrl
       },
     });
   };
@@ -106,6 +111,28 @@ const DeckManager = () => {
     setIsAddingDeck(false);
     setEditingDeck(null);
   };
+
+  const handleSetCardAsBackground = (deckId: string, cardImageUrl: string) => {
+    updateDeckMutation.mutate({
+      deckId,
+      updates: {
+        cardBackgroundUrl: cardImageUrl
+      }
+    });
+
+    setSelectedCardAsBackground(prev => ({
+      ...prev,
+      [deckId]: cardImageUrl
+    }));
+  };
+  
+  const selectCardForBackground = (card: MagicCard) => {
+    if (!selectedDeck) return;
+    
+    if (card.imageUrl) {
+      handleSetCardAsBackground(selectedDeck.id, card.imageUrl);
+    }
+  };
   
   if (isLoading) {
     return <div className="flex justify-center my-8">Cargando mazos...</div>;
@@ -116,7 +143,7 @@ const DeckManager = () => {
       <DeckForm 
         deck={editingDeck}
         onSubmit={editingDeck 
-          ? (name, format, cards) => handleUpdateDeck(editingDeck.id, name, format, cards) 
+          ? (name, format, cards, cardBackgroundUrl) => handleUpdateDeck(editingDeck.id, name, format, cards, cardBackgroundUrl) 
           : handleCreateDeck
         }
         onCancel={handleCancelForm}
@@ -144,16 +171,31 @@ const DeckManager = () => {
           </div>
         </div>
         
-        <div className="magic-card p-6">
-          <h2 className="text-2xl font-bold mb-4">{selectedDeck.name}</h2>
-          <div className="mb-4">
-            <span className="inline-block bg-primary/10 text-primary px-3 py-1 rounded-full text-sm">
-              {selectedDeck.format}
-            </span>
+        <div className="enhanced-card p-6">
+          <div className="flex flex-col md:flex-row gap-6 items-start">
+            {selectedDeck.cardBackgroundUrl && (
+              <div className="md:w-1/4 w-full">
+                <AspectRatio ratio={488/680} className="rounded-lg overflow-hidden border border-border/50">
+                  <img 
+                    src={selectedDeck.cardBackgroundUrl} 
+                    alt="Deck Featured Card" 
+                    className="w-full h-full object-cover"
+                  />
+                </AspectRatio>
+              </div>
+            )}
+            <div className={selectedDeck.cardBackgroundUrl ? "md:w-3/4 w-full" : "w-full"}>
+              <h2 className="text-2xl md:text-3xl font-bold mb-4">{selectedDeck.name}</h2>
+              <div className="mb-4">
+                <span className="inline-block bg-primary/10 text-primary px-3 py-1 rounded-full text-sm">
+                  {selectedDeck.format}
+                </span>
+              </div>
+            </div>
           </div>
           
           <Tabs value={selectedTab} onValueChange={(tab) => setSelectedTab(tab as any)} className="mt-6">
-            <TabsList>
+            <TabsList className="grid w-full max-w-md grid-cols-3">
               <TabsTrigger value="cards">Cartas</TabsTrigger>
               <TabsTrigger value="sideboard">Guía de Sideboard</TabsTrigger>
               <TabsTrigger value="photos">Fotos</TabsTrigger>
@@ -161,8 +203,28 @@ const DeckManager = () => {
             
             <TabsContent value="cards">
               <div className="mt-6">
-                <h3 className="text-xl font-semibold mb-4">Lista de cartas</h3>
-                <CardList cards={selectedDeck.cards} />
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-semibold">Lista de cartas</h3>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      const selectedCard = selectedDeck.cards.find(card => card.imageUrl);
+                      if (selectedCard && selectedCard.imageUrl) {
+                        handleSetCardAsBackground(selectedDeck.id, selectedCard.imageUrl);
+                      }
+                    }}
+                    disabled={!selectedDeck.cards.some(card => card.imageUrl)}
+                  >
+                    <ImageIcon className="h-4 w-4 mr-2" />
+                    Seleccionar carta para portada
+                  </Button>
+                </div>
+                <CardList 
+                  cards={selectedDeck.cards} 
+                  onCardSelect={selectCardForBackground} 
+                  selectedCardUrl={selectedDeck.cardBackgroundUrl}
+                />
               </div>
             </TabsContent>
             
@@ -195,40 +257,55 @@ const DeckManager = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Mis Mazos</h2>
-        <Button onClick={() => setIsAddingDeck(true)}>
+        <Button onClick={() => setIsAddingDeck(true)} className="shadow-sm shadow-primary/20 hover:shadow-md hover:shadow-primary/30 transition-all">
           <PlusCircle className="mr-2 h-4 w-4" />
           Nuevo Mazo
         </Button>
       </div>
       
       {decks.length === 0 ? (
-        <div className="text-center py-10">
+        <div className="text-center py-10 enhanced-card p-8">
           <p className="text-muted-foreground mb-4">Aún no tienes mazos creados</p>
-          <Button onClick={() => setIsAddingDeck(true)}>
+          <Button onClick={() => setIsAddingDeck(true)} className="shadow-sm shadow-primary/20 hover:shadow-md hover:shadow-primary/30 transition-all">
             Crear tu primer mazo
           </Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {decks.map((deck) => (
-            <Card 
+            <div 
               key={deck.id} 
-              className="magic-card magic-card-hover cursor-pointer"
               onClick={() => handleSelectDeck(deck)}
+              className="enhanced-card cursor-pointer h-full flex flex-col overflow-hidden"
             >
-              <CardHeader>
-                <CardTitle>{deck.name}</CardTitle>
+              {deck.cardBackgroundUrl ? (
+                <AspectRatio ratio={16/9} className="bg-gradient-to-b from-black/70 to-transparent relative">
+                  <img 
+                    src={deck.cardBackgroundUrl}
+                    alt={deck.name}
+                    className="object-cover w-full h-full opacity-80"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-card via-card/80 to-transparent" />
+                </AspectRatio>
+              ) : null}
+              
+              <CardHeader className={deck.cardBackgroundUrl ? 'pt-3' : ''}>
+                <CardTitle className="text-xl group-hover:text-primary transition-colors">
+                  {deck.name}
+                </CardTitle>
                 <CardDescription>
                   Formato: {deck.format}
                 </CardDescription>
               </CardHeader>
+              
               <CardContent>
                 <p>{deck.cards.length} cartas</p>
               </CardContent>
-              <CardFooter className="text-sm text-muted-foreground">
+              
+              <CardFooter className="text-sm text-muted-foreground mt-auto">
                 Actualizado: {new Date(deck.updatedAt).toLocaleDateString()}
               </CardFooter>
-            </Card>
+            </div>
           ))}
         </div>
       )}
