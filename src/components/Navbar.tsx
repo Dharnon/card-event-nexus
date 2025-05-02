@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { CalendarDays, Menu, X, LogIn, User, Store, Shield, LogOut } from 'lucide-react';
@@ -13,6 +12,7 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/context/AuthContext';
+import ThemeToggle from './ThemeToggle';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -82,6 +82,8 @@ const Navbar = () => {
               </Link>
             )}
             
+            <ThemeToggle />
+            
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -135,7 +137,8 @@ const Navbar = () => {
           </div>
           
           <div className="md:hidden flex items-center">
-            <button onClick={toggleMenu} className="text-foreground hover:text-primary">
+            <ThemeToggle />
+            <button onClick={toggleMenu} className="text-foreground hover:text-primary ml-2">
               {isMenuOpen ? (
                 <X className="h-6 w-6" />
               ) : (
