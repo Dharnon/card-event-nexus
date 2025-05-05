@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -10,7 +10,7 @@ import { Download, Upload } from 'lucide-react';
 
 interface DeckImportExportProps {
   deck?: Deck;
-  onImport: (deckData: { name: string, format: string, cards: MagicCard[] }) => void;
+  onImport: (deckData: { name: string, format: string, cards: MagicCard[], sideboardCards?: MagicCard[] }) => void;
 }
 
 const DeckImportExport: React.FC<DeckImportExportProps> = ({ deck, onImport }) => {
@@ -38,6 +38,11 @@ const DeckImportExport: React.FC<DeckImportExportProps> = ({ deck, onImport }) =
               id: `imported-card-${index}`,
               name: card.name,
               quantity: card.quantity || 1
+            })),
+            sideboardCards: jsonData.sideboardCards?.map((card: any, index: number) => ({
+              id: `imported-sideboard-${index}`,
+              name: card.name,
+              quantity: card.quantity || 1
             }))
           };
         }
@@ -49,6 +54,7 @@ const DeckImportExport: React.FC<DeckImportExportProps> = ({ deck, onImport }) =
         // Assume first line might be the deck name
         let name = lines[0];
         let startIndex = 0;
+        let sideboardStartIndex = -1;
         
         // If the first line doesn't look like a card entry, use it as the name
         if (!name.match(/^\d+\s+\w/)) {
@@ -57,23 +63,36 @@ const DeckImportExport: React.FC<DeckImportExportProps> = ({ deck, onImport }) =
           name = 'Imported Deck';
         }
         
+        // Find sideboard marker
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim().toLowerCase();
+          if (line === 'sideboard' || line === 'sb' || line === 'sb:' || line === 'sideboard:') {
+            sideboardStartIndex = i + 1;
+            break;
+          }
+        }
+        
         // Process cards
-        const cards: MagicCard[] = [];
-        for (let i = startIndex; i < lines.length; i++) {
+        const mainCards: MagicCard[] = [];
+        const sideboardCards: MagicCard[] = [];
+        
+        // Process main deck cards
+        const mainEndIndex = sideboardStartIndex === -1 ? lines.length : sideboardStartIndex - 1;
+        for (let i = startIndex; i < mainEndIndex; i++) {
           const line = lines[i].trim();
-          if (!line) continue;
+          if (!line || line.toLowerCase() === 'maindeck' || line.toLowerCase() === 'main deck') continue;
           
           // Try to match quantity and card name pattern (e.g., "4 Lightning Bolt" or "4x Lightning Bolt")
           const match = line.match(/^(\d+)(\s+|\s*x\s*)(.+)$/i);
           if (match) {
-            cards.push({
+            mainCards.push({
               id: `imported-card-${i}`,
               name: match[3].trim(),
               quantity: parseInt(match[1], 10)
             });
           } else {
             // If no quantity specified, assume 1
-            cards.push({
+            mainCards.push({
               id: `imported-card-${i}`,
               name: line,
               quantity: 1
@@ -81,9 +100,38 @@ const DeckImportExport: React.FC<DeckImportExportProps> = ({ deck, onImport }) =
           }
         }
         
-        if (cards.length === 0) throw new Error('No valid card entries found');
+        // Process sideboard cards if sideboard section exists
+        if (sideboardStartIndex !== -1) {
+          for (let i = sideboardStartIndex; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+            
+            const match = line.match(/^(\d+)(\s+|\s*x\s*)(.+)$/i);
+            if (match) {
+              sideboardCards.push({
+                id: `imported-sideboard-${i}`,
+                name: match[3].trim(),
+                quantity: parseInt(match[1], 10)
+              });
+            } else {
+              // If no quantity specified, assume 1
+              sideboardCards.push({
+                id: `imported-sideboard-${i}`,
+                name: line,
+                quantity: 1
+              });
+            }
+          }
+        }
         
-        return { name, format: 'Standard', cards };
+        if (mainCards.length === 0) throw new Error('No valid card entries found');
+        
+        return { 
+          name, 
+          format: 'Standard', 
+          cards: mainCards,
+          sideboardCards: sideboardCards.length > 0 ? sideboardCards : undefined 
+        };
       }
     } catch (error: any) {
       console.error('Error parsing deck file:', error);
@@ -113,9 +161,13 @@ const DeckImportExport: React.FC<DeckImportExportProps> = ({ deck, onImport }) =
       
       if (deckData) {
         onImport(deckData);
+        
+        const sideboardCount = deckData.sideboardCards?.length || 0;
+        const sideboardMsg = sideboardCount > 0 ? ` and ${sideboardCount} sideboard cards` : '';
+        
         toast({
           title: 'Deck imported successfully',
-          description: `Imported ${deckData.name} with ${deckData.cards.length} cards`,
+          description: `Imported ${deckData.name} with ${deckData.cards.length} maindeck cards${sideboardMsg}`,
         });
       }
     } catch (error) {
@@ -147,14 +199,29 @@ const DeckImportExport: React.FC<DeckImportExportProps> = ({ deck, onImport }) =
         cards: deck.cards.map(card => ({
           name: card.name,
           quantity: card.quantity
+        })),
+        sideboardCards: deck.sideboardCards?.map(card => ({
+          name: card.name,
+          quantity: card.quantity
         }))
       };
 
-      // Create text format
+      // Create text format (with sideboard section if exists)
       let textFormat = `${deck.name}\n\n`;
+      
+      // Add maindeck header and cards
+      textFormat += "// Maindeck\n";
       deck.cards.forEach(card => {
         textFormat += `${card.quantity} ${card.name}\n`;
       });
+      
+      // Add sideboard section if exists
+      if (deck.sideboardCards && deck.sideboardCards.length > 0) {
+        textFormat += "\n// Sideboard\nSideboard\n";
+        deck.sideboardCards.forEach(card => {
+          textFormat += `${card.quantity} ${card.name}\n`;
+        });
+      }
 
       // Create JSON format
       const jsonFormat = JSON.stringify(exportData, null, 2);
@@ -183,9 +250,12 @@ const DeckImportExport: React.FC<DeckImportExportProps> = ({ deck, onImport }) =
         URL.revokeObjectURL(txtUrl);
       }, 100);
       
+      const sideboardCount = deck.sideboardCards?.length || 0;
+      const sideboardMsg = sideboardCount > 0 ? ` with ${sideboardCount} sideboard cards` : '';
+      
       toast({
         title: 'Deck exported successfully',
-        description: `${deck.name} exported in .deck and .txt formats`,
+        description: `${deck.name}${sideboardMsg} exported in .deck and .txt formats`,
       });
     } catch (error) {
       console.error('Error exporting deck:', error);
@@ -219,7 +289,7 @@ const DeckImportExport: React.FC<DeckImportExportProps> = ({ deck, onImport }) =
             </Button>
           </div>
           <p className="text-sm text-muted-foreground">
-            Supported formats: .txt (one card per line with quantity) or .deck (JSON)
+            Supported formats: .txt (one card per line with quantity, "Sideboard" marker for sideboard) or .deck (JSON)
           </p>
         </div>
         

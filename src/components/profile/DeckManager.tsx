@@ -20,6 +20,7 @@ const DeckManager = () => {
   const [selectedDeck, setSelectedDeck] = useState<Deck | null>(null);
   const [selectedTab, setSelectedTab] = useState<'cards' | 'sideboard' | 'photos' | 'import-export'>('cards');
   const [selectedCardAsBackground, setSelectedCardAsBackground] = useState<{ [key: string]: string }>({});
+  const [viewSideboard, setViewSideboard] = useState(false);
   
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -136,16 +137,26 @@ const DeckManager = () => {
     }
   };
   
-  const handleImportDeck = (deckData: { name: string, format: string, cards: MagicCard[] }) => {
+  const handleImportDeck = (deckData: { 
+    name: string, 
+    format: string, 
+    cards: MagicCard[], 
+    sideboardCards?: MagicCard[] 
+  }) => {
     createDeckMutation.mutate({
       name: deckData.name,
       format: deckData.format as EventFormat,
-      cards: deckData.cards
+      cards: deckData.cards,
+      sideboardCards: deckData.sideboardCards
     });
+    
+    const sideboardMsg = deckData.sideboardCards?.length 
+      ? ` and ${deckData.sideboardCards.length} sideboard cards` 
+      : '';
     
     toast({
       title: "Deck imported",
-      description: `Successfully imported ${deckData.name} with ${deckData.cards.length} cards`
+      description: `Successfully imported ${deckData.name} with ${deckData.cards.length} maindeck cards${sideboardMsg}`
     });
   };
   
@@ -220,7 +231,18 @@ const DeckManager = () => {
             <TabsContent value="cards">
               <div className="mt-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-semibold">Lista de cartas</h3>
+                  <div className="flex items-center gap-4">
+                    <h3 className="text-xl font-semibold">
+                      {viewSideboard ? 'Sideboard' : 'Maindeck'}
+                    </h3>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setViewSideboard(!viewSideboard)}
+                    >
+                      {viewSideboard ? 'Ver Maindeck' : 'Ver Sideboard'}
+                    </Button>
+                  </div>
                   <Button 
                     variant="outline" 
                     size="sm"
@@ -236,11 +258,26 @@ const DeckManager = () => {
                     Seleccionar carta para portada
                   </Button>
                 </div>
-                <CardList 
-                  cards={selectedDeck.cards} 
-                  onCardSelect={selectCardForBackground} 
-                  selectedCardUrl={selectedDeck.cardBackgroundUrl}
-                />
+                
+                {viewSideboard ? (
+                  selectedDeck.sideboardCards && selectedDeck.sideboardCards.length > 0 ? (
+                    <CardList 
+                      cards={selectedDeck.sideboardCards} 
+                      onCardSelect={selectCardForBackground} 
+                      selectedCardUrl={selectedDeck.cardBackgroundUrl}
+                    />
+                  ) : (
+                    <div className="text-center py-10 border border-dashed rounded-lg">
+                      <p className="text-muted-foreground">No hay cartas en el sideboard</p>
+                    </div>
+                  )
+                ) : (
+                  <CardList 
+                    cards={selectedDeck.cards} 
+                    onCardSelect={selectCardForBackground} 
+                    selectedCardUrl={selectedDeck.cardBackgroundUrl}
+                  />
+                )}
               </div>
             </TabsContent>
             

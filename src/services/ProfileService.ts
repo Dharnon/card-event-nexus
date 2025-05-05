@@ -188,6 +188,10 @@ export const preloadSampleData = () => {
         { id: 'card-2', name: 'Counterspell', quantity: 4 },
         { id: 'card-3', name: 'Cryptic Command', quantity: 3 },
       ],
+      sideboardCards: [
+        { id: 'sideboard-1', name: 'Negate', quantity: 2 },
+        { id: 'sideboard-2', name: 'Mystical Dispute', quantity: 3 },
+      ],
       userId: CURRENT_USER_ID,
       createdAt: '2023-01-15T12:00:00Z',
       updatedAt: '2023-02-10T15:30:00Z',
@@ -226,6 +230,10 @@ export const preloadSampleData = () => {
         { id: 'card-4', name: 'Mountain', quantity: 20 },
         { id: 'card-5', name: 'Lightning Bolt', quantity: 4 },
         { id: 'card-6', name: 'Goblin Guide', quantity: 4 },
+      ],
+      sideboardCards: [
+        { id: 'sideboard-3', name: 'Pyroblast', quantity: 3 },
+        { id: 'sideboard-4', name: 'Roiling Vortex', quantity: 2 },
       ],
       userId: CURRENT_USER_ID,
       createdAt: '2023-03-05T09:15:00Z',

@@ -28,7 +28,8 @@ export interface Deck {
   updatedAt: string;
   sideboardGuide?: SideboardGuide;
   photos?: DeckPhoto[];
-  cardBackgroundUrl?: string; // Added this property for the deck card background
+  cardBackgroundUrl?: string;
+  sideboardCards?: Card[];
 }
 
 export interface GameResult {
@@ -40,13 +41,12 @@ export interface GameResult {
   notes?: string;
   eventId: string;
   date: string;
-  matchScore?: MatchScore; // Added match score tracking
+  matchScore?: MatchScore;
 }
 
-// New interface to track match scores (best of 3)
 export interface MatchScore {
-  playerWins: number; // 0-2
-  opponentWins: number; // 0-2
+  playerWins: number;
+  opponentWins: number;
 }
 
 export interface UserEvent {
@@ -156,7 +156,6 @@ export interface CardSearchInputProps {
   placeholder?: string;
 }
 
-// Update the CardList props to include the onCardSelect and selectedCardUrl properties
 export interface CardListProps {
   cards: Card[];
   onCardSelect?: (card: Card) => void;
