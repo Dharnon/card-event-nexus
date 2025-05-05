@@ -1,53 +1,13 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card as MagicCard } from '@/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
-import { searchCardByName, getCardImageUrl, ScryfallCard } from '@/services/ScryfallService';
+import { searchCardByName, getCardImageUrl } from '@/services/ScryfallService';
 import { useDebounce } from '@/hooks/useDebounce';
+import { CardListProps } from '@/types';
 
-interface CardListProps {
-  cards: MagicCard[];
-}
-
-interface CardsByType {
-  [key: string]: MagicCard[];
-}
-
-// This is a simplified version - in a real app you'd want to categorize by actual card types
-const getCardType = (cardName: string): string => {
-  const lowercaseName = cardName.toLowerCase();
-  
-  if (lowercaseName.includes('island') || lowercaseName.includes('mountain') || 
-      lowercaseName.includes('swamp') || lowercaseName.includes('forest') || 
-      lowercaseName.includes('plains')) {
-    return 'Tierras';
-  }
-  
-  if (lowercaseName.includes('instant') || lowercaseName.includes('instante') || 
-      lowercaseName.includes('sorcery') || lowercaseName.includes('conjuro')) {
-    return 'Hechizos';
-  }
-  
-  if (lowercaseName.includes('creature') || lowercaseName.includes('criatura')) {
-    return 'Criaturas';
-  }
-  
-  if (lowercaseName.includes('artifact') || lowercaseName.includes('artefacto')) {
-    return 'Artefactos';
-  }
-  
-  if (lowercaseName.includes('enchantment') || lowercaseName.includes('encantamiento')) {
-    return 'Encantamientos';
-  }
-  
-  if (lowercaseName.includes('planeswalker')) {
-    return 'Planeswalkers';
-  }
-  
-  return 'Otros';
-};
-
-const CardList: React.FC<CardListProps> = ({ cards }) => {
+const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUrl }) => {
   const [view, setView] = useState<'list' | 'gallery'>('list');
   const [cardImages, setCardImages] = useState<Record<string, string>>({});
   
@@ -76,7 +36,7 @@ const CardList: React.FC<CardListProps> = ({ cards }) => {
   }, [cards]);
 
   // Group cards by type
-  const cardsByType: CardsByType = cards.reduce((acc, card) => {
+  const cardsByType = cards.reduce((acc, card) => {
     const type = getCardType(card.name);
     if (!acc[type]) {
       acc[type] = [];
@@ -124,11 +84,12 @@ const CardList: React.FC<CardListProps> = ({ cards }) => {
                     <tr>
                       <th className="text-left p-2">Cantidad</th>
                       <th className="text-left p-2">Nombre</th>
+                      {onCardSelect && <th className="text-right p-2">Acción</th>}
                     </tr>
                   </thead>
                   <tbody>
                     {cards.map((card) => (
-                      <tr key={card.id} className="border-t hover:bg-muted/50">
+                      <tr key={card.id} className={`border-t hover:bg-muted/50 ${selectedCardUrl === card.imageUrl ? 'bg-primary/10' : ''}`}>
                         <td className="p-2 text-center w-16">{card.quantity}</td>
                         <td className="p-2">
                           <HoverCard>
@@ -147,6 +108,18 @@ const CardList: React.FC<CardListProps> = ({ cards }) => {
                             </HoverCardContent>
                           </HoverCard>
                         </td>
+                        {onCardSelect && (
+                          <td className="p-2 text-right">
+                            {card.imageUrl && (
+                              <button 
+                                onClick={() => onCardSelect(card)}
+                                className={`px-2 py-1 text-xs rounded ${selectedCardUrl === card.imageUrl ? 'bg-primary text-white' : 'bg-muted hover:bg-primary/20'}`}
+                              >
+                                {selectedCardUrl === card.imageUrl ? 'Seleccionada' : 'Seleccionar'}
+                              </button>
+                            )}
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -158,9 +131,13 @@ const CardList: React.FC<CardListProps> = ({ cards }) => {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {cards.map((card) => (
-            <div key={card.id} className="rounded-md overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
+            <div 
+              key={card.id} 
+              className={`rounded-md overflow-hidden border shadow-sm hover:shadow-md transition-shadow ${selectedCardUrl === card.imageUrl ? 'ring-2 ring-primary' : ''}`}
+              onClick={() => onCardSelect && card.imageUrl && onCardSelect(card)}
+            >
               {cardImages[card.name] ? (
-                <div className="relative">
+                <div className="relative cursor-pointer">
                   <img 
                     src={cardImages[card.name]} 
                     alt={card.name} 
@@ -170,9 +147,14 @@ const CardList: React.FC<CardListProps> = ({ cards }) => {
                   <div className="absolute top-0 left-0 bg-background/80 text-foreground px-2 py-1 rounded-br-md">
                     {card.quantity}
                   </div>
+                  {selectedCardUrl === card.imageUrl && (
+                    <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                      <span className="bg-primary text-white px-2 py-1 rounded text-xs">Seleccionada</span>
+                    </div>
+                  )}
                 </div>
               ) : (
-                <div className="bg-muted aspect-[2.5/3.5] flex items-center justify-center p-2 text-center">
+                <div className={`bg-muted aspect-[2.5/3.5] flex items-center justify-center p-2 text-center ${onCardSelect ? 'cursor-pointer' : ''}`}>
                   <div>
                     <div className="font-bold">{card.name}</div>
                     <div className="mt-2 text-sm">×{card.quantity}</div>
@@ -186,5 +168,43 @@ const CardList: React.FC<CardListProps> = ({ cards }) => {
     </div>
   );
 };
+
+// This is a simplified version - in a real app you'd want to categorize by actual card types
+const getCardType = (cardName: string): string => {
+  const lowercaseName = cardName.toLowerCase();
+  
+  if (lowercaseName.includes('island') || lowercaseName.includes('mountain') || 
+      lowercaseName.includes('swamp') || lowercaseName.includes('forest') || 
+      lowercaseName.includes('plains')) {
+    return 'Tierras';
+  }
+  
+  if (lowercaseName.includes('instant') || lowercaseName.includes('instante') || 
+      lowercaseName.includes('sorcery') || lowercaseName.includes('conjuro')) {
+    return 'Hechizos';
+  }
+  
+  if (lowercaseName.includes('creature') || lowercaseName.includes('criatura')) {
+    return 'Criaturas';
+  }
+  
+  if (lowercaseName.includes('artifact') || lowercaseName.includes('artefacto')) {
+    return 'Artefactos';
+  }
+  
+  if (lowercaseName.includes('enchantment') || lowercaseName.includes('encantamiento')) {
+    return 'Encantamientos';
+  }
+  
+  if (lowercaseName.includes('planeswalker')) {
+    return 'Planeswalkers';
+  }
+  
+  return 'Otros';
+};
+
+interface CardsByType {
+  [key: string]: MagicCard[];
+}
 
 export default CardList;
