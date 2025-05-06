@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getUserDecks, createDeck, updateDeck, deleteDeck } from '@/services/ProfileService';
@@ -5,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Deck, EventFormat, Card as MagicCard, SideboardGuide, DeckPhoto } from '@/types';
-import { PlusCircle, ImageIcon, Download, Upload } from 'lucide-react';
+import { PlusCircle, ImageIcon, ChevronLeft, Trash, Edit, Upload } from 'lucide-react';
 import DeckForm from './DeckForm';
 import CardList from './CardList';
 import SideboardGuideComponent from './SideboardGuide';
@@ -13,6 +14,7 @@ import DeckPhotoGallery from './DeckPhotoGallery';
 import DeckImportExport from './DeckImportExport';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { useToast } from '@/hooks/use-toast';
+import { Separator } from '@/components/ui/separator';
 
 const DeckManager = () => {
   const [isAddingDeck, setIsAddingDeck] = useState(false);
@@ -161,7 +163,7 @@ const DeckManager = () => {
   };
   
   if (isLoading) {
-    return <div className="flex justify-center my-8">Cargando mazos...</div>;
+    return <div className="flex justify-center my-4">Loading decks...</div>;
   }
   
   if (isAddingDeck || editingDeck) {
@@ -179,60 +181,66 @@ const DeckManager = () => {
   
   if (selectedDeck) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <Button variant="outline" onClick={() => setSelectedDeck(null)}>
-            Volver a la lista
+          <Button variant="ghost" onClick={() => setSelectedDeck(null)} className="flex items-center gap-1">
+            <ChevronLeft className="h-4 w-4" />
+            Back to list
           </Button>
           <div className="space-x-2">
-            <Button variant="outline" onClick={() => setEditingDeck(selectedDeck)}>
-              Editar mazo
+            <Button variant="outline" onClick={() => setEditingDeck(selectedDeck)} size="sm">
+              <Edit className="h-4 w-4 mr-1" />
+              Edit
             </Button>
             <Button 
               variant="destructive" 
               onClick={() => handleDeleteDeck(selectedDeck.id)}
+              size="sm"
             >
-              Eliminar mazo
+              <Trash className="h-4 w-4 mr-1" />
+              Delete
             </Button>
           </div>
         </div>
         
-        <div className="enhanced-card p-6">
-          <div className="flex flex-col md:flex-row gap-6 items-start">
-            {selectedDeck.cardBackgroundUrl && (
-              <div className="md:w-1/4 w-full">
-                <AspectRatio ratio={488/680} className="rounded-lg overflow-hidden border border-border/50">
-                  <img 
-                    src={selectedDeck.cardBackgroundUrl} 
-                    alt="Deck Featured Card" 
-                    className="w-full h-full object-cover"
-                  />
-                </AspectRatio>
-              </div>
-            )}
-            <div className={selectedDeck.cardBackgroundUrl ? "md:w-3/4 w-full" : "w-full"}>
-              <h2 className="text-2xl md:text-3xl font-bold mb-4">{selectedDeck.name}</h2>
-              <div className="mb-4">
-                <span className="inline-block bg-primary/10 text-primary px-3 py-1 rounded-full text-sm">
-                  {selectedDeck.format}
-                </span>
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex flex-col md:flex-row gap-4 items-start">
+              {selectedDeck.cardBackgroundUrl && (
+                <div className="md:w-1/4 w-full">
+                  <AspectRatio ratio={488/680} className="rounded-lg overflow-hidden border">
+                    <img 
+                      src={selectedDeck.cardBackgroundUrl} 
+                      alt="Deck Featured Card" 
+                      className="w-full h-full object-cover"
+                    />
+                  </AspectRatio>
+                </div>
+              )}
+              <div className={selectedDeck.cardBackgroundUrl ? "md:w-3/4 w-full" : "w-full"}>
+                <CardTitle className="text-2xl">{selectedDeck.name}</CardTitle>
+                <CardDescription className="mt-2">
+                  <span className="inline-block bg-muted text-muted-foreground px-3 py-1 rounded-full text-sm">
+                    {selectedDeck.format}
+                  </span>
+                </CardDescription>
               </div>
             </div>
-          </div>
+          </CardHeader>
           
-          <Tabs value={selectedTab} onValueChange={(tab) => setSelectedTab(tab as any)} className="mt-6">
+          <Tabs value={selectedTab} onValueChange={(tab) => setSelectedTab(tab as any)} className="mt-4">
             <TabsList className="grid w-full max-w-md grid-cols-4">
-              <TabsTrigger value="cards">Cartas</TabsTrigger>
+              <TabsTrigger value="cards">Cards</TabsTrigger>
               <TabsTrigger value="sideboard">Sideboard</TabsTrigger>
-              <TabsTrigger value="photos">Fotos</TabsTrigger>
+              <TabsTrigger value="photos">Photos</TabsTrigger>
               <TabsTrigger value="import-export">Import/Export</TabsTrigger>
             </TabsList>
             
             <TabsContent value="cards">
-              <div className="mt-6">
+              <div className="mt-4">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-4">
-                    <h3 className="text-xl font-semibold">
+                    <h3 className="text-lg font-medium">
                       {viewSideboard ? 'Sideboard' : 'Maindeck'}
                     </h3>
                     <Button 
@@ -240,7 +248,7 @@ const DeckManager = () => {
                       size="sm" 
                       onClick={() => setViewSideboard(!viewSideboard)}
                     >
-                      {viewSideboard ? 'Ver Maindeck' : 'Ver Sideboard'}
+                      {viewSideboard ? 'View Maindeck' : 'View Sideboard'}
                     </Button>
                   </div>
                   <Button 
@@ -255,7 +263,7 @@ const DeckManager = () => {
                     disabled={!selectedDeck.cards.some(card => card.imageUrl)}
                   >
                     <ImageIcon className="h-4 w-4 mr-2" />
-                    Seleccionar carta para portada
+                    Set card as cover
                   </Button>
                 </div>
                 
@@ -263,26 +271,22 @@ const DeckManager = () => {
                   selectedDeck.sideboardCards && selectedDeck.sideboardCards.length > 0 ? (
                     <CardList 
                       cards={selectedDeck.sideboardCards} 
-                      onCardSelect={selectCardForBackground} 
-                      selectedCardUrl={selectedDeck.cardBackgroundUrl}
                     />
                   ) : (
-                    <div className="text-center py-10 border border-dashed rounded-lg">
-                      <p className="text-muted-foreground">No hay cartas en el sideboard</p>
+                    <div className="text-center py-8 border border-dashed rounded-lg">
+                      <p className="text-muted-foreground">No sideboard cards</p>
                     </div>
                   )
                 ) : (
                   <CardList 
                     cards={selectedDeck.cards} 
-                    onCardSelect={selectCardForBackground} 
-                    selectedCardUrl={selectedDeck.cardBackgroundUrl}
                   />
                 )}
               </div>
             </TabsContent>
             
             <TabsContent value="sideboard">
-              <div className="mt-6">
+              <div className="mt-4">
                 <SideboardGuideComponent 
                   deckId={selectedDeck.id} 
                   initialGuide={selectedDeck.sideboardGuide}
@@ -292,7 +296,7 @@ const DeckManager = () => {
             </TabsContent>
             
             <TabsContent value="photos">
-              <div className="mt-6">
+              <div className="mt-4">
                 <DeckPhotoGallery 
                   deckId={selectedDeck.id}
                   initialPhotos={selectedDeck.photos}
@@ -302,7 +306,7 @@ const DeckManager = () => {
             </TabsContent>
             
             <TabsContent value="import-export">
-              <div className="mt-6">
+              <div className="mt-4">
                 <DeckImportExport 
                   deck={selectedDeck}
                   onImport={handleImportDeck}
@@ -310,84 +314,85 @@ const DeckManager = () => {
               </div>
             </TabsContent>
           </Tabs>
-        </div>
+        </Card>
       </div>
     );
   }
   
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Mis Mazos</h2>
+        <h2 className="text-xl font-medium">My Decks</h2>
         <div className="flex gap-2">
           <Button 
             variant="outline"
             onClick={() => setIsAddingDeck(true)} 
             className="flex items-center gap-1"
+            size="sm"
           >
             <Upload className="h-4 w-4" />
-            Importar mazo
+            Import deck
           </Button>
-          <Button onClick={() => setIsAddingDeck(true)} className="shadow-sm shadow-primary/20 hover:shadow-md hover:shadow-primary/30 transition-all">
+          <Button onClick={() => setIsAddingDeck(true)} size="sm">
             <PlusCircle className="mr-2 h-4 w-4" />
-            Nuevo Mazo
+            New Deck
           </Button>
         </div>
       </div>
       
       {decks.length === 0 ? (
-        <div className="text-center py-10 enhanced-card p-8">
-          <p className="text-muted-foreground mb-4">Aún no tienes mazos creados</p>
+        <div className="text-center py-8 border border-dashed rounded-lg">
+          <p className="text-muted-foreground mb-4">You don't have any decks yet</p>
           <div className="flex flex-col space-y-4 items-center">
-            <Button onClick={() => setIsAddingDeck(true)} className="shadow-sm shadow-primary/20 hover:shadow-md hover:shadow-primary/30 transition-all">
+            <Button onClick={() => setIsAddingDeck(true)}>
               <PlusCircle className="mr-2 h-4 w-4" />
-              Crear tu primer mazo
+              Create your first deck
             </Button>
             <DeckImportExport onImport={handleImportDeck} />
           </div>
         </div>
       ) : (
         <div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
             {decks.map((deck) => (
-              <div 
+              <Card 
                 key={deck.id} 
                 onClick={() => handleSelectDeck(deck)}
-                className="enhanced-card cursor-pointer h-full flex flex-col overflow-hidden"
+                className="cursor-pointer hover:border-primary/50 transition-colors"
               >
-                {deck.cardBackgroundUrl ? (
-                  <AspectRatio ratio={16/9} className="bg-gradient-to-b from-black/70 to-transparent relative">
-                    <img 
-                      src={deck.cardBackgroundUrl}
-                      alt={deck.name}
-                      className="object-cover w-full h-full opacity-80"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-card via-card/80 to-transparent" />
+                {deck.cardBackgroundUrl && (
+                  <AspectRatio ratio={16/9}>
+                    <div className="relative w-full h-full">
+                      <img 
+                        src={deck.cardBackgroundUrl}
+                        alt={deck.name}
+                        className="object-cover w-full h-full"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
+                    </div>
                   </AspectRatio>
-                ) : null}
+                )}
                 
                 <CardHeader className={deck.cardBackgroundUrl ? 'pt-3' : ''}>
-                  <CardTitle className="text-xl group-hover:text-primary transition-colors">
-                    {deck.name}
-                  </CardTitle>
-                  <CardDescription>
-                    Formato: {deck.format}
-                  </CardDescription>
+                  <CardTitle className="text-lg">{deck.name}</CardTitle>
+                  <CardDescription>Format: {deck.format}</CardDescription>
                 </CardHeader>
                 
                 <CardContent>
-                  <p>{deck.cards.length} cartas</p>
+                  <p className="text-sm">{deck.cards.length} cards</p>
                 </CardContent>
                 
-                <CardFooter className="text-sm text-muted-foreground mt-auto">
-                  Actualizado: {new Date(deck.updatedAt).toLocaleDateString()}
+                <CardFooter className="text-sm text-muted-foreground">
+                  Updated: {new Date(deck.updatedAt).toLocaleDateString()}
                 </CardFooter>
-              </div>
+              </Card>
             ))}
           </div>
           
-          <div className="mt-8">
-            <h3 className="text-lg font-medium mb-4">Importar un mazo</h3>
+          <Separator className="my-4" />
+          
+          <div className="mt-4">
+            <h3 className="text-lg font-medium mb-2">Import a deck</h3>
             <DeckImportExport onImport={handleImportDeck} />
           </div>
         </div>
