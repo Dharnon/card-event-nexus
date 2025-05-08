@@ -69,7 +69,7 @@ const CalendarPage = () => {
               <Skeleton className="h-[600px] w-full" />
             </div>
           ) : (
-            <div className="h-[700px] border rounded-lg overflow-hidden">
+            <div className="h-[700px] border overflow-hidden">
               <FullScreenCalendar data={calendarData} />
             </div>
           )}
