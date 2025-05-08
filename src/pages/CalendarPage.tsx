@@ -3,10 +3,50 @@ import Navbar from '@/components/Navbar';
 import { useEvents } from '@/context/EventContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CalendarDays } from 'lucide-react';
-import EventCalendarNew from '@/components/EventCalendarNew';
+import { FullScreenCalendar } from '@/components/ui/fullscreen-calendar';
+import { format, parseISO } from 'date-fns';
 
 const CalendarPage = () => {
   const { events, isLoading } = useEvents();
+  
+  // Transform events into the format expected by FullScreenCalendar
+  const calendarData = events.reduce((acc, event) => {
+    const day = parseISO(event.startDate);
+    const eventTime = format(parseISO(event.startDate), 'h:mm a');
+    
+    const existingDay = acc.find(item => 
+      format(item.day, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd')
+    );
+    
+    if (existingDay) {
+      existingDay.events.push({
+        id: event.id,
+        name: event.title,
+        time: eventTime,
+        datetime: event.startDate,
+      });
+    } else {
+      acc.push({
+        day,
+        events: [{
+          id: event.id,
+          name: event.title,
+          time: eventTime,
+          datetime: event.startDate,
+        }],
+      });
+    }
+    
+    return acc;
+  }, [] as Array<{
+    day: Date;
+    events: Array<{
+      id: string | number;
+      name: string;
+      time: string;
+      datetime: string;
+    }>;
+  }>);
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -29,8 +69,8 @@ const CalendarPage = () => {
               <Skeleton className="h-[600px] w-full" />
             </div>
           ) : (
-            <div className="calendar-container h-[600px]">
-              <EventCalendarNew events={events} />
+            <div className="h-[700px] border rounded-lg overflow-hidden">
+              <FullScreenCalendar data={calendarData} />
             </div>
           )}
         </div>
