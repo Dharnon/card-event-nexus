@@ -86,23 +86,24 @@ const EventFilters = () => {
   const hasActiveFilters = searchTerm || location || format || type || date;
 
   const FiltersContent = () => (
-    <div className="space-y-4">
+    <div className="space-y-5 py-4">
       <div className="relative">
-        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Search by keyword..."
-          className="pl-8 bg-background/50 backdrop-blur-sm"
+          placeholder="Search by keyword or name..."
+          className="pl-10 bg-background h-11"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="space-y-4">
+        <div className="font-medium text-sm">Location</div>
         <Select 
           value={location} 
           onValueChange={(value) => setLocation(value || undefined)}
         >
-          <SelectTrigger className="bg-background/50 backdrop-blur-sm">
+          <SelectTrigger className="w-full bg-background h-11">
             <SelectValue placeholder="Select location" />
           </SelectTrigger>
           <SelectContent>
@@ -113,12 +114,15 @@ const EventFilters = () => {
             ))}
           </SelectContent>
         </Select>
-        
+      </div>
+      
+      <div className="space-y-4">
+        <div className="font-medium text-sm">Format</div>
         <Select 
           value={format} 
           onValueChange={(value) => setFormat(value as EventFormat || undefined)}
         >
-          <SelectTrigger className="bg-background/50 backdrop-blur-sm">
+          <SelectTrigger className="w-full bg-background h-11">
             <SelectValue placeholder="Select format" />
           </SelectTrigger>
           <SelectContent>
@@ -129,29 +133,35 @@ const EventFilters = () => {
             ))}
           </SelectContent>
         </Select>
-        
+      </div>
+      
+      <div className="space-y-4">
+        <div className="font-medium text-sm">Event Type</div>
         <Select 
           value={type} 
           onValueChange={(value) => setType(value as EventType || undefined)}
         >
-          <SelectTrigger className="bg-background/50 backdrop-blur-sm">
+          <SelectTrigger className="w-full bg-background h-11">
             <SelectValue placeholder="Select event type" />
           </SelectTrigger>
           <SelectContent>
             {typeOptions.map((t) => (
               <SelectItem key={t} value={t}>
-                {t}
+                {typeLabels[t]}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        
+      </div>
+      
+      <div className="space-y-4">
+        <div className="font-medium text-sm">Date</div>
         <Popover>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
               className={cn(
-                "w-full justify-start text-left font-normal bg-background/50 backdrop-blur-sm",
+                "w-full justify-start text-left font-normal h-11",
                 !date && "text-muted-foreground"
               )}
             >
@@ -171,8 +181,8 @@ const EventFilters = () => {
         </Popover>
       </div>
       
-      <div className="flex gap-2">
-        <Button onClick={handleSearch} className="w-full">
+      <div className="flex flex-col sm:flex-row gap-3 pt-4">
+        <Button onClick={handleSearch} className="flex-1 h-11">
           Apply Filters
         </Button>
         
@@ -180,10 +190,10 @@ const EventFilters = () => {
           <Button 
             variant="outline" 
             onClick={clearFilters}
-            className="bg-destructive/10 text-destructive-foreground hover:bg-destructive/20"
+            className="bg-destructive/10 text-destructive hover:bg-destructive/20 h-11"
           >
-            <X className="h-4 w-4 mr-1" />
-            Clear
+            <X className="h-4 w-4 mr-2" />
+            Clear All
           </Button>
         )}
       </div>
@@ -194,21 +204,19 @@ const EventFilters = () => {
     return (
       <Drawer>
         <DrawerTrigger asChild>
-          <Button variant="outline" className="w-full mb-4 flex items-center justify-center">
+          <Button variant="outline" className="w-full mb-4 flex items-center justify-center h-11">
             <Sliders className="w-4 h-4 mr-2" />
             <span>Filters</span>
           </Button>
         </DrawerTrigger>
-        <DrawerContent>
+        <DrawerContent className="px-4 pb-4">
           <DrawerHeader>
-            <DrawerTitle className="flex items-center">
+            <DrawerTitle className="flex items-center text-xl">
               <Filter className="h-5 w-5 mr-2" />
               Filter Events
             </DrawerTitle>
           </DrawerHeader>
-          <div className="px-4">
-            <FiltersContent />
-          </div>
+          <FiltersContent />
           <DrawerFooter>
             <DrawerClose asChild>
               <Button variant="outline">Close</Button>
@@ -220,9 +228,9 @@ const EventFilters = () => {
   }
   
   return (
-    <div className="p-4 bg-card/50 rounded-lg border shadow-md backdrop-blur-sm mb-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold flex items-center">
+    <div className="p-6 bg-card rounded-lg border shadow-md mb-6">
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="text-xl font-semibold flex items-center">
           <Filter className="h-5 w-5 mr-2" />
           Filter Events
         </h2>
@@ -231,7 +239,7 @@ const EventFilters = () => {
             variant="ghost" 
             size="sm"
             onClick={clearFilters}
-            className="h-8 flex items-center text-muted-foreground hover:text-foreground"
+            className="h-9 flex items-center text-muted-foreground hover:text-foreground"
           >
             <X className="h-4 w-4 mr-1" />
             Clear all

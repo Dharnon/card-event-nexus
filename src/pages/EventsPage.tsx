@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { Calendar, Grid3X3, SlidersHorizontal, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import Navbar from '@/components/Navbar';
 import EventCard from '@/components/EventCard';
 import EventFilters from '@/components/EventFilters';
@@ -16,7 +15,7 @@ const EventsPage = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <main className="flex-grow bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
             <div>
               <h1 className="text-3xl font-bold">Browse Events</h1>
@@ -53,8 +52,8 @@ const EventsPage = () => {
             </div>
           </div>
 
-          <div className="flex flex-col md:flex-row space-y-6 md:space-y-0 md:space-x-6">
-            <div className={`md:w-80 md:block ${showFilters ? 'block' : 'hidden'}`}>
+          <div className="flex flex-col md:flex-row gap-6">
+            <div className={`md:w-96 md:block ${showFilters ? 'block' : 'hidden'}`}>
               <div className="sticky top-6">
                 <EventFilters />
               </div>

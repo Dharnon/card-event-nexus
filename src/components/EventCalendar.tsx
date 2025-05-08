@@ -17,49 +17,20 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Event, EventType } from '@/types';
 import EventCard from './EventCard';
 import { useTheme } from '@/context/ThemeContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface EventCalendarProps {
   events: Event[];
 }
 
 // Define colors for different event types
-const typeColors: Record<EventType, { bg: string, color: string, darkBg: string, darkColor: string }> = {
-  'tournament': { 
-    bg: 'bg-magic-purple', 
-    color: 'text-white',
-    darkBg: 'dark:bg-magic-purple/80',
-    darkColor: 'dark:text-white'
-  },
-  'casual': { 
-    bg: 'bg-green-600', 
-    color: 'text-white',
-    darkBg: 'dark:bg-green-600/80',
-    darkColor: 'dark:text-white'
-  },
-  'championship': { 
-    bg: 'bg-red-600', 
-    color: 'text-white',
-    darkBg: 'dark:bg-red-600/80',
-    darkColor: 'dark:text-white'
-  },
-  'draft': { 
-    bg: 'bg-blue-600', 
-    color: 'text-white',
-    darkBg: 'dark:bg-blue-600/80', 
-    darkColor: 'dark:text-white'
-  },
-  'prerelease': { 
-    bg: 'bg-amber-600', 
-    color: 'text-white',
-    darkBg: 'dark:bg-amber-600/80',
-    darkColor: 'dark:text-white'
-  },
-  'other': { 
-    bg: 'bg-slate-600', 
-    color: 'text-white',
-    darkBg: 'dark:bg-slate-600/80',
-    darkColor: 'dark:text-white'
-  }
+const typeColors: Record<EventType, { bg: string, color: string }> = {
+  'tournament': { bg: 'bg-blue-600', color: 'text-white' },
+  'casual': { bg: 'bg-green-600', color: 'text-white' },
+  'championship': { bg: 'bg-red-600', color: 'text-white' },
+  'draft': { bg: 'bg-purple-600', color: 'text-white' },
+  'prerelease': { bg: 'bg-amber-600', color: 'text-white' },
+  'other': { bg: 'bg-slate-600', color: 'text-white' }
 };
 
 const typeLabels: Record<EventType, string> = {
@@ -74,9 +45,8 @@ const typeLabels: Record<EventType, string> = {
 const EventCalendar = ({ events }: EventCalendarProps) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const { theme } = useTheme();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   
   const nextMonth = () => {
     setCurrentMonth(dateFns.addMonths(currentMonth, 1));
@@ -113,33 +83,34 @@ const EventCalendar = ({ events }: EventCalendarProps) => {
   
   return (
     <div className="space-y-4">
-      <Card className="shadow-lg border-border/30 glass-morphism">
+      <Card className="shadow border">
         <CardHeader className="pb-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <CardTitle className="text-2xl flex items-center">
-              <CalendarDays className="h-6 w-6 mr-2 text-primary" />
+            <CardTitle className="text-xl flex items-center">
+              <CalendarDays className="h-5 w-5 mr-2 text-primary" />
               Events Calendar
             </CardTitle>
             <div className="flex items-center space-x-3">
-              <Button variant="outline" size="icon" onClick={prevMonth} className="hover:bg-primary/5">
+              <Button variant="outline" size="icon" onClick={prevMonth}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <span className="text-xl font-medium text-gradient whitespace-nowrap px-2">
+              <span className="text-lg font-medium whitespace-nowrap px-2">
                 {dateFns.format(currentMonth, 'MMMM yyyy', { locale: es })}
               </span>
-              <Button variant="outline" size="icon" onClick={nextMonth} className="hover:bg-primary/5">
+              <Button variant="outline" size="icon" onClick={nextMonth}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           </div>
           <CardDescription className="text-base mt-2">
-            View all upcoming Magic: The Gathering events
+            View upcoming Magic: The Gathering events
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-7 gap-1 text-center mb-3 bg-muted/30 rounded-t-lg p-2">
+          {/* Calendar header - days of week */}
+          <div className="grid grid-cols-7 gap-1 text-center mb-2 bg-muted/20 rounded-lg p-2">
             {['D', 'L', 'M', 'X', 'J', 'V', 'S'].map((day, index) => (
-              <div key={index} className="text-sm font-medium text-muted-foreground">
+              <div key={index} className="text-sm font-medium">
                 {day}
               </div>
             ))}
@@ -148,7 +119,7 @@ const EventCalendar = ({ events }: EventCalendarProps) => {
           <div className="grid grid-cols-7 gap-1 md:gap-2">
             {/* Empty cells for days of the week before the first day of the month */}
             {Array.from({ length: dateFns.startOfMonth(currentMonth).getDay() }).map((_, i) => (
-              <div key={`empty-start-${i}`} className="calendar-day" />
+              <div key={`empty-start-${i}`} className="aspect-square" />
             ))}
             
             {/* Actual days of the month */}
@@ -164,37 +135,34 @@ const EventCalendar = ({ events }: EventCalendarProps) => {
                   <DialogTrigger asChild>
                     <Button
                       variant={isSelected ? "default" : isToday ? "outline" : "ghost"}
-                      className={`calendar-day flex flex-col items-center justify-start p-1 hover:bg-muted/50 ${
-                        hasEvents ? "ring-1 ring-primary/20" : ""
-                      } ${isToday && !isSelected ? "ring-1 ring-primary" : ""}`}
+                      className={`h-auto min-h-14 md:min-h-20 w-full aspect-square flex flex-col items-center justify-start p-1 border ${
+                        hasEvents ? "border-primary/40" : "border-transparent"
+                      } ${isToday && !isSelected ? "ring-1 ring-primary" : ""} rounded-md`}
                       onClick={() => handleDateClick(day)}
                     >
-                      <div className="calendar-day-content">
-                        <span className={`text-sm font-semibold mb-1 ${isSelected ? "text-primary-foreground" : isToday ? "text-primary" : "text-foreground"}`}>
+                      <div className="w-full h-full flex flex-col">
+                        <span className={`text-sm font-semibold mb-1 ${isSelected ? "text-primary-foreground" : isToday ? "text-primary" : ""}`}>
                           {dateFns.format(day, 'd')}
                         </span>
                         
                         {hasEvents && (
-                          <div className="mt-auto mb-1 flex flex-col gap-1 w-full px-1">
-                            {eventTypes.map((type, idx) => (
-                              <TooltipProvider key={idx}>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <div 
-                                      className={`text-[10px] rounded-sm px-1 py-0.5 truncate w-full ${typeColors[type].bg} ${typeColors[type].color} ${typeColors[type].darkBg} ${typeColors[type].darkColor}`}
-                                    >
-                                      {dayEvents.filter(e => e.type === type).length} {typeLabels[type]}
-                                    </div>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="bottom">
-                                    <p>{dayEvents.filter(e => e.type === type).length} {typeLabels[type]} events</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
+                          <div className="mt-auto flex flex-col gap-0.5 w-full px-0.5">
+                            {!isMobile && eventTypes.slice(0, 2).map((type, idx) => (
+                              <div 
+                                key={idx}
+                                className={`text-[9px] rounded-sm px-1 py-0.5 truncate w-full ${typeColors[type].bg} ${typeColors[type].color}`}
+                              >
+                                {dayEvents.filter(e => e.type === type).length}
+                              </div>
                             ))}
-                            {dayEvents.length > 3 && (
-                              <span className="text-[10px] text-muted-foreground mt-1 text-center">
-                                +{dayEvents.length - 3} more
+                            {isMobile && hasEvents && (
+                              <div className="text-[9px] rounded-sm px-1 py-0.5 bg-primary/80 text-primary-foreground text-center">
+                                {dayEvents.length} event{dayEvents.length !== 1 ? 's' : ''}
+                              </div>
+                            )}
+                            {!isMobile && eventTypes.length > 2 && (
+                              <span className="text-[9px] text-muted-foreground mt-0.5 text-center">
+                                +{eventTypes.length - 2} more
                               </span>
                             )}
                           </div>
@@ -238,17 +206,17 @@ const EventCalendar = ({ events }: EventCalendarProps) => {
             
             {/* Empty cells for days of the week after the last day of the month */}
             {Array.from({ length: 6 - dateFns.endOfMonth(currentMonth).getDay() }).map((_, i) => (
-              <div key={`empty-end-${i}`} className="calendar-day" />
+              <div key={`empty-end-${i}`} className="aspect-square" />
             ))}
           </div>
           
           {/* Legend */}
-          <div className="mt-8 pt-4 border-t border-border/30">
+          <div className="mt-6 pt-4 border-t">
             <h4 className="text-base font-medium mb-3">Event Types</h4>
             <div className="flex flex-wrap gap-3">
               {Object.entries(typeColors).map(([type, colors]) => (
                 <div key={type} className="flex items-center">
-                  <div className={`w-4 h-4 rounded-sm ${colors.bg} ${colors.darkBg} mr-1.5`}></div>
+                  <div className={`w-3 h-3 rounded-sm ${colors.bg} mr-1.5`}></div>
                   <span className="text-sm">{typeLabels[type as EventType]}</span>
                 </div>
               ))}

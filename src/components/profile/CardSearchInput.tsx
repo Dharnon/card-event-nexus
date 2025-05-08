@@ -54,7 +54,7 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
       imageUrl: getCardImageUrl(selectedCard),
     };
     
-    onCardSelect(newCard); // Using the onCardSelect prop correctly
+    onCardSelect(newCard);
     setSelectedCard(null);
     setQuantity(1);
   };
@@ -85,7 +85,7 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
         
         {isSearching && (
           <div className="absolute z-10 w-full mt-1 p-2 bg-background border rounded-md shadow-lg text-center">
-            Buscando...
+            Searching...
           </div>
         )}
       </div>
@@ -125,7 +125,7 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
                 </Button>
               </div>
               <Button type="button" onClick={handleAddCard}>
-                Añadir al mazo
+                Add to deck
               </Button>
             </div>
           </div>
