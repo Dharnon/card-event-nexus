@@ -1,9 +1,9 @@
 
 import Navbar from '@/components/Navbar';
-import EventCalendar from '@/components/EventCalendar';
 import { useEvents } from '@/context/EventContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CalendarDays } from 'lucide-react';
+import EventCalendarNew from '@/components/EventCalendarNew';
 
 const CalendarPage = () => {
   const { events, isLoading } = useEvents();
@@ -12,7 +12,7 @@ const CalendarPage = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <main className="flex-grow bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-8">
             <div className="flex items-center mb-2">
               <CalendarDays className="h-7 w-7 mr-3 text-primary" />
@@ -26,11 +26,11 @@ const CalendarPage = () => {
           {isLoading ? (
             <div className="space-y-4">
               <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-96 w-full" />
+              <Skeleton className="h-[600px] w-full" />
             </div>
           ) : (
-            <div className="calendar-container">
-              <EventCalendar events={events} />
+            <div className="calendar-container h-[600px]">
+              <EventCalendarNew events={events} />
             </div>
           )}
         </div>

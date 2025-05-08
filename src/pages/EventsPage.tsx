@@ -15,7 +15,7 @@ const EventsPage = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <main className="flex-grow bg-background">
-        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
             <div>
               <h1 className="text-3xl font-bold">Browse Events</h1>
@@ -53,8 +53,8 @@ const EventsPage = () => {
           </div>
 
           <div className="flex flex-col md:flex-row gap-6">
-            <div className={`md:w-96 md:block ${showFilters ? 'block' : 'hidden'}`}>
-              <div className="sticky top-6">
+            <div className={`md:w-[300px] md:block ${showFilters ? 'block' : 'hidden'}`}>
+              <div className="sticky top-6 w-full">
                 <EventFilters />
               </div>
             </div>
