@@ -3,8 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card as MagicCard, CardSearchInputProps } from '@/types';
-import { searchCardByName, ScryfallCard, getCardImageUrl } from '@/services/ScryfallService';
+import { searchCardByName, ScryfallCard, getCardImageUrl, getBasicLand } from '@/services/ScryfallService';
 import { useDebounce } from '@/hooks/useDebounce';
+import { Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+
+const BASIC_LANDS = ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest'];
 
 const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeholder = "Search for a card..." }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -14,6 +18,7 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
   const [quantity, setQuantity] = useState(1);
   
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
+  const { toast } = useToast();
   
   useEffect(() => {
     const fetchCards = async () => {
@@ -24,10 +29,40 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
       
       setIsSearching(true);
       try {
-        const results = await searchCardByName(debouncedSearchQuery);
+        // Verificar si es una tierra básica primero
+        const trimmedQuery = debouncedSearchQuery.trim();
+        const isBasicLand = BASIC_LANDS.some(land => 
+          land.toLowerCase().includes(trimmedQuery.toLowerCase())
+        );
+        
+        let results;
+        if (isBasicLand) {
+          // Filtrar las tierras básicas que coincidan con la búsqueda
+          const matchingLands = BASIC_LANDS.filter(land => 
+            land.toLowerCase().includes(trimmedQuery.toLowerCase())
+          );
+          
+          // Obtener los datos de cada tierra básica
+          const landPromises = matchingLands.map(async land => {
+            const landCard = await getBasicLand(land);
+            return landCard;
+          });
+          
+          const landResults = await Promise.all(landPromises);
+          results = landResults.filter(Boolean) as ScryfallCard[];
+        } else {
+          // Búsqueda normal para cartas que no son tierras básicas
+          results = await searchCardByName(debouncedSearchQuery);
+        }
+        
         setSearchResults(results.slice(0, 5)); // Limit to 5 results
       } catch (error) {
         console.error('Error searching for cards:', error);
+        toast({
+          title: "Error de búsqueda",
+          description: "No se pudieron encontrar cartas con ese nombre.",
+          variant: "destructive",
+        });
         setSearchResults([]);
       } finally {
         setIsSearching(false);
@@ -35,7 +70,7 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
     };
     
     fetchCards();
-  }, [debouncedSearchQuery]);
+  }, [debouncedSearchQuery, toast]);
   
   const handleSelectCard = (card: ScryfallCard) => {
     setSelectedCard(card);
@@ -78,6 +113,7 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
                 onClick={() => handleSelectCard(card)}
               >
                 {card.name}
+                {card.type_line && <span className="text-xs text-muted-foreground ml-2">{card.type_line}</span>}
               </div>
             ))}
           </div>
@@ -85,7 +121,10 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
         
         {isSearching && (
           <div className="absolute z-10 w-full mt-1 p-2 bg-background border rounded-md shadow-lg text-center">
-            Searching...
+            <div className="flex items-center justify-center space-x-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Buscando...</span>
+            </div>
           </div>
         )}
       </div>
@@ -103,6 +142,9 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
           <div className="flex flex-col justify-between flex-1">
             <div>
               <h3 className="font-bold text-lg">{selectedCard.name}</h3>
+              {selectedCard.type_line && (
+                <p className="text-sm text-muted-foreground">{selectedCard.type_line}</p>
+              )}
             </div>
             <div className="flex items-center justify-between mt-4">
               <div className="flex items-center">
