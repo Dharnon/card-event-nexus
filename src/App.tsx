@@ -13,6 +13,7 @@ import CalendarPage from "./pages/CalendarPage";
 import EventDetailPage from "./pages/EventDetailPage";
 import CreateEventPage from "./pages/CreateEventPage";
 import LoginPage from "./pages/LoginPage";
+import AuthPage from "./pages/AuthPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import ProfilePage from "./pages/ProfilePage";
 import NotFound from "./pages/NotFound";
@@ -23,27 +24,28 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <AuthProvider>
-          <EventProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
+        <BrowserRouter>
+          <AuthProvider>
+            <EventProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
                 <Routes>
                   <Route path="/" element={<HomePage />} />
                   <Route path="/events" element={<EventsPage />} />
                   <Route path="/events/:id" element={<EventDetailPage />} />
                   <Route path="/calendar" element={<CalendarPage />} />
                   <Route path="/create-event" element={<CreateEventPage />} />
-                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/login" element={<AuthPage />} />
+                  <Route path="/auth" element={<AuthPage />} />
                   <Route path="/admin" element={<AdminDashboard />} />
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
-              </BrowserRouter>
-            </TooltipProvider>
-          </EventProvider>
-        </AuthProvider>
+              </TooltipProvider>
+            </EventProvider>
+          </AuthProvider>
+        </BrowserRouter>
       </ThemeProvider>
     </QueryClientProvider>
   );

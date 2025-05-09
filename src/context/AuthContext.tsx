@@ -1,6 +1,10 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, UserRole } from '@/types';
+import { supabase } from "@/integrations/supabase/client";
+import * as AuthService from "@/services/AuthService";
+import { useNavigate, useLocation } from "react-router-dom";
+import { toast } from "sonner";
 
 interface AuthContextType {
   user: User | null;
@@ -20,59 +24,70 @@ const AuthContext = createContext<AuthContextType>({
 
 export const useAuth = () => useContext(AuthContext);
 
-// Mock users for demo
-const mockUsers: User[] = [
-  {
-    id: '1',
-    name: 'Regular User',
-    email: 'user@example.com',
-    role: 'user',
-  },
-  {
-    id: '2',
-    name: 'Admin User',
-    email: 'admin@example.com',
-    role: 'admin',
-  },
-  {
-    id: '3',
-    name: 'Magic Store',
-    email: 'store@example.com',
-    role: 'store',
-  },
-];
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
+  const location = useLocation();
 
+  // Initialize auth state and set up listener
   useEffect(() => {
-    // Check if user is logged in from localStorage
-    const storedUser = localStorage.getItem('magicUser');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
-  }, []);
+    // Set up auth state listener first
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (session) {
+          // Set user from session
+          const { user: supabaseUser } = session;
+          const currentUser: User = {
+            id: supabaseUser.id,
+            email: supabaseUser.email || '',
+            name: supabaseUser.user_metadata?.name || supabaseUser.email?.split('@')[0] || 'User',
+            role: supabaseUser.user_metadata?.role || 'user',
+            avatarUrl: supabaseUser.user_metadata?.avatar_url
+          };
+          setUser(currentUser);
+          setIsLoading(false);
+          
+          // If we're on the login page, redirect to home
+          if (location.pathname === '/login') {
+            setTimeout(() => {
+              navigate('/');
+            }, 0);
+          }
+        } else {
+          setUser(null);
+          setIsLoading(false);
+          
+          // If we're on a protected page, redirect to login
+          const publicRoutes = ['/login', '/register'];
+          if (!publicRoutes.includes(location.pathname)) {
+            // Don't redirect immediately to prevent loops
+            setTimeout(() => {
+              navigate('/login');
+            }, 0);
+          }
+        }
+      }
+    );
+
+    // Check for existing session
+    AuthService.getCurrentUser().then(user => {
+      setUser(user);
+      setIsLoading(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [navigate, location]);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Find user in mock data (in real app, this would be a server request)
-      const foundUser = mockUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
-      
-      if (!foundUser) {
-        throw new Error('Invalid credentials');
-      }
-      
-      // Save to localStorage
-      localStorage.setItem('magicUser', JSON.stringify(foundUser));
-      setUser(foundUser);
-    } catch (error) {
-      console.error('Login error:', error);
+      await AuthService.login(email, password);
+      toast.success("Welcome back!");
+    } catch (error: any) {
+      toast.error(error.message || "Login failed. Please try again.");
       throw error;
     } finally {
       setIsLoading(false);
@@ -80,36 +95,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
-    localStorage.removeItem('magicUser');
-    setUser(null);
+    AuthService.logout();
   };
 
   const register = async (name: string, email: string, password: string, role: UserRole) => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Check if user already exists
-      const userExists = mockUsers.some(u => u.email.toLowerCase() === email.toLowerCase());
-      
-      if (userExists) {
-        throw new Error('User already exists');
-      }
-      
-      // In a real application, this would be a server request
-      const newUser: User = {
-        id: `${mockUsers.length + 1}`,
-        name,
-        email,
-        role,
-      };
-      
-      // Save to localStorage
-      localStorage.setItem('magicUser', JSON.stringify(newUser));
-      setUser(newUser);
-    } catch (error) {
-      console.error('Registration error:', error);
+      await AuthService.register(name, email, password, role);
+      toast.success("Registration successful!");
+    } catch (error: any) {
+      toast.error(error.message || "Registration failed. Please try again.");
       throw error;
     } finally {
       setIsLoading(false);

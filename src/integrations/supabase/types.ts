@@ -9,7 +9,187 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      cards: {
+        Row: {
+          created_at: string
+          deck_id: string
+          id: string
+          image_url: string | null
+          is_sideboard: boolean
+          name: string
+          quantity: number
+          scryfall_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          deck_id: string
+          id?: string
+          image_url?: string | null
+          is_sideboard?: boolean
+          name: string
+          quantity: number
+          scryfall_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          deck_id?: string
+          id?: string
+          image_url?: string | null
+          is_sideboard?: boolean
+          name?: string
+          quantity?: number
+          scryfall_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cards_deck_id_fkey"
+            columns: ["deck_id"]
+            isOneToOne: false
+            referencedRelation: "decks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      decks: {
+        Row: {
+          card_background_url: string | null
+          created_at: string
+          format: string
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          card_background_url?: string | null
+          created_at?: string
+          format: string
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          card_background_url?: string | null
+          created_at?: string
+          format?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      event_registrations: {
+        Row: {
+          event_id: string
+          id: string
+          registered_at: string
+          user_id: string
+        }
+        Insert: {
+          event_id: string
+          id?: string
+          registered_at?: string
+          user_id: string
+        }
+        Update: {
+          event_id?: string
+          id?: string
+          registered_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          created_at: string
+          created_by: string
+          current_participants: number | null
+          description: string | null
+          end_date: string | null
+          featured: boolean | null
+          format: string
+          id: string
+          image: string | null
+          location: Json
+          max_participants: number | null
+          price: number | null
+          start_date: string
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          current_participants?: number | null
+          description?: string | null
+          end_date?: string | null
+          featured?: boolean | null
+          format: string
+          id?: string
+          image?: string | null
+          location: Json
+          max_participants?: number | null
+          price?: number | null
+          start_date: string
+          title: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          current_participants?: number | null
+          description?: string | null
+          end_date?: string | null
+          featured?: boolean | null
+          format?: string
+          id?: string
+          image?: string | null
+          location?: Json
+          max_participants?: number | null
+          price?: number | null
+          start_date?: string
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          id: string
+          updated_at: string
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          id: string
+          updated_at?: string
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

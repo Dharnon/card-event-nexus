@@ -1,5 +1,7 @@
+
 import * as dateFns from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useState, useEffect } from 'react';
 import { 
   CalendarClock, 
   MapPin, 
@@ -8,16 +10,18 @@ import {
   Clock, 
   Store as StoreIcon, 
   Calendar, 
-  CheckCircle, 
+  CheckCircle,
+  XCircle, 
   AlertCircle 
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from "sonner";
 import { useAuth } from '@/context/AuthContext';
 import { Event, EventFormat, EventType } from '@/types';
+import { registerForEvent, cancelRegistration, checkRegistration, subscribeToEventWithRegistrations } from '@/services/EventService';
 
 interface EventDetailProps {
   event: Event;
@@ -55,8 +59,33 @@ const typeLabels: Record<EventType, string> = {
 };
 
 const EventDetail = ({ event }: EventDetailProps) => {
-  const { toast } = useToast();
+  const [currentEvent, setCurrentEvent] = useState<Event>(event);
+  const [isRegistered, setIsRegistered] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
   const { user } = useAuth();
+  
+  useEffect(() => {
+    // Set initial event
+    setCurrentEvent(event);
+    
+    // Check if user is registered
+    if (user) {
+      checkRegistration(event.id)
+        .then(registered => setIsRegistered(registered))
+        .catch(() => setIsRegistered(false));
+    }
+    
+    // Subscribe to event and registration updates
+    const unsubscribe = subscribeToEventWithRegistrations(event.id, updatedEvent => {
+      if (updatedEvent) {
+        setCurrentEvent(updatedEvent);
+      }
+    });
+    
+    return () => {
+      unsubscribe();
+    };
+  }, [event, user]);
   
   const formatDate = (dateString: string) => {
     return dateFns.format(dateFns.parseISO(dateString), 'EEEE d MMMM, yyyy • h:mm a', { locale: es });
@@ -66,45 +95,69 @@ const EventDetail = ({ event }: EventDetailProps) => {
     return dateFns.format(dateFns.parseISO(dateString), 'h:mm a');
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!user) {
-      toast({
-        title: "Authentication required",
-        description: "Please log in to register for this event",
-        variant: "destructive",
-      });
+      toast.error("Please log in to register for this event");
       return;
     }
     
-    toast({
-      title: "Registration successful!",
-      description: `You have been registered for ${event.title}`,
-      variant: "default",
-    });
+    setIsRegistering(true);
+    
+    try {
+      await registerForEvent(currentEvent.id);
+      setIsRegistered(true);
+      toast.success("You have been registered for this event!");
+    } catch (error) {
+      console.error("Registration error:", error);
+      toast.error("Failed to register for event. Please try again.");
+    } finally {
+      setIsRegistering(false);
+    }
   };
   
-  const isFull = event.maxParticipants !== undefined && 
-                event.currentParticipants !== undefined && 
-                event.currentParticipants >= event.maxParticipants;
+  const handleCancelRegistration = async () => {
+    if (!user) return;
+    
+    setIsRegistering(true);
+    
+    try {
+      await cancelRegistration(currentEvent.id);
+      setIsRegistered(false);
+      toast.success("Your registration has been canceled");
+    } catch (error) {
+      console.error("Cancellation error:", error);
+      toast.error("Failed to cancel registration. Please try again.");
+    } finally {
+      setIsRegistering(false);
+    }
+  };
+  
+  const isFull = currentEvent.maxParticipants !== undefined && 
+                currentEvent.currentParticipants !== undefined && 
+                currentEvent.currentParticipants >= currentEvent.maxParticipants;
   
   return (
     <Card className="max-w-4xl mx-auto overflow-hidden">
       <div className="h-48 bg-magic-gradient-bg flex items-center justify-center">
-        <Calendar className="h-24 w-24 text-white opacity-30" />
+        {currentEvent.image ? (
+          <img src={currentEvent.image} alt={currentEvent.title} className="w-full h-full object-cover" />
+        ) : (
+          <Calendar className="h-24 w-24 text-white opacity-30" />
+        )}
       </div>
       <CardHeader>
         <div className="flex flex-wrap gap-2 mb-2">
-          <Badge variant="outline" className={typeColors[event.type] || ''}>
-            {typeLabels[event.type]}
+          <Badge variant="outline" className={typeColors[currentEvent.type] || ''}>
+            {typeLabels[currentEvent.type]}
           </Badge>
-          <Badge variant="outline" className={formatColors[event.format] || ''}>
-            {event.format}
+          <Badge variant="outline" className={formatColors[currentEvent.format] || ''}>
+            {currentEvent.format}
           </Badge>
         </div>
-        <CardTitle className="text-2xl">{event.title}</CardTitle>
+        <CardTitle className="text-2xl">{currentEvent.title}</CardTitle>
         <CardDescription className="flex items-center mt-1">
           <StoreIcon className="h-4 w-4 mr-1" />
-          Organized by Magic Store {event.location.city}
+          Organized by Magic Store {currentEvent.location.city}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -114,11 +167,11 @@ const EventDetail = ({ event }: EventDetailProps) => {
               <CalendarClock className="h-5 w-5 mr-3 mt-0.5 text-magic-purple" />
               <div>
                 <div className="font-medium">Date & Time</div>
-                <div>{formatDate(event.startDate)}</div>
-                {event.endDate && (
+                <div>{formatDate(currentEvent.startDate)}</div>
+                {currentEvent.endDate && (
                   <div className="flex items-center text-sm text-muted-foreground mt-1">
                     <Clock className="h-4 w-4 mr-1" />
-                    <span>Until {formatTime(event.endDate)}</span>
+                    <span>Until {formatTime(currentEvent.endDate)}</span>
                   </div>
                 )}
               </div>
@@ -127,10 +180,10 @@ const EventDetail = ({ event }: EventDetailProps) => {
               <MapPin className="h-5 w-5 mr-3 mt-0.5 text-magic-purple" />
               <div>
                 <div className="font-medium">Location</div>
-                <div>{event.location.name}</div>
+                <div>{currentEvent.location.name}</div>
                 <div className="text-sm text-muted-foreground">
-                  {event.location.address}, {event.location.city}
-                  {event.location.postalCode && `, ${event.location.postalCode}`}
+                  {currentEvent.location.address}, {currentEvent.location.city}
+                  {currentEvent.location.postalCode && `, ${currentEvent.location.postalCode}`}
                 </div>
               </div>
             </div>
@@ -141,9 +194,9 @@ const EventDetail = ({ event }: EventDetailProps) => {
               <div>
                 <div className="font-medium">Participants</div>
                 <div className="flex items-center">
-                  {event.currentParticipants !== undefined && event.maxParticipants !== undefined ? (
+                  {currentEvent.currentParticipants !== undefined && currentEvent.maxParticipants !== undefined ? (
                     <>
-                      <span>{event.currentParticipants}/{event.maxParticipants}</span>
+                      <span>{currentEvent.currentParticipants}/{currentEvent.maxParticipants}</span>
                       {isFull ? (
                         <Badge variant="outline" className="ml-2 bg-red-100 text-red-700 border-red-200">
                           Full
@@ -160,12 +213,12 @@ const EventDetail = ({ event }: EventDetailProps) => {
                 </div>
               </div>
             </div>
-            {event.price !== undefined && (
+            {currentEvent.price !== undefined && (
               <div className="flex items-start">
                 <CreditCard className="h-5 w-5 mr-3 mt-0.5 text-magic-purple" />
                 <div>
                   <div className="font-medium">Price</div>
-                  <div>{event.price > 0 ? `${event.price}€` : 'Free'}</div>
+                  <div>{currentEvent.price > 0 ? `${currentEvent.price}€` : 'Free'}</div>
                 </div>
               </div>
             )}
@@ -174,7 +227,7 @@ const EventDetail = ({ event }: EventDetailProps) => {
         
         <div>
           <h3 className="text-lg font-semibold mb-2">Description</h3>
-          <p className="text-muted-foreground whitespace-pre-line">{event.description}</p>
+          <p className="text-muted-foreground whitespace-pre-line">{currentEvent.description}</p>
         </div>
         
         <Separator />
@@ -182,11 +235,32 @@ const EventDetail = ({ event }: EventDetailProps) => {
         <div className="flex items-center justify-between">
           <div className="flex items-center text-sm text-muted-foreground">
             <Calendar className="h-4 w-4 mr-1" />
-            <span>Added on {dateFns.format(dateFns.parseISO(event.createdAt), 'PP')}</span>
+            <span>Added on {dateFns.format(dateFns.parseISO(currentEvent.createdAt), 'PP')}</span>
           </div>
           
-          {!isFull && (
-            <Button onClick={handleRegister} className="px-8">
+          {user ? (
+            isRegistered ? (
+              <Button 
+                onClick={handleCancelRegistration} 
+                variant="outline" 
+                disabled={isRegistering}
+                className="px-8"
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                Cancel Registration
+              </Button>
+            ) : !isFull && (
+              <Button 
+                onClick={handleRegister} 
+                disabled={isRegistering}
+                className="px-8"
+              >
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Register
+              </Button>
+            )
+          ) : (
+            <Button onClick={() => toast.error("Please log in to register")} className="px-8">
               Register
             </Button>
           )}
