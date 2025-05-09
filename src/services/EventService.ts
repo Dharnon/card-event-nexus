@@ -1,5 +1,27 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Event, EventFormat, EventType, EventLocation } from "@/types";
+
+// Helper function to safely convert JSON to EventLocation
+function convertToEventLocation(locationJson: any): EventLocation {
+  if (!locationJson || typeof locationJson !== 'object') {
+    // Return a default location if data is invalid
+    return {
+      name: 'Unknown',
+      address: 'Unknown',
+      city: 'Unknown',
+      country: 'Unknown'
+    };
+  }
+  
+  return {
+    name: locationJson.name || 'Unknown',
+    address: locationJson.address || 'Unknown',
+    city: locationJson.city || 'Unknown',
+    country: locationJson.country || 'Unknown',
+    postalCode: locationJson.postalCode
+  };
+}
 
 export const getEvents = async (): Promise<Event[]> => {
   try {
@@ -18,7 +40,7 @@ export const getEvents = async (): Promise<Event[]> => {
       type: event.type as EventType,
       startDate: event.start_date,
       endDate: event.end_date || undefined,
-      location: event.location as EventLocation,
+      location: convertToEventLocation(event.location),
       price: event.price ? Number(event.price) : undefined,
       maxParticipants: event.max_participants || undefined,
       currentParticipants: event.current_participants || 0,
@@ -53,7 +75,7 @@ export const getEventById = async (id: string): Promise<Event | null> => {
       type: data.type as EventType,
       startDate: data.start_date,
       endDate: data.end_date || undefined,
-      location: data.location as EventLocation,
+      location: convertToEventLocation(data.location),
       price: data.price ? Number(data.price) : undefined,
       maxParticipants: data.max_participants || undefined,
       currentParticipants: data.current_participants || 0,
@@ -113,7 +135,7 @@ export const createEvent = async (event: Omit<Event, 'id' | 'createdBy' | 'creat
       type: data.type as EventType,
       startDate: data.start_date,
       endDate: data.end_date || undefined,
-      location: data.location as EventLocation,
+      location: convertToEventLocation(data.location),
       price: data.price ? Number(data.price) : undefined,
       maxParticipants: data.max_participants || undefined,
       currentParticipants: data.current_participants || 0,
@@ -173,7 +195,7 @@ export const updateEvent = async (id: string, updates: Partial<Event>): Promise<
       type: data.type as EventType,
       startDate: data.start_date,
       endDate: data.end_date || undefined,
-      location: data.location as EventLocation,
+      location: convertToEventLocation(data.location),
       price: data.price ? Number(data.price) : undefined,
       maxParticipants: data.max_participants || undefined,
       currentParticipants: data.current_participants || 0,
