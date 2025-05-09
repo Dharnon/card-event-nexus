@@ -213,7 +213,7 @@ const SideboardGuideComponent: React.FC<SideboardGuideProps> = ({
           </div>
           
           <div className="flex justify-end">
-            <Button onClick={handleSave}>Guardar guía de sideboard</Button>
+            <Button onClick={handleSave} className="py-0 my-[15px]">Guardar guía de sideboard</Button>
           </div>
         </div> : <div className="space-y-6">
           <Card>
