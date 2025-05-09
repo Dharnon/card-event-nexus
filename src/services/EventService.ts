@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Event, EventFormat, EventType, EventLocation } from "@/types";
 
@@ -75,6 +74,15 @@ export const createEvent = async (event: Omit<Event, 'id' | 'createdBy' | 'creat
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) throw new Error('User not authenticated');
     
+    // Convert EventLocation to a JSON object suitable for Supabase
+    const locationJson = {
+      name: event.location.name,
+      address: event.location.address,
+      city: event.location.city,
+      country: event.location.country,
+      postalCode: event.location.postalCode
+    };
+    
     const { data, error } = await supabase
       .from('events')
       .insert({
@@ -84,7 +92,7 @@ export const createEvent = async (event: Omit<Event, 'id' | 'createdBy' | 'creat
         type: event.type,
         start_date: event.startDate,
         end_date: event.endDate,
-        location: event.location,
+        location: locationJson,
         price: event.price,
         max_participants: event.maxParticipants,
         current_participants: event.currentParticipants || 0,
@@ -132,7 +140,16 @@ export const updateEvent = async (id: string, updates: Partial<Event>): Promise<
     if (updates.type !== undefined) dbUpdates.type = updates.type;
     if (updates.startDate !== undefined) dbUpdates.start_date = updates.startDate;
     if (updates.endDate !== undefined) dbUpdates.end_date = updates.endDate;
-    if (updates.location !== undefined) dbUpdates.location = updates.location;
+    if (updates.location !== undefined) {
+      // Convert EventLocation to a JSON object
+      dbUpdates.location = {
+        name: updates.location.name,
+        address: updates.location.address,
+        city: updates.location.city,
+        country: updates.location.country,
+        postalCode: updates.location.postalCode
+      };
+    }
     if (updates.price !== undefined) dbUpdates.price = updates.price;
     if (updates.maxParticipants !== undefined) dbUpdates.max_participants = updates.maxParticipants;
     if (updates.currentParticipants !== undefined) dbUpdates.current_participants = updates.currentParticipants;
