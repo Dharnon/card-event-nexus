@@ -110,9 +110,9 @@ const AuthPage = () => {
           </CardDescription>
         </CardHeader>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-2 px-[28px] mx-0">
             <TabsTrigger value="login">Login</TabsTrigger>
-            <TabsTrigger value="register">Register</TabsTrigger>
+            <TabsTrigger value="register" className="px-px">Register</TabsTrigger>
           </TabsList>
           <TabsContent value="login">
             <form onSubmit={handleSubmit}>
