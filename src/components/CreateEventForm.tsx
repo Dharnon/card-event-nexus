@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import * as dateFns from 'date-fns';
+import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CalendarIcon, Clock } from 'lucide-react';
 import { 
@@ -234,7 +234,7 @@ const CreateEventForm = () => {
                     <SelectContent>
                       {typeOptions.map((type) => (
                         <SelectItem key={type} value={type}>
-                          {type}
+                          {typeLabels[type]}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -270,7 +270,7 @@ const CreateEventForm = () => {
                           )}
                         >
                           {field.value ? (
-                            dateFns.format(field.value, "PPP", { locale: es })
+                            format(field.value, "PPP")
                           ) : (
                             <span>Pick a date</span>
                           )}
