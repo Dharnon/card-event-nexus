@@ -179,7 +179,7 @@ const DeckManager = () => {
           </div>
         </div>
         
-        <Card className="px-[20px]">
+        <Card className="px-0">
           <CardHeader className="pb-2">
             <div className="flex flex-col md:flex-row gap-4 items-start">
               {selectedDeck.cardBackgroundUrl && <div className="md:w-1/4 w-full">
@@ -199,7 +199,7 @@ const DeckManager = () => {
           </CardHeader>
           
           <Tabs value={selectedTab} onValueChange={tab => setSelectedTab(tab as any)} className="mt-4">
-            <TabsList className="grid w-full max-w-md grid-cols-4">
+            <TabsList className="grid w-full max-w-md grid-cols-4 mx-[23px]">
               <TabsTrigger value="cards">Cards</TabsTrigger>
               <TabsTrigger value="sideboard">Sideboard</TabsTrigger>
               <TabsTrigger value="photos">Photos</TabsTrigger>
@@ -208,7 +208,7 @@ const DeckManager = () => {
             
             <TabsContent value="cards">
               <div className="mt-4">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-4 mx-[35px]">
                   <div className="flex items-center gap-4">
                     <h3 className="text-lg font-medium">
                       {viewSideboard ? 'Sideboard' : 'Maindeck'}
@@ -222,7 +222,7 @@ const DeckManager = () => {
                   if (selectedCard && selectedCard.imageUrl) {
                     handleSetCardAsBackground(selectedDeck.id, selectedCard.imageUrl);
                   }
-                }} disabled={!selectedDeck.cards.some(card => card.imageUrl)}>
+                }} disabled={!selectedDeck.cards.some(card => card.imageUrl)} className="text-base text-left">
                     <ImageIcon className="h-4 w-4 mr-2" />
                     Set card as cover
                   </Button>

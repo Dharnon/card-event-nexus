@@ -53,7 +53,7 @@ const CardList: React.FC<CardListProps> = ({
     return "";
   };
   return <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center mx-[40px]">
         <div className="text-sm text-muted-foreground">
           {sortedCards.reduce((acc, card) => acc + card.quantity, 0)} cards • {sortedCards.length} unique
         </div>
@@ -69,7 +69,7 @@ const CardList: React.FC<CardListProps> = ({
         </div>
       </div>
       
-      <ScrollArea className="h-[400px] rounded-md border p-4">
+      <ScrollArea className="h-[400px] rounded-md border p-4 px-[28px] mx-0">
         {viewMode === 'text' ? <div className="space-y-2">
             {sortedCards.map(card => <div key={card.id} className={`p-2 rounded-md border ${onCardSelect ? 'cursor-pointer hover:bg-muted/50' : ''} ${selectedCardUrl === card.imageUrl ? 'bg-muted' : ''}`} onClick={() => onCardSelect && onCardSelect(card)} onMouseEnter={() => setHoveredCard(card)} onMouseLeave={() => setHoveredCard(null)}>
                 <div className="flex items-center justify-between">
