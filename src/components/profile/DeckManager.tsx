@@ -199,7 +199,7 @@ const DeckManager = () => {
           </CardHeader>
           
           <Tabs value={selectedTab} onValueChange={tab => setSelectedTab(tab as any)} className="mt-4">
-            <TabsList className="grid w-full max-w-md grid-cols-4">
+            <TabsList className="grid w-full max-w-md grid-cols-4 px-[7px]">
               <TabsTrigger value="cards">Cards</TabsTrigger>
               <TabsTrigger value="sideboard">Sideboard</TabsTrigger>
               <TabsTrigger value="photos">Photos</TabsTrigger>
