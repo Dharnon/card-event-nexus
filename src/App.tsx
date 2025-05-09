@@ -14,6 +14,7 @@ import EventDetailPage from "./pages/EventDetailPage";
 import CreateEventPage from "./pages/CreateEventPage";
 import LoginPage from "./pages/LoginPage";
 import AuthPage from "./pages/AuthPage";
+import AuthCallbackPage from "./pages/AuthCallbackPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import ProfilePage from "./pages/ProfilePage";
 import NotFound from "./pages/NotFound";
@@ -38,6 +39,7 @@ const App = () => {
                   <Route path="/create-event" element={<CreateEventPage />} />
                   <Route path="/login" element={<AuthPage />} />
                   <Route path="/auth" element={<AuthPage />} />
+                  <Route path="/auth/callback" element={<AuthCallbackPage />} />
                   <Route path="/admin" element={<AdminDashboard />} />
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="*" element={<NotFound />} />

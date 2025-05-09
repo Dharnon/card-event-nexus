@@ -10,16 +10,24 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   logout: () => void;
   register: (name: string, email: string, password: string, role: UserRole) => Promise<void>;
+  resendConfirmationEmail: (email: string) => Promise<void>;
+  isAuthenticating: boolean;
+  authError: string | null;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   isLoading: true,
   login: async () => {},
+  loginWithGoogle: async () => {},
   logout: () => {},
   register: async () => {},
+  resendConfirmationEmail: async () => {},
+  isAuthenticating: false,
+  authError: null,
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -27,6 +35,8 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -48,8 +58,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(currentUser);
           setIsLoading(false);
           
-          // If we're on the login page, redirect to home
-          if (location.pathname === '/login') {
+          // If we're on the login or auth page, redirect to home
+          if (location.pathname.includes('/login') || location.pathname.includes('/auth')) {
             setTimeout(() => {
               navigate('/');
             }, 0);
@@ -59,8 +69,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setIsLoading(false);
           
           // If we're on a protected page, redirect to login
-          const publicRoutes = ['/login', '/register'];
-          if (!publicRoutes.includes(location.pathname)) {
+          const publicRoutes = ['/login', '/auth', '/auth/callback', '/register'];
+          const isPublicRoute = publicRoutes.some(route => location.pathname.includes(route));
+          
+          if (!isPublicRoute) {
             // Don't redirect immediately to prevent loops
             setTimeout(() => {
               navigate('/login');
@@ -82,15 +94,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [navigate, location]);
 
   const login = async (email: string, password: string) => {
-    setIsLoading(true);
+    setAuthError(null);
+    setIsAuthenticating(true);
     try {
       await AuthService.login(email, password);
       toast.success("Welcome back!");
     } catch (error: any) {
-      toast.error(error.message || "Login failed. Please try again.");
+      const errorMessage = error.message || "Login failed. Please try again.";
+      setAuthError(errorMessage);
+      toast.error(errorMessage);
       throw error;
     } finally {
-      setIsLoading(false);
+      setIsAuthenticating(false);
+    }
+  };
+
+  const loginWithGoogle = async () => {
+    setAuthError(null);
+    setIsAuthenticating(true);
+    try {
+      await AuthService.loginWithGoogle();
+      // No success message here as the page will redirect to Google
+    } catch (error: any) {
+      const errorMessage = error.message || "Google login failed. Please try again.";
+      setAuthError(errorMessage);
+      toast.error(errorMessage);
+      setIsAuthenticating(false);
+      throw error;
     }
   };
 
@@ -99,20 +129,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const register = async (name: string, email: string, password: string, role: UserRole) => {
-    setIsLoading(true);
+    setAuthError(null);
+    setIsAuthenticating(true);
     try {
       await AuthService.register(name, email, password, role);
-      toast.success("Registration successful!");
+      toast.success("Registration successful! Please check your email to confirm your account.");
+      // Redirect to a confirmation page or show confirmation message
+      navigate('/login?verification=pending');
     } catch (error: any) {
-      toast.error(error.message || "Registration failed. Please try again.");
+      const errorMessage = error.message || "Registration failed. Please try again.";
+      setAuthError(errorMessage);
+      toast.error(errorMessage);
       throw error;
     } finally {
-      setIsLoading(false);
+      setIsAuthenticating(false);
+    }
+  };
+
+  const resendConfirmationEmail = async (email: string) => {
+    try {
+      await AuthService.resendConfirmationEmail(email);
+      toast.success("Verification email has been sent again. Please check your inbox.");
+    } catch (error: any) {
+      const errorMessage = error.message || "Failed to resend verification email. Please try again.";
+      toast.error(errorMessage);
+      throw error;
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, register }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      isLoading, 
+      login, 
+      loginWithGoogle,
+      logout, 
+      register, 
+      resendConfirmationEmail,
+      isAuthenticating,
+      authError
+    }}>
       {children}
     </AuthContext.Provider>
   );

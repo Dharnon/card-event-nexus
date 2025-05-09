@@ -38,11 +38,44 @@ export const login = async (email: string, password: string) => {
       password,
     });
     
-    if (error) throw error;
+    if (error) {
+      if (error.message.includes("Email not confirmed")) {
+        throw new Error("Please check your inbox and confirm your email address before logging in.");
+      }
+      throw error;
+    }
     
     return data.user;
   } catch (error: any) {
     console.error("Login error:", error.message);
+    throw error;
+  }
+};
+
+export const loginWithGoogle = async () => {
+  try {
+    // Clean up existing state
+    cleanupAuthState();
+    
+    // Attempt global sign out
+    try {
+      await supabase.auth.signOut({ scope: 'global' });
+    } catch (err) {
+      // Continue even if this fails
+    }
+    
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin + '/auth/callback',
+      }
+    });
+    
+    if (error) throw error;
+    
+    return data;
+  } catch (error: any) {
+    console.error("Google login error:", error.message);
     throw error;
   }
 };
@@ -101,19 +134,28 @@ export const register = async (name: string, email: string, password: string, ro
   }
 };
 
+export const resendConfirmationEmail = async (email: string) => {
+  try {
+    const { data, error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+    });
+    
+    if (error) throw error;
+    
+    return data;
+  } catch (error: any) {
+    console.error("Error resending confirmation email:", error.message);
+    throw error;
+  }
+};
+
 export const getCurrentUser = async (): Promise<User | null> => {
   try {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) return null;
     
     const { id, email, user_metadata } = session.user;
-    
-    // Retrieve user profile data if needed
-    // const { data: profile } = await supabase
-    //   .from('profiles')
-    //   .select('*')
-    //   .eq('id', id)
-    //   .single();
     
     const user: User = {
       id,
