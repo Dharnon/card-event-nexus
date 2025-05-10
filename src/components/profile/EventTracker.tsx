@@ -1,8 +1,7 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getUserEvents, createUserEvent, updateUserEvent, deleteUserEvent, createGameResult, getUserGames, getUserDecks } from '@/services/ProfileService';
-import { UserEvent } from '@/types';
+import { UserEvent, GameResult } from '@/types';
 import { toast } from "sonner";
 import EventForm from './EventForm';
 import GameResultForm from './GameResultForm';
