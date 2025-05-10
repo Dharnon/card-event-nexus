@@ -74,7 +74,7 @@ const Navbar = () => {
             </Link>
             
             {user?.role === 'store' && (
-              <Link to="/create-event" className={`nav-link ${isActive('/create-event') ? 'active' : ''}`}>
+              <Link to="/events/create" className={`nav-link ${isActive('/events/create') ? 'active' : ''}`}>
                 Create Event
               </Link>
             )}
@@ -121,7 +121,7 @@ const Navbar = () => {
                   </DropdownMenuItem>
                   {user.role === 'store' && (
                     <DropdownMenuItem asChild>
-                      <Link to="/my-events" className="cursor-pointer">My Events</Link>
+                      <Link to="/store" className="cursor-pointer">Store Dashboard</Link>
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator />
@@ -182,8 +182,8 @@ const Navbar = () => {
             
             {user?.role === 'store' && (
               <Link 
-                to="/create-event" 
-                className={`px-3 py-3 rounded-md text-base font-medium ${isActive('/create-event') ? 'text-primary bg-primary/10' : 'hover:bg-primary/5'}`}
+                to="/events/create" 
+                className={`px-3 py-3 rounded-md text-base font-medium ${isActive('/events/create') ? 'text-primary bg-primary/10' : 'hover:bg-primary/5'}`}
                 onClick={() => setIsMenuOpen(false)}
               >
                 Create Event
@@ -229,11 +229,11 @@ const Navbar = () => {
                 </Link>
                 {user.role === 'store' && (
                   <Link 
-                    to="/my-events" 
+                    to="/store" 
                     className="px-3 py-3 rounded-md text-base font-medium hover:bg-primary/5"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    My Events
+                    Store Dashboard
                   </Link>
                 )}
                 <button
