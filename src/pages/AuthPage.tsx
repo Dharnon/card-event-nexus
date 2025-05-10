@@ -128,7 +128,7 @@ const AuthPage = () => {
                     <Mail className="h-4 w-4" />
                     Email
                   </Label>
-                  <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} required className="transition-all bg-zinc-800" />
+                  <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} required className="transition-all bg-inherit" />
                 </div>
                 
                 {/* Password Field */}
