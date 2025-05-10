@@ -74,9 +74,14 @@ const Navbar = () => {
             </Link>
             
             {user?.role === 'store' && (
-              <Link to="/events/create" className={`nav-link ${isActive('/events/create') ? 'active' : ''}`}>
-                Create Event
-              </Link>
+              <>
+                <Link to="/events/create" className={`nav-link ${isActive('/events/create') ? 'active' : ''}`}>
+                  Create Event
+                </Link>
+                <Link to="/store" className={`nav-link ${isActive('/store') ? 'active' : ''}`}>
+                  My Events
+                </Link>
+              </>
             )}
             
             {user?.role === 'admin' && (
@@ -120,9 +125,14 @@ const Navbar = () => {
                     <Link to="/profile" className="cursor-pointer">Profile</Link>
                   </DropdownMenuItem>
                   {user.role === 'store' && (
-                    <DropdownMenuItem asChild>
-                      <Link to="/store" className="cursor-pointer">Store Dashboard</Link>
-                    </DropdownMenuItem>
+                    <>
+                      <DropdownMenuItem asChild>
+                        <Link to="/store" className="cursor-pointer">Store Dashboard</Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/events/create" className="cursor-pointer">Create Event</Link>
+                      </DropdownMenuItem>
+                    </>
                   )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={logout} className="text-destructive focus:text-destructive cursor-pointer">
@@ -181,13 +191,22 @@ const Navbar = () => {
             </Link>
             
             {user?.role === 'store' && (
-              <Link 
-                to="/events/create" 
-                className={`px-3 py-3 rounded-md text-base font-medium ${isActive('/events/create') ? 'text-primary bg-primary/10' : 'hover:bg-primary/5'}`}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Create Event
-              </Link>
+              <>
+                <Link 
+                  to="/events/create" 
+                  className={`px-3 py-3 rounded-md text-base font-medium ${isActive('/events/create') ? 'text-primary bg-primary/10' : 'hover:bg-primary/5'}`}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Create Event
+                </Link>
+                <Link 
+                  to="/store" 
+                  className={`px-3 py-3 rounded-md text-base font-medium ${isActive('/store') ? 'text-primary bg-primary/10' : 'hover:bg-primary/5'}`}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  My Events
+                </Link>
+              </>
             )}
             
             {user?.role === 'admin' && (
@@ -228,13 +247,22 @@ const Navbar = () => {
                   Profile
                 </Link>
                 {user.role === 'store' && (
-                  <Link 
-                    to="/store" 
-                    className="px-3 py-3 rounded-md text-base font-medium hover:bg-primary/5"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Store Dashboard
-                  </Link>
+                  <>
+                    <Link 
+                      to="/store" 
+                      className="px-3 py-3 rounded-md text-base font-medium hover:bg-primary/5"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Store Dashboard
+                    </Link>
+                    <Link 
+                      to="/events/create" 
+                      className="px-3 py-3 rounded-md text-base font-medium hover:bg-primary/5"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Create Event
+                    </Link>
+                  </>
                 )}
                 <button
                   onClick={() => {

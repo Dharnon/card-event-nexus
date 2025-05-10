@@ -54,6 +54,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const loadEvents = async () => {
     try {
+      setLoading(true);
       const eventsData = await getEvents();
       setEvents(eventsData);
       setError(null);
@@ -136,8 +137,9 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const addEvent = async (event: Omit<Event, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
       const newEvent = await createEvent(event);
+      await loadEvents(); // Refresh events to get the latest data
       return newEvent;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create event:', error);
       toast.error('Failed to create event. Please try again.');
       throw error;
@@ -148,8 +150,9 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const updateEventData = async (id: string, updates: Partial<Event>) => {
     try {
       const updatedEvent = await updateEvent(id, updates);
+      await loadEvents(); // Refresh events to get the latest data
       return updatedEvent;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to update event:', error);
       toast.error('Failed to update event. Please try again.');
       throw error;
@@ -160,8 +163,9 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const deleteEventById = async (id: string) => {
     try {
       await deleteEvent(id);
+      await loadEvents(); // Refresh events to get the latest data
       toast.success('Event deleted successfully.');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to delete event:', error);
       toast.error('Failed to delete event. Please try again.');
       throw error;

@@ -100,6 +100,7 @@ const CreateEventForm = ({ eventId, initialEvent }: CreateEventFormProps) => {
     }
     
     setIsSubmitting(true);
+    toast.loading(isEditing ? 'Updating event...' : 'Creating event...');
     
     try {
       // Upload image if one is selected
@@ -141,18 +142,27 @@ const CreateEventForm = ({ eventId, initialEvent }: CreateEventFormProps) => {
       
       if (isEditing && eventId) {
         // Update existing event
-        await updateEventData(eventId, eventData);
-        toast.success('Event updated successfully');
+        const updated = await updateEventData(eventId, eventData);
+        toast.dismiss();
+        toast.success('Event updated successfully', {
+          description: `Event "${updated.title}" has been updated in the database.`
+        });
         navigate(`/events/${eventId}`);
       } else {
         // Create new event
         const event = await addEvent(eventData);
-        toast.success('Event created successfully');
+        toast.dismiss();
+        toast.success('Event created successfully', {
+          description: `Event "${event.title}" has been added to the database.`
+        });
         navigate(`/events/${event.id}`);
       }
     } catch (error) {
       console.error('Error saving event:', error);
-      toast.error('There was an error saving your event');
+      toast.dismiss();
+      toast.error('There was an error saving your event', {
+        description: error instanceof Error ? error.message : 'Please try again later'
+      });
     } finally {
       setIsSubmitting(false);
     }

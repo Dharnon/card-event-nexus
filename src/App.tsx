@@ -11,7 +11,7 @@ import { AuthProvider } from './context/AuthContext';
 import { EventProvider } from './context/EventContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { LanguageProvider } from './context/LanguageContext';
-import { Toaster } from '@/components/ui/toaster';
+import { Toaster } from 'sonner';
 import AuthPage from './pages/AuthPage';
 import AuthCallbackPage from './pages/AuthCallbackPage';
 import LoginPage from './pages/LoginPage';
@@ -48,7 +48,7 @@ function App() {
                   <Route path="/admin/users" element={<AdminUsersPage />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
-                <Toaster />
+                <Toaster richColors closeButton position="top-right" />
               </EventProvider>
             </AuthProvider>
           </LanguageProvider>

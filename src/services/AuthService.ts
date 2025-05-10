@@ -45,6 +45,10 @@ export const login = async (email: string, password: string) => {
       throw error;
     }
     
+    toast.success('Logged in successfully!', {
+      description: `Welcome back, ${data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'User'}`
+    });
+    
     return data.user;
   } catch (error: any) {
     console.error("Login error:", error.message);
@@ -92,6 +96,8 @@ export const logout = async () => {
       // Ignore errors
     }
     
+    toast.success('Logged out successfully');
+    
     // Force page reload for a clean state
     window.location.href = '/login';
   } catch (error: any) {
@@ -113,19 +119,27 @@ export const register = async (name: string, email: string, password: string, ro
       // Continue even if this fails
     }
     
+    // Setup custom email template options
+    const emailOptions = {
+      emailRedirectTo: window.location.origin + '/auth/callback',
+      data: {
+        name,
+        role,
+      }
+    };
+    
     // Register new user
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: {
-          name,
-          role,
-        }
-      }
+      options: emailOptions
     });
     
     if (error) throw error;
+    
+    toast.success('Registration successful!', {
+      description: 'Please check your email to confirm your account.'
+    });
     
     return data.user;
   } catch (error: any) {
@@ -139,13 +153,23 @@ export const resendConfirmationEmail = async (email: string) => {
     const { data, error } = await supabase.auth.resend({
       type: 'signup',
       email,
+      options: {
+        emailRedirectTo: window.location.origin + '/auth/callback'
+      }
     });
     
     if (error) throw error;
     
+    toast.success('Confirmation email sent', {
+      description: 'Please check your email to confirm your account.'
+    });
+    
     return data;
   } catch (error: any) {
     console.error("Error resending confirmation email:", error.message);
+    toast.error('Failed to send confirmation email', {
+      description: error.message
+    });
     throw error;
   }
 };
