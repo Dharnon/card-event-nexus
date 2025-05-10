@@ -137,7 +137,7 @@ const AuthPage = () => {
                     <Lock className="h-4 w-4" />
                     Password
                   </Label>
-                  <Input id="password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required className="transition-all bg-zinc-800" />
+                  <Input id="password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required className="transition-all bg-inherit" />
                 </div>
                 
                 {/* Google Login Button */}
