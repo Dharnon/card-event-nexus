@@ -1,12 +1,11 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { CalendarIcon, Clock } from 'lucide-react';
+import { CalendarIcon, Clock, ImagePlus } from 'lucide-react';
 import { 
   Form,
   FormControl,
@@ -22,11 +21,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { useEvents } from '@/context/EventContext';
 import { EventFormat, EventType, Event } from '@/types';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const formatOptions: EventFormat[] = [
   'Standard', 'Modern', 'Legacy', 'Commander', 'Pioneer', 'Vintage', 'Draft', 'Sealed', 'Prerelease', 'Other'
@@ -62,24 +62,54 @@ const formSchema = z.object({
   address: z.string().min(5, { message: 'Address is required' }),
   price: z.string().optional(),
   maxParticipants: z.string().optional(),
+  featured: z.boolean().default(false),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
-const CreateEventForm = () => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { user } = useAuth();
-  const { addEvent } = useEvents();
-  const { toast } = useToast();
-  const navigate = useNavigate();
+interface CreateEventFormProps {
+  eventId?: string;
+  initialEvent?: Event;
+}
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
+const CreateEventForm = ({ eventId, initialEvent }: CreateEventFormProps) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(initialEvent?.image || null);
+  const { user } = useAuth();
+  const { addEvent, updateEventData } = useEvents();
+  const navigate = useNavigate();
+  const isEditing = !!eventId;
+
+  // Prepare default values based on the initial event if we're editing
+  const getDefaultValues = (): FormValues => {
+    if (initialEvent) {
+      const startDate = new Date(initialEvent.startDate);
+      
+      return {
+        title: initialEvent.title,
+        description: initialEvent.description,
+        format: initialEvent.format,
+        type: initialEvent.type,
+        date: startDate,
+        time: format(startDate, 'HH:mm'),
+        duration: initialEvent.endDate ? 
+          String(Math.round((new Date(initialEvent.endDate).getTime() - startDate.getTime()) / (1000 * 60 * 60))) : 
+          '4',
+        locationName: initialEvent.location.name,
+        city: initialEvent.location.city,
+        address: initialEvent.location.address,
+        price: initialEvent.price !== undefined ? String(initialEvent.price) : '',
+        maxParticipants: initialEvent.maxParticipants !== undefined ? String(initialEvent.maxParticipants) : '',
+        featured: initialEvent.featured || false,
+      };
+    }
+    
+    return {
       title: '',
       description: '',
       format: 'Standard',
-      type: 'tournament',  // Fixed: now uses lowercase 'tournament' to match EventType
+      type: 'tournament',
       time: '18:00',
       duration: '4',
       locationName: user?.role === 'store' ? `Magic Store ${user.name}` : '',
@@ -87,22 +117,80 @@ const CreateEventForm = () => {
       address: '',
       price: '10',
       maxParticipants: '32',
-    },
+      featured: false,
+    };
+  };
+
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: getDefaultValues(),
   });
+
+  // Handle image selection
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setImageFile(file);
+      
+      // Create a preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  
+  // Upload image to Supabase Storage
+  const uploadImage = async (file: File): Promise<string | null> => {
+    try {
+      // Check if storage bucket exists
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const eventsBucket = buckets?.find(b => b.name === 'events');
+      
+      // Create the bucket if it doesn't exist
+      if (!eventsBucket) {
+        await supabase.storage.createBucket('events', { public: true });
+      }
+      
+      // Upload the file
+      const fileName = `${Date.now()}-${file.name}`;
+      const { data, error } = await supabase.storage
+        .from('events')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+        
+      if (error) throw error;
+      
+      // Get public URL
+      const { data: publicURL } = supabase.storage
+        .from('events')
+        .getPublicUrl(data.path);
+        
+      return publicURL.publicUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      return null;
+    }
+  };
 
   const onSubmit = async (values: FormValues) => {
     if (!user) {
-      toast({
-        title: 'Authentication required',
-        description: 'You must be logged in as a store to create an event',
-        variant: 'destructive',
-      });
+      toast.error('You must be logged in to create an event');
       return;
     }
     
     setIsSubmitting(true);
     
     try {
+      // Upload image if one is selected
+      let imageUrl = initialEvent?.image || null;
+      if (imageFile) {
+        imageUrl = await uploadImage(imageFile);
+      }
+      
       // Parse date and time
       const startDate = new Date(values.date);
       const [hours, minutes] = values.time.split(':').map(Number);
@@ -113,7 +201,7 @@ const CreateEventForm = () => {
       endDate.setHours(endDate.getHours() + Number(values.duration));
       
       // Create event object
-      const newEvent: Omit<Event, 'id' | 'createdAt' | 'updatedAt'> = {
+      const eventData: Omit<Event, 'id' | 'createdAt' | 'updatedAt'> = {
         title: values.title,
         description: values.description,
         format: values.format,
@@ -128,25 +216,26 @@ const CreateEventForm = () => {
         },
         price: values.price ? Number(values.price) : undefined,
         maxParticipants: values.maxParticipants ? Number(values.maxParticipants) : undefined,
-        currentParticipants: 0,
+        currentParticipants: initialEvent?.currentParticipants || 0,
+        image: imageUrl,
+        featured: values.featured,
         createdBy: user.id,
       };
       
-      const event = await addEvent(newEvent);
-      
-      toast({
-        title: 'Event created',
-        description: 'Your event has been successfully created',
-      });
-      
-      navigate(`/events/${event.id}`);
+      if (isEditing && eventId) {
+        // Update existing event
+        await updateEventData(eventId, eventData);
+        toast.success('Event updated successfully');
+        navigate(`/events/${eventId}`);
+      } else {
+        // Create new event
+        const event = await addEvent(eventData);
+        toast.success('Event created successfully');
+        navigate(`/events/${event.id}`);
+      }
     } catch (error) {
-      console.error('Error creating event:', error);
-      toast({
-        title: 'Error',
-        description: 'There was an error creating your event',
-        variant: 'destructive',
-      });
+      console.error('Error saving event:', error);
+      toast.error('There was an error saving your event');
     } finally {
       setIsSubmitting(false);
     }
@@ -161,59 +250,66 @@ const CreateEventForm = () => {
             <p className="text-muted-foreground">Basic details about your event</p>
           </div>
           
-          <FormField
-            control={form.control}
-            name="title"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Event Title</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g. Modern Championship" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Description</FormLabel>
-                <FormControl>
-                  <Textarea 
-                    placeholder="Provide details about your event..." 
-                    className="min-h-32" 
-                    {...field} 
+          <div className="space-y-4">
+            <div className="flex flex-col space-y-2">
+              <label htmlFor="image" className="text-sm font-medium">
+                Event Image
+              </label>
+              <div className="flex items-center space-x-4">
+                {imagePreview ? (
+                  <div className="relative w-24 h-24 rounded overflow-hidden border">
+                    <img 
+                      src={imagePreview} 
+                      alt="Event preview" 
+                      className="w-full h-full object-cover"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-1 right-1 w-6 h-6 p-0"
+                      onClick={() => {
+                        setImagePreview(null);
+                        setImageFile(null);
+                      }}
+                    >
+                      ✕
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="w-24 h-24 border rounded flex items-center justify-center text-muted-foreground">
+                    <ImagePlus className="h-8 w-8" />
+                  </div>
+                )}
+                <div className="flex-1">
+                  <Input
+                    id="image"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="text-sm text-gray-500
+                      file:mr-4 file:py-2 file:px-4
+                      file:rounded file:border-0
+                      file:text-sm file:font-semibold
+                      file:bg-primary file:text-primary-foreground
+                      hover:file:bg-primary/90"
                   />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Recommended: 1280 x 720px (16:9 ratio)
+                  </p>
+                </div>
+              </div>
+            </div>
+            
             <FormField
               control={form.control}
-              name="format"
+              name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Format</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a format" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {formatOptions.map((format) => (
-                        <SelectItem key={format} value={format}>
-                          {format}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormLabel>Event Title</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. Modern Championship" {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -221,28 +317,73 @@ const CreateEventForm = () => {
             
             <FormField
               control={form.control}
-              name="type"
+              name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Event Type</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select event type" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {typeOptions.map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {typeLabels[type]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormLabel>Description</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="Provide details about your event..." 
+                      className="min-h-32" 
+                      {...field} 
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="format"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Format</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a format" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {formatOptions.map((format) => (
+                          <SelectItem key={format} value={format}>
+                            {format}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Event Type</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select event type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {typeOptions.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {typeLabels[type]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
           </div>
         </div>
         
@@ -428,11 +569,36 @@ const CreateEventForm = () => {
                 </FormItem>
               )}
             />
+
+            {user?.role === 'admin' && (
+              <FormField
+                control={form.control}
+                name="featured"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 md:col-span-2 rounded-md border p-4">
+                    <FormControl>
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 mt-1 text-primary border-primary rounded"
+                        checked={field.value}
+                        onChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>Featured Event</FormLabel>
+                      <FormDescription>
+                        Featured events appear prominently on the homepage
+                      </FormDescription>
+                    </div>
+                  </FormItem>
+                )}
+              />
+            )}
           </div>
         </div>
         
         <Button type="submit" className="w-full" disabled={isSubmitting}>
-          {isSubmitting ? 'Creating Event...' : 'Create Event'}
+          {isSubmitting ? (isEditing ? 'Updating Event...' : 'Creating Event...') : (isEditing ? 'Update Event' : 'Create Event')}
         </Button>
       </form>
     </Form>

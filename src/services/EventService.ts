@@ -91,6 +91,22 @@ export const getEventById = async (id: string): Promise<Event | null> => {
   }
 };
 
+export const getRegistrations = async (eventId: string): Promise<any[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('event_registrations')
+      .select('*')
+      .eq('event_id', eventId);
+    
+    if (error) throw error;
+    
+    return data;
+  } catch (error) {
+    console.error(`Error fetching registrations for event ${eventId}:`, error);
+    throw error;
+  }
+};
+
 export const createEvent = async (event: Omit<Event, 'id' | 'createdBy' | 'createdAt' | 'updatedAt'>): Promise<Event> => {
   try {
     const { data: userData } = await supabase.auth.getUser();
@@ -327,4 +343,42 @@ export const subscribeToEventWithRegistrations = (eventId: string, callback: (ev
   return () => {
     supabase.removeChannel(channel);
   };
+};
+
+// Get events created by the current store
+export const getStoreEvents = async (): Promise<Event[]> => {
+  try {
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) throw new Error('User not authenticated');
+    
+    const { data, error } = await supabase
+      .from('events')
+      .select('*')
+      .eq('created_by', userData.user.id)
+      .order('start_date', { ascending: true });
+    
+    if (error) throw error;
+    
+    return data.map(event => ({
+      id: event.id,
+      title: event.title,
+      description: event.description || '',
+      format: event.format as EventFormat,
+      type: event.type as EventType,
+      startDate: event.start_date,
+      endDate: event.end_date || undefined,
+      location: convertToEventLocation(event.location),
+      price: event.price ? Number(event.price) : undefined,
+      maxParticipants: event.max_participants || undefined,
+      currentParticipants: event.current_participants || 0,
+      image: event.image || undefined,
+      featured: event.featured || false,
+      createdBy: event.created_by,
+      createdAt: event.created_at,
+      updatedAt: event.updated_at
+    }));
+  } catch (error) {
+    console.error('Error fetching store events:', error);
+    throw error;
+  }
 };

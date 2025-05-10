@@ -1,54 +1,59 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/context/AuthContext";
-import { EventProvider } from "@/context/EventContext";
-import { ThemeProvider } from "@/context/ThemeContext";
-import HomePage from "./pages/HomePage";
-import EventsPage from "./pages/EventsPage";
-import CalendarPage from "./pages/CalendarPage";
-import EventDetailPage from "./pages/EventDetailPage";
-import CreateEventPage from "./pages/CreateEventPage";
-import LoginPage from "./pages/LoginPage";
-import AuthPage from "./pages/AuthPage";
-import AuthCallbackPage from "./pages/AuthCallbackPage";
-import AdminDashboard from "./pages/AdminDashboard";
-import ProfilePage from "./pages/ProfilePage";
-import NotFound from "./pages/NotFound";
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import HomePage from './pages/HomePage';
+import EventsPage from './pages/EventsPage';
+import EventDetailPage from './pages/EventDetailPage';
+import ProfilePage from './pages/ProfilePage';
+import CreateEventPage from './pages/CreateEventPage';
+import CalendarPage from './pages/CalendarPage';
+import NotFound from './pages/NotFound';
+import { AuthProvider } from './context/AuthContext';
+import { EventProvider } from './context/EventContext';
+import { ThemeProvider } from './context/ThemeContext';
+import { LanguageProvider } from './context/LanguageContext';
+import { Toaster } from '@/components/ui/toaster';
+import AuthPage from './pages/AuthPage';
+import AuthCallbackPage from './pages/AuthCallbackPage';
+import LoginPage from './pages/LoginPage';
+import StoreProfilePage from './pages/StoreProfilePage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
+import AdminUsersPage from './pages/AdminUsersPage';
+import EventRegistrationsPage from './pages/EventRegistrationsPage';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const queryClient = new QueryClient();
 
-const App = () => {
+function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <BrowserRouter>
-          <AuthProvider>
-            <EventProvider>
-              <TooltipProvider>
-                <Toaster />
-                <Sonner />
+      <BrowserRouter>
+        <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+          <LanguageProvider>
+            <AuthProvider>
+              <EventProvider>
                 <Routes>
                   <Route path="/" element={<HomePage />} />
                   <Route path="/events" element={<EventsPage />} />
                   <Route path="/events/:id" element={<EventDetailPage />} />
+                  <Route path="/events/:id/registrations" element={<EventRegistrationsPage />} />
+                  <Route path="/events/create" element={<CreateEventPage />} />
+                  <Route path="/events/edit/:id" element={<CreateEventPage />} />
+                  <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/calendar" element={<CalendarPage />} />
-                  <Route path="/create-event" element={<CreateEventPage />} />
-                  <Route path="/login" element={<AuthPage />} />
+                  <Route path="/login" element={<LoginPage />} />
                   <Route path="/auth" element={<AuthPage />} />
                   <Route path="/auth/callback" element={<AuthCallbackPage />} />
-                  <Route path="/admin" element={<AdminDashboard />} />
-                  <Route path="/profile" element={<ProfilePage />} />
+                  <Route path="/store" element={<StoreProfilePage />} />
+                  <Route path="/admin" element={<AdminDashboardPage />} />
+                  <Route path="/admin/users" element={<AdminUsersPage />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
-              </TooltipProvider>
-            </EventProvider>
-          </AuthProvider>
-        </BrowserRouter>
-      </ThemeProvider>
+                <Toaster />
+              </EventProvider>
+            </AuthProvider>
+          </LanguageProvider>
+        </ThemeProvider>
+      </BrowserRouter>
     </QueryClientProvider>
   );
 }
