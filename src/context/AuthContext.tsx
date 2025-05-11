@@ -12,7 +12,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   logout: () => void;
-  register: (name: string, email: string, password: string, role: UserRole) => Promise<void>;
+  register: (name: string, email: string, password: string, role: UserRole, adminPassword?: string) => Promise<void>;
   resendConfirmationEmail: (email: string) => Promise<void>;
   isAuthenticating: boolean;
   authError: string | null;
@@ -68,10 +68,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(null);
           setIsLoading(false);
           
-          // If we're on a protected page, redirect to login
-          const publicRoutes = ['/login', '/auth', '/auth/callback', '/register'];
-          const isPublicRoute = publicRoutes.some(route => location.pathname.includes(route));
+          // List of public routes that don't require authentication
+          const publicRoutes = [
+            '/login', 
+            '/auth', 
+            '/auth/callback', 
+            '/register',
+            '/', 
+            '/events',
+            '/calendar',
+            '/events/'  // Allow viewing event details without auth
+          ];
           
+          // Check if current path is a public route or starts with a public route pattern
+          const isPublicRoute = publicRoutes.some(route => 
+            location.pathname === route || 
+            (route.endsWith('/') && location.pathname.startsWith(route))
+          );
+          
+          // Don't redirect if on a public route
           if (!isPublicRoute) {
             // Don't redirect immediately to prevent loops
             setTimeout(() => {
@@ -128,10 +143,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     AuthService.logout();
   };
 
-  const register = async (name: string, email: string, password: string, role: UserRole) => {
+  const register = async (name: string, email: string, password: string, role: UserRole, adminPassword?: string) => {
     setAuthError(null);
     setIsAuthenticating(true);
     try {
+      // Check if admin password is correct if role is 'admin'
+      if (role === 'admin') {
+        if (adminPassword !== 'mondongo') {
+          throw new Error('Incorrect admin password');
+        }
+      }
+      
       await AuthService.register(name, email, password, role);
       toast.success("Registration successful! Please check your email to confirm your account.");
       // Redirect to a confirmation page or show confirmation message
@@ -173,3 +195,5 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     </AuthContext.Provider>
   );
 };
+
+export default AuthContext;

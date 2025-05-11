@@ -15,7 +15,7 @@ const CreateEventPage = () => {
   const [event, setEvent] = useState(id ? getEventById(id) : undefined);
   const isEditing = !!id;
   
-  // Only store accounts can access this page
+  // Allow access to this page for store accounts and admins
   useEffect(() => {
     if (user && user.role !== 'store' && user.role !== 'admin') {
       navigate('/');
@@ -26,10 +26,6 @@ const CreateEventPage = () => {
       navigate('/');
     }
   }, [user, navigate, event, isEditing]);
-  
-  if (!user || (user.role !== 'store' && user.role !== 'admin')) {
-    return null;
-  }
   
   return (
     <div className="min-h-screen flex flex-col">

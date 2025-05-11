@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,13 +11,15 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useAuth } from '@/context/AuthContext';
 import { UserRole } from '@/types';
-import { AlertCircle, Loader2, Mail, Lock, User as UserIcon, AlertTriangle } from 'lucide-react';
+import { AlertCircle, Loader2, Mail, Lock, User as UserIcon, AlertTriangle, ShieldCheck } from 'lucide-react';
+
 const AuthPage = () => {
   const [activeTab, setActiveTab] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [role, setRole] = useState<UserRole>('user');
+  const [adminPassword, setAdminPassword] = useState('');
   const [resendEmail, setResendEmail] = useState('');
   const [verificationDialogOpen, setVerificationDialogOpen] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
@@ -56,6 +59,7 @@ const AuthPage = () => {
     if (/[^A-Za-z0-9]/.test(password)) strength += 1;
     setPasswordStrength(strength);
   }, [password]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -63,13 +67,14 @@ const AuthPage = () => {
         await login(email, password);
         navigate('/');
       } else {
-        await register(name, email, password, role);
+        await register(name, email, password, role, role === 'admin' ? adminPassword : undefined);
         // The redirect happens inside register function
       }
     } catch (err) {
       // Error handling is done in context
     }
   };
+
   const handleGoogleLogin = async () => {
     try {
       await loginWithGoogle();
@@ -77,6 +82,7 @@ const AuthPage = () => {
       // Error handling is done in context
     }
   };
+
   const handleResendVerification = async () => {
     try {
       await resendConfirmationEmail(resendEmail);
@@ -85,6 +91,7 @@ const AuthPage = () => {
       // Error handling is done in context
     }
   };
+
   const getPasswordStrengthColor = () => {
     switch (passwordStrength) {
       case 0:
@@ -101,7 +108,9 @@ const AuthPage = () => {
         return "bg-gray-200 dark:bg-gray-700";
     }
   };
-  return <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background via-background to-background/80 px-4">
+
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background via-background to-background/80 px-4">
       <Card className="w-full max-w-md shadow-xl border-opacity-50 backdrop-blur-sm">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Magic: The Gathering Events</CardTitle>
@@ -118,9 +127,9 @@ const AuthPage = () => {
             <form onSubmit={handleSubmit}>
               <CardContent className="space-y-4 pt-4">
                 {authError && <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{authError}</AlertDescription>
-                  </Alert>}
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{authError}</AlertDescription>
+                </Alert>}
                 
                 {/* Email Field */}
                 <div className="space-y-2">
@@ -128,7 +137,15 @@ const AuthPage = () => {
                     <Mail className="h-4 w-4" />
                     Email
                   </Label>
-                  <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} required className="transition-all bg-inherit" />
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    placeholder="you@example.com" 
+                    value={email} 
+                    onChange={e => setEmail(e.target.value)} 
+                    required 
+                    className="transition-all bg-inherit" 
+                  />
                 </div>
                 
                 {/* Password Field */}
@@ -137,7 +154,15 @@ const AuthPage = () => {
                     <Lock className="h-4 w-4" />
                     Password
                   </Label>
-                  <Input id="password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required className="transition-all bg-inherit" />
+                  <Input 
+                    id="password" 
+                    type="password" 
+                    placeholder="••••••••" 
+                    value={password} 
+                    onChange={e => setPassword(e.target.value)} 
+                    required 
+                    className="transition-all bg-inherit" 
+                  />
                 </div>
                 
                 {/* Google Login Button */}
@@ -152,7 +177,12 @@ const AuthPage = () => {
                   </div>
                 </div>
                 
-                <Button type="button" className="w-full flex items-center justify-center space-x-2 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 shadow-sm" onClick={handleGoogleLogin} disabled={isAuthenticating}>
+                <Button 
+                  type="button" 
+                  className="w-full flex items-center justify-center space-x-2 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 shadow-sm" 
+                  onClick={handleGoogleLogin} 
+                  disabled={isAuthenticating}
+                >
                   <svg className="h-5 w-5" viewBox="0 0 24 24">
                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
                     <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
@@ -164,10 +194,12 @@ const AuthPage = () => {
               </CardContent>
               <CardFooter>
                 <Button type="submit" className="w-full" disabled={isAuthenticating}>
-                  {isAuthenticating ? <>
+                  {isAuthenticating ? 
+                    <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Signing in...
-                    </> : 'Sign In'}
+                    </> : 'Sign In'
+                  }
                 </Button>
               </CardFooter>
             </form>
@@ -175,10 +207,12 @@ const AuthPage = () => {
           <TabsContent value="register">
             <form onSubmit={handleSubmit}>
               <CardContent className="space-y-4 pt-4">
-                {authError && <Alert variant="destructive">
+                {authError && 
+                  <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>{authError}</AlertDescription>
-                  </Alert>}
+                  </Alert>
+                }
                 
                 {/* Name Field */}
                 <div className="space-y-2">
@@ -186,7 +220,14 @@ const AuthPage = () => {
                     <UserIcon className="h-4 w-4" />
                     Name
                   </Label>
-                  <Input id="name" placeholder="Your Name" value={name} onChange={e => setName(e.target.value)} className="transition-all" required />
+                  <Input 
+                    id="name" 
+                    placeholder="Your Name" 
+                    value={name} 
+                    onChange={e => setName(e.target.value)} 
+                    className="transition-all" 
+                    required 
+                  />
                 </div>
                 
                 {/* Email Field */}
@@ -195,7 +236,15 @@ const AuthPage = () => {
                     <Mail className="h-4 w-4" />
                     Email
                   </Label>
-                  <Input id="register-email" type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} className="transition-all" required />
+                  <Input 
+                    id="register-email" 
+                    type="email" 
+                    placeholder="you@example.com" 
+                    value={email} 
+                    onChange={e => setEmail(e.target.value)} 
+                    className="transition-all" 
+                    required 
+                  />
                 </div>
                 
                 {/* Password Field with Strength Indicator */}
@@ -204,11 +253,22 @@ const AuthPage = () => {
                     <Lock className="h-4 w-4" />
                     Password
                   </Label>
-                  <Input id="register-password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} className="transition-all" required />
+                  <Input 
+                    id="register-password" 
+                    type="password" 
+                    placeholder="••••••••" 
+                    value={password} 
+                    onChange={e => setPassword(e.target.value)} 
+                    className="transition-all" 
+                    required 
+                  />
                   <div className="h-1 w-full rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex">
-                    {Array.from({
-                    length: 4
-                  }).map((_, i) => <div key={i} className={`h-full w-1/4 transition-all duration-300 ${i < passwordStrength ? getPasswordStrengthColor() : 'bg-transparent'}`} />)}
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <div 
+                        key={i} 
+                        className={`h-full w-1/4 transition-all duration-300 ${i < passwordStrength ? getPasswordStrengthColor() : 'bg-transparent'}`} 
+                      />
+                    ))}
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {passwordStrength === 0 && "Enter a password"}
@@ -227,7 +287,11 @@ const AuthPage = () => {
                       Choose what type of account you need
                     </span>
                   </Label>
-                  <RadioGroup value={role} onValueChange={val => setRole(val as UserRole)} className="grid grid-cols-2 gap-2">
+                  <RadioGroup 
+                    value={role} 
+                    onValueChange={val => setRole(val as UserRole)} 
+                    className="grid grid-cols-3 gap-2"
+                  >
                     <div className={`flex items-center space-x-2 border rounded-md p-3 cursor-pointer hover:bg-accent ${role === 'user' ? 'border-primary bg-primary/10' : 'border-border'}`}>
                       <RadioGroupItem value="user" id="player" className="sr-only" />
                       <Label htmlFor="player" className="cursor-pointer w-full text-center font-medium">
@@ -240,10 +304,40 @@ const AuthPage = () => {
                         Store Owner
                       </Label>
                     </div>
+                    <div className={`flex items-center space-x-2 border rounded-md p-3 cursor-pointer hover:bg-accent ${role === 'admin' ? 'border-primary bg-primary/10' : 'border-border'}`}>
+                      <RadioGroupItem value="admin" id="admin" className="sr-only" />
+                      <Label htmlFor="admin" className="cursor-pointer w-full text-center font-medium">
+                        Admin
+                      </Label>
+                    </div>
                   </RadioGroup>
-                  <p className="text-xs text-muted-foreground">
-                    Store owners can create and manage events
-                  </p>
+                  
+                  {role === 'store' && (
+                    <p className="text-xs text-muted-foreground">
+                      Store owners can create and manage events
+                    </p>
+                  )}
+                  
+                  {role === 'admin' && (
+                    <div className="space-y-2 mt-2">
+                      <Label htmlFor="admin-password" className="flex items-center gap-2">
+                        <ShieldCheck className="h-4 w-4" />
+                        Admin Password
+                      </Label>
+                      <Input 
+                        id="admin-password" 
+                        type="password" 
+                        placeholder="Enter admin password" 
+                        value={adminPassword} 
+                        onChange={e => setAdminPassword(e.target.value)} 
+                        className="transition-all" 
+                        required={role === 'admin'} 
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Admin password is required for admin registration
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Google Registration */}
@@ -258,7 +352,12 @@ const AuthPage = () => {
                   </div>
                 </div>
                 
-                <Button type="button" className="w-full flex items-center justify-center space-x-2 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 shadow-sm" onClick={handleGoogleLogin} disabled={isAuthenticating}>
+                <Button 
+                  type="button" 
+                  className="w-full flex items-center justify-center space-x-2 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 shadow-sm" 
+                  onClick={handleGoogleLogin} 
+                  disabled={isAuthenticating}
+                >
                   <svg className="h-5 w-5" viewBox="0 0 24 24">
                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
                     <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
@@ -269,11 +368,17 @@ const AuthPage = () => {
                 </Button>
               </CardContent>
               <CardFooter>
-                <Button type="submit" className="w-full" disabled={isAuthenticating || passwordStrength < 3}>
-                  {isAuthenticating ? <>
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={isAuthenticating || passwordStrength < 3 || (role === 'admin' && !adminPassword)}
+                >
+                  {isAuthenticating ? 
+                    <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Creating account...
-                    </> : 'Create Account'}
+                    </> : 'Create Account'
+                  }
                 </Button>
               </CardFooter>
             </form>
@@ -310,20 +415,24 @@ const AuthPage = () => {
           </div>
           <DialogFooter className="flex sm:justify-between flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => {
-            setVerificationDialogOpen(false);
-            navigate('/login');
-          }}>
+              setVerificationDialogOpen(false);
+              navigate('/login');
+            }}>
               Back to login
             </Button>
             <Button onClick={handleResendVerification} disabled={isAuthenticating}>
-              {isAuthenticating ? <>
+              {isAuthenticating ? 
+                <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Sending...
-                </> : 'Resend verification email'}
+                </> : 'Resend verification email'
+              }
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>;
+    </div>
+  );
 };
+
 export default AuthPage;
