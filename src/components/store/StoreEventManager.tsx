@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useEvents } from '@/context/EventContext';
 import { useAuth } from '@/context/AuthContext';
@@ -27,11 +27,12 @@ const formatDate = (dateString: string) => {
 };
 
 const StoreEventManager = () => {
-  const { events, deleteEvent, refreshEvents } = useEvents();
+  const { events, deleteEvent, refreshEvents, showToastOnce } = useEvents();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [storeEvents, setStoreEvents] = useState<Event[]>([]);
   const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
+  const initialLoadDoneRef = useRef<boolean>(false);
 
   useEffect(() => {
     if (user) {
@@ -44,8 +45,12 @@ const StoreEventManager = () => {
   }, [events, user]);
 
   useEffect(() => {
-    // Refresh events when component mounts
-    refreshEvents();
+    // Only refresh events once when component mounts
+    if (!initialLoadDoneRef.current) {
+      console.log('StoreEventManager: Initial events refresh');
+      initialLoadDoneRef.current = true;
+      refreshEvents();
+    }
   }, [refreshEvents]);
 
   const handleCreateEvent = () => {
@@ -65,10 +70,18 @@ const StoreEventManager = () => {
     
     try {
       await deleteEvent(eventToDelete.id);
-      toast.success('Event deleted successfully');
+      if (showToastOnce) {
+        showToastOnce('Event deleted successfully', 'success');
+      } else {
+        toast.success('Event deleted successfully');
+      }
       setEventToDelete(null);
     } catch (error) {
-      toast.error('Failed to delete event');
+      if (showToastOnce) {
+        showToastOnce('Failed to delete event', 'error');
+      } else {
+        toast.error('Failed to delete event');
+      }
       console.error('Delete error:', error);
     }
   };

@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Plus, Edit } from 'lucide-react';
 import Navbar from '@/components/Navbar';
@@ -12,6 +12,14 @@ const CreateEventPage = () => {
   const { getEventById } = useEvents();
   const [event, setEvent] = useState(id ? getEventById(id) : undefined);
   const isEditing = !!id;
+  
+  // Only fetch event data when editing an existing event
+  useEffect(() => {
+    if (id) {
+      const eventData = getEventById(id);
+      setEvent(eventData);
+    }
+  }, [id, getEventById]);
   
   return (
     <div className="min-h-screen flex flex-col">

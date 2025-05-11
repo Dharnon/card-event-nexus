@@ -10,6 +10,8 @@ export const useEventsData = () => {
   const [error, setError] = useState<Error | null>(null);
   const toastShownRef = useRef<{[key: string]: boolean}>({});
   const toastTimeouts = useRef<{[key: string]: NodeJS.Timeout}>({});
+  const isSubscribedRef = useRef<boolean>(false);
+  const loadingInProgressRef = useRef<boolean>(false);
 
   const showToastOnce = (message: string, type: 'success' | 'error') => {
     const toastKey = `${type}-${message}`;
@@ -38,7 +40,14 @@ export const useEventsData = () => {
   };
 
   const loadEvents = async () => {
+    // Prevent concurrent loading operations
+    if (loadingInProgressRef.current) {
+      console.log('Events loading already in progress, skipping...');
+      return events;
+    }
+    
     try {
+      loadingInProgressRef.current = true;
       setLoading(true);
       const eventsData = await getEvents();
       console.log('Loaded events:', eventsData);
@@ -51,6 +60,7 @@ export const useEventsData = () => {
       showToastOnce('Failed to load events. Please try again later.', 'error');
       return [];
     } finally {
+      loadingInProgressRef.current = false;
       setLoading(false);
     }
   };
@@ -58,16 +68,30 @@ export const useEventsData = () => {
   useEffect(() => {
     loadEvents();
 
-    // Subscribe to event updates with debounce to prevent multiple quick updates
-    const unsubscribe = subscribeToEvents(updatedEvents => {
-      console.log('Events updated via subscription:', updatedEvents);
-      setEvents(updatedEvents);
-    });
-
+    // Only set up subscription if we haven't already
+    if (!isSubscribedRef.current) {
+      isSubscribedRef.current = true;
+      console.log('Setting up event subscription...');
+      
+      // Subscribe to event updates with debounce to prevent multiple quick updates
+      const unsubscribe = subscribeToEvents(updatedEvents => {
+        console.log('Events updated via subscription:', updatedEvents);
+        setEvents(updatedEvents);
+      });
+      
+      // Clean up function
+      return () => {
+        console.log('Cleaning up event subscription...');
+        // Clean up timeouts
+        Object.values(toastTimeouts.current).forEach(timeout => clearTimeout(timeout));
+        unsubscribe();
+        isSubscribedRef.current = false;
+      };
+    }
+    
     return () => {
-      // Clean up timeouts
+      // Clean up timeouts when the component unmounts even if no subscription was made
       Object.values(toastTimeouts.current).forEach(timeout => clearTimeout(timeout));
-      unsubscribe();
     };
   }, []);
 

@@ -19,7 +19,7 @@ interface EventContextType {
   updateEventData: (id: string, updates: Partial<Event>) => Promise<Event>;
   deleteEvent: (id: string) => Promise<void>;
   setFilters: (filters: EventFilters) => void;
-  showToastOnce?: (message: string, type: 'success' | 'error') => void;
+  showToastOnce: (message: string, type: 'success' | 'error') => void;
 }
 
 const EventContext = createContext<EventContextType>({
@@ -36,6 +36,7 @@ const EventContext = createContext<EventContextType>({
   updateEventData: async () => ({} as Event),
   deleteEvent: async () => {},
   setFilters: () => {},
+  showToastOnce: () => {},
 });
 
 export const useEvents = () => useContext(EventContext);
