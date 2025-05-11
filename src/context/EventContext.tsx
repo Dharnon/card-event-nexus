@@ -1,15 +1,9 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import { Event, EventFormat, EventType, EventLocation } from '@/types';
-import { getEvents, getEventById as fetchEventById, subscribeToEvents, createEvent, updateEvent, deleteEvent } from '@/services/EventService';
-import { toast } from 'sonner';
 
-export interface EventFilters {
-  searchTerm?: string;
-  location?: string;
-  format?: EventFormat;
-  type?: EventType;
-  startDate?: Date;
-}
+import { createContext, useContext } from 'react';
+import { Event } from '@/types';
+import { useEventsData } from '@/hooks/useEventsData';
+import { useEventFilters, EventFilters } from '@/hooks/useEventFilters';
+import { useEventOperations } from '@/hooks/useEventOperations';
 
 interface EventContextType {
   events: Event[];
@@ -46,145 +40,11 @@ const EventContext = createContext<EventContextType>({
 export const useEvents = () => useContext(EventContext);
 
 export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<Error | null>(null);
-  const [filters, setFilters] = useState<EventFilters>({});
-
-  const loadEvents = async () => {
-    try {
-      setLoading(true);
-      const eventsData = await getEvents();
-      setEvents(eventsData);
-      setError(null);
-    } catch (err: any) {
-      console.error('Failed to load events:', err);
-      setError(err);
-      toast.error('Failed to load events. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadEvents();
-
-    // Subscribe to event updates
-    const unsubscribe = subscribeToEvents(updatedEvents => {
-      setEvents(updatedEvents);
-    });
-
-    return () => {
-      unsubscribe();
-    };
-  }, []);
-
-  // Filter featured events
-  const featuredEvents = events.filter(event => event.featured);
-
-  // Filter upcoming events (events that haven't started yet)
-  const upcomingEvents = events
-    .filter(event => new Date(event.startDate) > new Date())
-    .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
-
-  // Apply filters
-  const filteredEvents = events.filter(event => {
-    // Search term filter
-    if (filters.searchTerm && 
-        !event.title.toLowerCase().includes(filters.searchTerm.toLowerCase()) && 
-        !event.description.toLowerCase().includes(filters.searchTerm.toLowerCase())) {
-      return false;
-    }
-    
-    // Location filter
-    if (filters.location && event.location.city !== filters.location) {
-      return false;
-    }
-    
-    // Format filter
-    if (filters.format && event.format !== filters.format) {
-      return false;
-    }
-    
-    // Type filter
-    if (filters.type && event.type !== filters.type) {
-      return false;
-    }
-    
-    // Date filter
-    if (filters.startDate) {
-      const eventDate = new Date(event.startDate);
-      const filterDate = filters.startDate;
-      
-      // Check if the dates match (ignoring time)
-      if (eventDate.getDate() !== filterDate.getDate() || 
-          eventDate.getMonth() !== filterDate.getMonth() || 
-          eventDate.getFullYear() !== filterDate.getFullYear()) {
-        return false;
-      }
-    }
-    
-    return true;
-  });
-
-  // Get event by ID
-  const getEventById = (id: string): Event | undefined => {
-    return events.find(event => event.id === id);
-  };
-
-  // Add new event
-  const addEvent = async (event: Omit<Event, 'id' | 'createdAt' | 'updatedAt'>) => {
-    try {
-      console.log('Adding event with data:', event);
-      
-      // Validate required fields before sending to API
-      if (!event.title || !event.format || !event.type || !event.startDate) {
-        throw new Error('Missing required event fields');
-      }
-      
-      // Ensure location object is complete
-      if (!event.location || !event.location.name || !event.location.city || !event.location.address) {
-        throw new Error('Event location information is incomplete');
-      }
-      
-      const newEvent = await createEvent(event);
-      await loadEvents(); // Refresh events to get the latest data
-      return newEvent;
-    } catch (error: any) {
-      console.error('Failed to create event:', error);
-      toast.error('Failed to create event', {
-        description: error instanceof Error ? error.message : String(error)
-      });
-      throw error;
-    }
-  };
-
-  // Update event
-  const updateEventData = async (id: string, updates: Partial<Event>) => {
-    try {
-      const updatedEvent = await updateEvent(id, updates);
-      await loadEvents(); // Refresh events to get the latest data
-      return updatedEvent;
-    } catch (error: any) {
-      console.error('Failed to update event:', error);
-      toast.error('Failed to update event. Please try again.');
-      throw error;
-    }
-  };
-
-  // Delete event
-  const deleteEventById = async (id: string) => {
-    try {
-      await deleteEvent(id);
-      await loadEvents(); // Refresh events to get the latest data
-      toast.success('Event deleted successfully.');
-    } catch (error: any) {
-      console.error('Failed to delete event:', error);
-      toast.error('Failed to delete event. Please try again.');
-      throw error;
-    }
-  };
-
+  // Use our custom hooks to manage events data and operations
+  const { events, loading, error, refreshEvents } = useEventsData();
+  const { filteredEvents, featuredEvents, upcomingEvents, setFilters } = useEventFilters(events);
+  const { getEventById, addEvent, updateEventData, deleteEvent } = useEventOperations(refreshEvents, events);
+  
   return (
     <EventContext.Provider
       value={{
@@ -195,11 +55,11 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         loading,
         isLoading: loading,
         error,
-        refreshEvents: loadEvents,
+        refreshEvents,
         getEventById,
         addEvent,
         updateEventData,
-        deleteEvent: deleteEventById,
+        deleteEvent,
         setFilters,
       }}
     >
