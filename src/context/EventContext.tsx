@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect } from 'react';
 import { Event, EventFormat, EventType, EventLocation } from '@/types';
 import { getEvents, getEventById as fetchEventById, subscribeToEvents, createEvent, updateEvent, deleteEvent } from '@/services/EventService';
@@ -136,12 +135,26 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Add new event
   const addEvent = async (event: Omit<Event, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
+      console.log('Adding event with data:', event);
+      
+      // Validate required fields before sending to API
+      if (!event.title || !event.format || !event.type || !event.startDate) {
+        throw new Error('Missing required event fields');
+      }
+      
+      // Ensure location object is complete
+      if (!event.location || !event.location.name || !event.location.city || !event.location.address) {
+        throw new Error('Event location information is incomplete');
+      }
+      
       const newEvent = await createEvent(event);
       await loadEvents(); // Refresh events to get the latest data
       return newEvent;
     } catch (error: any) {
       console.error('Failed to create event:', error);
-      toast.error('Failed to create event. Please try again.');
+      toast.error('Failed to create event', {
+        description: error instanceof Error ? error.message : String(error)
+      });
       throw error;
     }
   };
@@ -180,7 +193,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         featuredEvents,
         upcomingEvents,
         loading,
-        isLoading: loading, // Add alias for isLoading
+        isLoading: loading,
         error,
         refreshEvents: loadEvents,
         getEventById,

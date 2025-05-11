@@ -76,13 +76,18 @@ const CreateEventForm = ({ eventId, initialEvent }: CreateEventFormProps) => {
       };
     }
     
+    // Provide default values for all form fields to prevent uncontrolled to controlled warnings
     return {
+      title: '',
+      description: '',
       format: 'Standard',
       type: 'tournament',
+      date: new Date(),
       time: '18:00',
       duration: '4',
-      locationName: user?.role === 'store' ? `Magic Store ${user.name || ''}` : '',
+      locationName: user?.role === 'store' ? `Magic Store ${user?.name || ''}` : '',
       city: '',
+      address: '',
       price: '10',
       maxParticipants: '32',
       featured: false,
@@ -92,6 +97,7 @@ const CreateEventForm = ({ eventId, initialEvent }: CreateEventFormProps) => {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: getDefaultValues(),
+    mode: 'onBlur', // Validate fields when they lose focus
   });
 
   const onSubmit = async (values: FormValues) => {
@@ -126,7 +132,7 @@ const CreateEventForm = ({ eventId, initialEvent }: CreateEventFormProps) => {
       const endDate = new Date(startDate);
       endDate.setHours(endDate.getHours() + Number(values.duration));
       
-      // Create event object
+      // Create event object with all required fields and proper types
       const eventData: Omit<Event, 'id' | 'createdAt' | 'updatedAt'> = {
         title: values.title,
         description: values.description,
@@ -138,7 +144,8 @@ const CreateEventForm = ({ eventId, initialEvent }: CreateEventFormProps) => {
           name: values.locationName,
           address: values.address,
           city: values.city,
-          country: 'Spain',
+          country: 'Spain', // Default country
+          postalCode: '' // Add empty postal code to match schema
         },
         price: values.price ? Number(values.price) : undefined,
         maxParticipants: values.maxParticipants ? Number(values.maxParticipants) : undefined,

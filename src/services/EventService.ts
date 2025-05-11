@@ -112,7 +112,12 @@ export const createEvent = async (event: Omit<Event, 'id' | 'createdBy' | 'creat
     // Get current user session - this respects auth rules
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
     
-    if (sessionError || !sessionData.session || !sessionData.session.user) {
+    if (sessionError) {
+      console.error('Session error:', sessionError);
+      throw new Error(`Authentication error: ${sessionError.message}`);
+    }
+    
+    if (!sessionData.session || !sessionData.session.user) {
       throw new Error('User not authenticated');
     }
     
@@ -123,33 +128,43 @@ export const createEvent = async (event: Omit<Event, 'id' | 'createdBy' | 'creat
       name: event.location.name,
       address: event.location.address,
       city: event.location.city,
-      country: event.location.country,
-      postalCode: event.location.postalCode
+      country: event.location.country || 'Spain',
+      postalCode: event.location.postalCode || ''
     };
+    
+    // Validate price and maxParticipants to ensure they're not undefined or NaN
+    const price = typeof event.price === 'number' ? event.price : null;
+    const maxParticipants = typeof event.maxParticipants === 'number' ? event.maxParticipants : null;
+    const currentParticipants = event.currentParticipants || 0;
+
+    // Validate required fields
+    if (!event.title || !event.format || !event.type || !event.startDate || !locationJson.name) {
+      throw new Error('Missing required fields for event creation');
+    }
     
     // Insert the event into the database with current user as creator
     const { data, error } = await supabase
       .from('events')
       .insert({
         title: event.title,
-        description: event.description,
+        description: event.description || '',
         format: event.format,
         type: event.type,
         start_date: event.startDate,
-        end_date: event.endDate,
+        end_date: event.endDate || null,
         location: locationJson,
-        price: event.price,
-        max_participants: event.maxParticipants,
-        current_participants: event.currentParticipants || 0,
-        image: event.image,
+        price: price,
+        max_participants: maxParticipants,
+        current_participants: currentParticipants,
+        image: event.image || null,
         featured: event.featured || false,
-        created_by: userId // Using the user ID from the session
+        created_by: userId
       })
       .select();
     
     if (error) {
-      console.error('Supabase error:', error);
-      throw error;
+      console.error('Supabase insert error:', error);
+      throw new Error(`Database error: ${error.message}`);
     }
     
     if (!data || data.length === 0) {
