@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Event, EventFormat, EventType, EventLocation } from "@/types";
 
@@ -116,8 +115,7 @@ export const createEvent = async (event: Omit<Event, 'id' | 'createdBy' | 'creat
     
     // If user is not authenticated, use a default user ID for events created by anonymous users
     if (!sessionData.session || !sessionData.session.user) {
-      // We'll allow anonymous event creation by setting a default creator ID
-      // This is a temporary solution to bypass authentication requirements
+      // We'll use a default user ID for anonymous event creation
       userId = '00000000-0000-0000-0000-000000000000'; // Default UUID for anonymous users
     } else {
       userId = sessionData.session.user.id;
@@ -144,7 +142,7 @@ export const createEvent = async (event: Omit<Event, 'id' | 'createdBy' | 'creat
     
     console.log('Creating event with user ID:', userId);
     
-    // Insert the event into the database with current user as creator
+    // Insert the event into the database
     const { data, error } = await supabase
       .from('events')
       .insert({

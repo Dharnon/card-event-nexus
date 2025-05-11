@@ -1,31 +1,17 @@
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Plus, Edit } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import CreateEventForm from '@/components/CreateEventForm';
-import { useAuth } from '@/context/AuthContext';
 import { useEvents } from '@/context/EventContext';
 
 const CreateEventPage = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { getEventById } = useEvents();
   const [event, setEvent] = useState(id ? getEventById(id) : undefined);
   const isEditing = !!id;
-  
-  // Allow access to this page for store accounts and admins
-  useEffect(() => {
-    if (user && user.role !== 'store' && user.role !== 'admin') {
-      navigate('/');
-    }
-    
-    // If editing, check that the store owns this event or is admin
-    if (isEditing && event && user && user.role === 'store' && event.createdBy !== user.id) {
-      navigate('/');
-    }
-  }, [user, navigate, event, isEditing]);
   
   return (
     <div className="min-h-screen flex flex-col">

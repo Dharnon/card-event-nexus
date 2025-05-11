@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, UserRole } from '@/types';
 import { supabase } from "@/integrations/supabase/client";
@@ -77,7 +76,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             '/', 
             '/events',
             '/calendar',
-            '/events/'  // Allow viewing event details without auth
+            '/events/',  // Allow viewing event details without auth
+            '/events/create' // Allow creating events without auth
           ];
           
           // Check if current path is a public route or starts with a public route pattern
@@ -143,7 +143,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     AuthService.logout();
   };
 
-  const register = async (name: string, email: string, password: string, role: UserRole, adminPassword?: string) => {
+  const register = async (name: string, email: string, password: string, role: UserRole = 'user', adminPassword?: string) => {
     setAuthError(null);
     setIsAuthenticating(true);
     try {

@@ -76,6 +76,9 @@ const CreateEventForm = ({ eventId, initialEvent }: CreateEventFormProps) => {
       };
     }
     
+    // Default store name based on user if available, or a generic name
+    const storeName = user?.role === 'store' ? `Magic Store ${user?.name || ''}` : 'Magic Store';
+    
     // Provide default values for all form fields to prevent uncontrolled to controlled warnings
     return {
       title: '',
@@ -85,7 +88,7 @@ const CreateEventForm = ({ eventId, initialEvent }: CreateEventFormProps) => {
       date: new Date(),
       time: '18:00',
       duration: '4',
-      locationName: user?.role === 'store' ? `Magic Store ${user?.name || ''}` : '',
+      locationName: storeName,
       city: '',
       address: '',
       price: '10',
@@ -101,11 +104,6 @@ const CreateEventForm = ({ eventId, initialEvent }: CreateEventFormProps) => {
   });
 
   const onSubmit = async (values: FormValues) => {
-    if (!user) {
-      toast.error('You must be logged in to create an event');
-      return;
-    }
-    
     setIsSubmitting(true);
     const toastId = toast.loading(isEditing ? 'Updating event...' : 'Creating event...', {
       duration: 60000, // Long duration as we'll dismiss it manually
@@ -152,7 +150,7 @@ const CreateEventForm = ({ eventId, initialEvent }: CreateEventFormProps) => {
         currentParticipants: initialEvent?.currentParticipants || 0,
         image: imageUrl,
         featured: values.featured,
-        createdBy: user.id,
+        createdBy: user?.id || '00000000-0000-0000-0000-000000000000', // Use anonymous ID if no user
       };
       
       console.log('Saving event with data:', eventData);
