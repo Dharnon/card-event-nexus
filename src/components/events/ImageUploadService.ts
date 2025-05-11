@@ -36,7 +36,9 @@ export const uploadEventImage = async (file: File): Promise<string | null> => {
       }
       
       console.log('New bucket created:', newBucket);
-      eventsBucket = newBucket;
+      // Fix: Don't reassign the variable directly, just use the bucket name for future operations
+      console.log('Using newly created events bucket');
+      // We don't need to reassign eventsBucket as we know it exists now
     }
     
     // Upload the file
