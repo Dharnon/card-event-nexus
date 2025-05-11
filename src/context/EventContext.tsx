@@ -39,11 +39,19 @@ const EventContext = createContext<EventContextType>({
 
 export const useEvents = () => useContext(EventContext);
 
+// Re-export EventFilters type from the hook
+export type { EventFilters } from '@/hooks/useEventFilters';
+
 export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Use our custom hooks to manage events data and operations
   const { events, loading, error, refreshEvents } = useEventsData();
   const { filteredEvents, featuredEvents, upcomingEvents, setFilters } = useEventFilters(events);
   const { getEventById, addEvent, updateEventData, deleteEvent } = useEventOperations(refreshEvents, events);
+  
+  // Create a wrapper for refreshEvents to adapt the return type
+  const refreshEventsWrapper = async (): Promise<void> => {
+    await refreshEvents();
+  };
   
   return (
     <EventContext.Provider
@@ -55,7 +63,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         loading,
         isLoading: loading,
         error,
-        refreshEvents,
+        refreshEvents: refreshEventsWrapper,
         getEventById,
         addEvent,
         updateEventData,

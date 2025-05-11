@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import * as dateFns from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -19,8 +18,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { EventFilters as EventFiltersType, useEvents } from '@/context/EventContext';
+import { useEvents } from '@/context/EventContext';
 import { EventFormat, EventType } from '@/types';
+import { EventFilters as EventFiltersType } from '@/hooks/useEventFilters';
 import {
   Drawer,
   DrawerClose,

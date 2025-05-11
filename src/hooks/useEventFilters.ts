@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Event, EventFormat, EventType } from '@/types';
 
+// Export this interface so it can be imported by other files
 export interface EventFilters {
   searchTerm?: string;
   location?: string;
