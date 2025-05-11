@@ -87,6 +87,7 @@ const EventTracker = () => {
     createEventMutation.mutate({
       name,
       date,
+      games: [] // Add the missing games property as an empty array
     });
   };
   
