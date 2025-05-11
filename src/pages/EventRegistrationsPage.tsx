@@ -16,7 +16,12 @@ const EventRegistrationsPage = () => {
     if (!id) return;
     
     // Initial fetch of event
-    setEvent(getEventById(id) || null);
+    const loadEventData = async () => {
+      const currentEvent = getEventById(id);
+      setEvent(currentEvent || null);
+    };
+    
+    loadEventData();
     
     // Setup real-time listener for changes to event registrations
     const channel = supabase
@@ -25,8 +30,10 @@ const EventRegistrationsPage = () => {
           { event: '*', schema: 'public', table: 'event_registrations', filter: `event_id=eq.${id}` },
           async (payload) => {
             console.log('Registration change detected:', payload);
+            // Avoid calling refreshEvents multiple times in quick succession
             await refreshEvents();
-            setEvent(getEventById(id) || null);
+            const updatedEvent = getEventById(id);
+            setEvent(updatedEvent || null);
           }
       )
       .subscribe();

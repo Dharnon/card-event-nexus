@@ -1,23 +1,14 @@
-
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, X, Plus, UserPlus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useEvents } from '@/context/EventContext';
 import { useAuth } from '@/context/AuthContext';
-import { toast } from "sonner";
-import { supabase } from '@/integrations/supabase/client';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Plus, PencilLine, Trash2, Users } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Event } from '@/types';
+import { Badge } from '@/components/ui/badge';
+import { format } from 'date-fns';
+import { Separator } from '@/components/ui/separator';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,327 +19,185 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
-interface Registration {
-  id: string;
-  userId: string;
-  eventId: string;
-  registeredAt: string;
-  userEmail?: string;
-  userName?: string;
-}
+const formatDate = (dateString: string) => {
+  return format(new Date(dateString), 'MM/dd/yyyy • h:mm a');
+};
 
-const EventRegistrationManager = () => {
-  const { id } = useParams<{ id: string }>();
-  const { getEventById } = useEvents();
+const StoreEventManager = () => {
+  const { events, deleteEvent, refreshEvents } = useEvents();
   const { user } = useAuth();
   const navigate = useNavigate();
-  
-  const [event, setEvent] = useState(id ? getEventById(id) : null);
-  const [registrations, setRegistrations] = useState<Registration[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [userToRemove, setUserToRemove] = useState<Registration | null>(null);
-  const [userToAdd, setUserToAdd] = useState('');
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [storeEvents, setStoreEvents] = useState<Event[]>([]);
+  const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
+  const toastShownRef = useRef<{[key: string]: boolean}>({});
 
   useEffect(() => {
-    if (!id) return;
-    
-    const fetchRegistrations = async () => {
-      try {
-        setLoading(true);
-        
-        // Fetch registrations for this event
-        const { data: registrationsData, error: registrationsError } = await supabase
-          .from('event_registrations')
-          .select('*')
-          .eq('event_id', id);
-          
-        if (registrationsError) throw registrationsError;
-        
-        console.log('Fetched registrations:', registrationsData);
-        
-        // Get user details for each registration
-        const userIds = registrationsData.map(reg => reg.user_id);
-        
-        // We can't directly query auth.users, so we'll use public.profiles if available
-        const { data: profilesData, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, username, avatar_url')
-          .in('id', userIds);
-          
-        if (profilesError) {
-          console.error('Error fetching profiles:', profilesError);
-        }
-        
-        console.log('Fetched profiles:', profilesData);
-          
-        // Map the registrations with user details
-        const enhancedRegistrations = registrationsData.map(reg => {
-          const profile = profilesData?.find(p => p.id === reg.user_id);
-          return {
-            id: reg.id,
-            userId: reg.user_id,
-            eventId: reg.event_id,
-            registeredAt: reg.registered_at,
-            userName: profile?.username || 'Unknown User',
-            userEmail: 'email@example.com' // Simplified approach
-          };
-        });
-        
-        setRegistrations(enhancedRegistrations);
-      } catch (error) {
-        console.error('Error fetching registrations:', error);
-        toast.error('Could not load registrations');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchRegistrations();
-  }, [id]);
+    if (user) {
+      // Filter events for this store (or all events for admin)
+      const filteredEvents = user.role === 'admin' 
+        ? events
+        : events.filter(event => event.createdBy === user.id);
+      setStoreEvents(filteredEvents);
+    }
+  }, [events, user]);
 
-  // Check if user is authorized to view this page
   useEffect(() => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-    
-    if (!event) {
-      toast.error('Event not found');
-      navigate('/');
-      return;
-    }
-    
-    // Only store owner or admin can access this page
-    if (user.role !== 'admin' && event.createdBy !== user.id) {
-      toast.error('You do not have permission to manage this event');
-      navigate('/');
-    }
-  }, [event, user, navigate]);
-  
-  const handleRemoveUser = async () => {
-    if (!userToRemove || !event) return;
-    
-    try {
-      // Remove user from event
-      const { error } = await supabase
-        .from('event_registrations')
-        .delete()
-        .eq('user_id', userToRemove.userId)
-        .eq('event_id', event.id);
-        
-      if (error) throw error;
+    // Refresh events when component mounts
+    refreshEvents();
+  }, [refreshEvents]);
+
+  // Helper function to prevent duplicate toasts
+  const showToastOnce = (message: string, type: 'success' | 'error') => {
+    const toastKey = `${type}-${message}`;
+    if (!toastShownRef.current[toastKey]) {
+      toastShownRef.current[toastKey] = true;
       
-      toast.success('User removed from event');
-      // Update local state
-      setRegistrations(prev => prev.filter(reg => reg.userId !== userToRemove.userId));
-      setUserToRemove(null);
-      
-      // Update event participant count in UI
-      if (event.currentParticipants !== undefined) {
-        setEvent({
-          ...event,
-          currentParticipants: Math.max(0, event.currentParticipants - 1)
-        });
+      if (type === 'error') {
+        toast.error(message);
+      } else {
+        toast.success(message);
       }
-    } catch (error) {
-      console.error('Error removing user:', error);
-      toast.error('Failed to remove user');
+      
+      // Clear this toast after a delay
+      setTimeout(() => {
+        delete toastShownRef.current[toastKey];
+      }, 2000);
     }
   };
-  
-  const handleAddUser = async () => {
-    if (!userToAdd || !event) return;
+
+  const handleCreateEvent = () => {
+    navigate('/events/create');
+  };
+
+  const handleEditEvent = (eventId: string) => {
+    navigate(`/events/edit/${eventId}`);
+  };
+
+  const confirmDeleteEvent = (event: Event) => {
+    setEventToDelete(event);
+  };
+
+  const handleDeleteEvent = async () => {
+    if (!eventToDelete) return;
     
     try {
-      // Try to find user by username
-      const { data: userData, error: userError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('username', userToAdd)
-        .single();
-        
-      if (userError) {
-        toast.error('User not found');
-        return;
-      }
-      
-      // Check if user is already registered
-      const { data: existingReg } = await supabase
-        .from('event_registrations')
-        .select('*')
-        .eq('user_id', userData.id)
-        .eq('event_id', event.id)
-        .maybeSingle();
-        
-      if (existingReg) {
-        toast.error('User already registered for this event');
-        return;
-      }
-      
-      // Add user to event
-      const { error: regError } = await supabase
-        .from('event_registrations')
-        .insert({
-          user_id: userData.id,
-          event_id: event.id
-        });
-        
-      if (regError) throw regError;
-      
-      // Refresh registrations
-      const { data: newReg } = await supabase
-        .from('event_registrations')
-        .select('*')
-        .eq('user_id', userData.id)
-        .eq('event_id', event.id)
-        .single();
-        
-      if (newReg) {
-        const newRegistration = {
-          id: newReg.id,
-          userId: newReg.user_id,
-          eventId: newReg.event_id,
-          registeredAt: newReg.registered_at,
-          userName: userToAdd,
-          userEmail: 'email@example.com' // Simplified approach
-        };
-        
-        setRegistrations(prev => [...prev, newRegistration]);
-        
-        // Update event participant count in UI
-        if (event.currentParticipants !== undefined) {
-          setEvent({
-            ...event,
-            currentParticipants: event.currentParticipants + 1
-          });
-        }
-      }
-      
-      toast.success('User added to event');
-      setUserToAdd('');
-      setIsAddDialogOpen(false);
+      await deleteEvent(eventToDelete.id);
+      showToastOnce('Event deleted successfully', 'success');
+      setEventToDelete(null);
     } catch (error) {
-      console.error('Error adding user:', error);
-      toast.error('Failed to add user');
+      showToastOnce('Failed to delete event', 'error');
+      console.error('Delete error:', error);
     }
   };
-  
-  const goBack = () => navigate(-1);
-  
-  if (loading || !event) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <p>Loading event registrations...</p>
-      </div>
-    );
-  }
+
+  const handleViewRegistrations = (eventId: string) => {
+    navigate(`/events/${eventId}/registrations`);
+  };
+
+  if (!user) return null;
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <Button variant="ghost" onClick={goBack} className="flex items-center">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Events
-        </Button>
-        
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <UserPlus className="mr-2 h-4 w-4" />
-              Add User
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add User to Event</DialogTitle>
-              <DialogDescription>
-                Enter the username of the user you want to add to this event.
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="py-4">
-              <Input
-                placeholder="Username"
-                value={userToAdd}
-                onChange={(e) => setUserToAdd(e.target.value)}
-              />
-            </div>
-            
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleAddUser}>
-                Add User
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
-      
-      <div>
-        <h1 className="text-2xl font-bold">Event Registrations</h1>
-        <h2 className="text-xl mt-1">{event.title}</h2>
-        <p className="text-muted-foreground">
-          {event.currentParticipants ?? 0} 
-          {event.maxParticipants ? ` / ${event.maxParticipants}` : ''} participants
-        </p>
-      </div>
-      
-      <Separator />
-      
-      {registrations.length === 0 ? (
-        <div className="text-center py-12 border rounded-lg">
-          <h3 className="font-semibold text-xl mb-2">No Registrations Yet</h3>
-          <p className="text-muted-foreground mb-6">
-            There are no users registered for this event yet.
+        <div>
+          <h2 className="text-2xl font-bold">My Events</h2>
+          <p className="text-muted-foreground">
+            {user.role === 'admin' ? 'Manage all events' : 'Manage your events'}
           </p>
         </div>
+        <Button onClick={handleCreateEvent}>
+          <Plus className="mr-2 h-4 w-4" />
+          Create New Event
+        </Button>
+      </div>
+
+      <Separator />
+
+      {storeEvents.length === 0 ? (
+        <div className="text-center py-12 border rounded-lg">
+          <h3 className="font-semibold text-xl mb-2">No Events Found</h3>
+          <p className="text-muted-foreground mb-6">
+            {user.role === 'admin'
+              ? 'There are no events in the system yet.'
+              : 'You have not created any events yet.'}
+          </p>
+          <Button onClick={handleCreateEvent}>Create Your First Event</Button>
+        </div>
       ) : (
-        <div className="space-y-4">
-          {registrations.map((registration) => (
-            <Card key={registration.id}>
-              <CardHeader className="py-3 px-4">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <CardTitle className="text-base">{registration.userName}</CardTitle>
-                    <p className="text-sm text-muted-foreground">{registration.userEmail}</p>
-                  </div>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="text-red-500"
-                    onClick={() => setUserToRemove(registration)}
-                  >
-                    <X className="h-4 w-4 mr-1" />
-                    Remove
-                  </Button>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
+          {storeEvents.map((event) => (
+            <Card key={event.id} className="overflow-hidden">
+              <CardHeader className="pb-2 bg-muted/50">
+                <div className="flex justify-between items-start">
+                  <CardTitle className="text-lg">{event.title}</CardTitle>
+                  <Badge variant={event.featured ? 'default' : 'outline'}>
+                    {event.format}
+                  </Badge>
                 </div>
+                <p className="text-sm text-muted-foreground">
+                  {formatDate(event.startDate)}
+                </p>
               </CardHeader>
+              <CardContent className="pt-4">
+                <div className="flex justify-between items-center">
+                  <div className="text-sm">
+                    <div className="flex items-center">
+                      <Users className="h-4 w-4 mr-2 text-muted-foreground" />
+                      <span>
+                        {event.currentParticipants ?? 0} / {event.maxParticipants ?? '∞'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="space-x-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleViewRegistrations(event.id)}
+                    >
+                      <Users className="h-4 w-4 mr-1" />
+                      Registrations
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleEditEvent(event.id)}
+                    >
+                      <PencilLine className="h-4 w-4 mr-1" />
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => confirmDeleteEvent(event)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
             </Card>
           ))}
         </div>
       )}
-      
-      <AlertDialog open={!!userToRemove} onOpenChange={(open) => !open && setUserToRemove(null)}>
+
+      <AlertDialog open={!!eventToDelete} onOpenChange={(open) => !open && setEventToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove User</AlertDialogTitle>
+            <AlertDialogTitle>Delete Event</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to remove {userToRemove?.userName} from this event?
+              Are you sure you want to delete this event? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleRemoveUser}
+              onClick={handleDeleteEvent}
               className="bg-red-500 hover:bg-red-600"
             >
-              Remove
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -357,4 +206,4 @@ const EventRegistrationManager = () => {
   );
 };
 
-export default EventRegistrationManager;
+export default StoreEventManager;
