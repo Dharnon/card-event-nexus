@@ -109,8 +109,14 @@ export const getRegistrations = async (eventId: string): Promise<any[]> => {
 
 export const createEvent = async (event: Omit<Event, 'id' | 'createdBy' | 'createdAt' | 'updatedAt'>): Promise<Event> => {
   try {
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) throw new Error('User not authenticated');
+    // Get current user session - this respects auth rules
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError || !sessionData.session || !sessionData.session.user) {
+      throw new Error('User not authenticated');
+    }
+    
+    const userId = sessionData.session.user.id;
     
     // Convert EventLocation to a JSON object suitable for Supabase
     const locationJson = {
@@ -121,6 +127,7 @@ export const createEvent = async (event: Omit<Event, 'id' | 'createdBy' | 'creat
       postalCode: event.location.postalCode
     };
     
+    // Insert the event into the database with current user as creator
     const { data, error } = await supabase
       .from('events')
       .insert({
@@ -136,7 +143,7 @@ export const createEvent = async (event: Omit<Event, 'id' | 'createdBy' | 'creat
         current_participants: event.currentParticipants || 0,
         image: event.image,
         featured: event.featured || false,
-        created_by: userData.user.id
+        created_by: userId // Using the user ID from the session
       })
       .select();
     

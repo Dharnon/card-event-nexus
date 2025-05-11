@@ -81,7 +81,7 @@ const CreateEventForm = ({ eventId, initialEvent }: CreateEventFormProps) => {
       type: 'tournament',
       time: '18:00',
       duration: '4',
-      locationName: user?.role === 'store' ? `Magic Store ${user.name}` : '',
+      locationName: user?.role === 'store' ? `Magic Store ${user.name || ''}` : '',
       city: '',
       price: '10',
       maxParticipants: '32',
