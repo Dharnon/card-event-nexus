@@ -33,6 +33,19 @@ const StoreEventManager = () => {
   const [storeEvents, setStoreEvents] = useState<Event[]>([]);
   const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
   const initialLoadDoneRef = useRef<boolean>(false);
+  const isRefreshingRef = useRef<boolean>(false);
+  
+  // Handle safe refresh to prevent loops
+  const safeRefresh = async () => {
+    if (isRefreshingRef.current) return;
+    
+    isRefreshingRef.current = true;
+    try {
+      await refreshEvents();
+    } finally {
+      isRefreshingRef.current = false;
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -49,9 +62,9 @@ const StoreEventManager = () => {
     if (!initialLoadDoneRef.current) {
       console.log('StoreEventManager: Initial events refresh');
       initialLoadDoneRef.current = true;
-      refreshEvents();
+      safeRefresh();
     }
-  }, [refreshEvents]);
+  }, []);
 
   const handleCreateEvent = () => {
     navigate('/events/create');
@@ -94,14 +107,14 @@ const StoreEventManager = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-wrap gap-3">
         <div>
           <h2 className="text-2xl font-bold">My Events</h2>
           <p className="text-muted-foreground">
             {user.role === 'admin' ? 'Manage all events' : 'Manage your events'}
           </p>
         </div>
-        <Button onClick={handleCreateEvent}>
+        <Button onClick={handleCreateEvent} className="whitespace-nowrap">
           <Plus className="mr-2 h-4 w-4" />
           Create New Event
         </Button>
@@ -110,9 +123,9 @@ const StoreEventManager = () => {
       <Separator />
 
       {storeEvents.length === 0 ? (
-        <div className="text-center py-12 border rounded-lg">
+        <div className="text-center py-8 border rounded-lg">
           <h3 className="font-semibold text-xl mb-2">No Events Found</h3>
-          <p className="text-muted-foreground mb-6">
+          <p className="text-muted-foreground mb-6 px-4">
             {user.role === 'admin'
               ? 'There are no events in the system yet.'
               : 'You have not created any events yet.'}
@@ -120,13 +133,13 @@ const StoreEventManager = () => {
           <Button onClick={handleCreateEvent}>Create Your First Event</Button>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
+        <div className="grid gap-4 grid-cols-1">
           {storeEvents.map((event) => (
             <Card key={event.id} className="overflow-hidden">
               <CardHeader className="pb-2 bg-muted/50">
                 <div className="flex justify-between items-start">
-                  <CardTitle className="text-lg">{event.title}</CardTitle>
-                  <Badge variant={event.featured ? 'default' : 'outline'}>
+                  <CardTitle className="text-lg line-clamp-1">{event.title}</CardTitle>
+                  <Badge variant={event.featured ? 'default' : 'outline'} className="ml-2 whitespace-nowrap">
                     {event.format}
                   </Badge>
                 </div>
@@ -135,7 +148,7 @@ const StoreEventManager = () => {
                 </p>
               </CardHeader>
               <CardContent className="pt-4">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                   <div className="text-sm">
                     <div className="flex items-center">
                       <Users className="h-4 w-4 mr-2 text-muted-foreground" />
@@ -144,11 +157,12 @@ const StoreEventManager = () => {
                       </span>
                     </div>
                   </div>
-                  <div className="space-x-2">
+                  <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleViewRegistrations(event.id)}
+                      className="flex-1 sm:flex-none"
                     >
                       <Users className="h-4 w-4 mr-1" />
                       Registrations
@@ -157,6 +171,7 @@ const StoreEventManager = () => {
                       size="sm"
                       variant="outline"
                       onClick={() => handleEditEvent(event.id)}
+                      className="flex-1 sm:flex-none"
                     >
                       <PencilLine className="h-4 w-4 mr-1" />
                       Edit
@@ -165,6 +180,7 @@ const StoreEventManager = () => {
                       size="sm"
                       variant="destructive"
                       onClick={() => confirmDeleteEvent(event)}
+                      className="flex-1 sm:flex-none"
                     >
                       <Trash2 className="h-4 w-4 mr-1" />
                       Delete
@@ -178,15 +194,15 @@ const StoreEventManager = () => {
       )}
 
       <AlertDialog open={!!eventToDelete} onOpenChange={(open) => !open && setEventToDelete(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-[95vw] w-full sm:max-w-[425px]">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Event</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete this event? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel className="mt-2 sm:mt-0">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteEvent}
               className="bg-red-500 hover:bg-red-600"

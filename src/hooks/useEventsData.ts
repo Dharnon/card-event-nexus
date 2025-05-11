@@ -12,6 +12,7 @@ export const useEventsData = () => {
   const toastTimeouts = useRef<{[key: string]: NodeJS.Timeout}>({});
   const isSubscribedRef = useRef<boolean>(false);
   const loadingInProgressRef = useRef<boolean>(false);
+  const initialLoadDoneRef = useRef<boolean>(false);
 
   const showToastOnce = (message: string, type: 'success' | 'error') => {
     const toastKey = `${type}-${message}`;
@@ -66,7 +67,11 @@ export const useEventsData = () => {
   };
 
   useEffect(() => {
-    loadEvents();
+    // Only fetch events once initially
+    if (!initialLoadDoneRef.current) {
+      initialLoadDoneRef.current = true;
+      loadEvents();
+    }
 
     // Only set up subscription if we haven't already
     if (!isSubscribedRef.current) {
@@ -74,7 +79,7 @@ export const useEventsData = () => {
       console.log('Setting up event subscription...');
       
       // Subscribe to event updates with debounce to prevent multiple quick updates
-      const unsubscribe = subscribeToEvents(updatedEvents => {
+      const unsubscribe = subscribeToEvents((updatedEvents) => {
         console.log('Events updated via subscription:', updatedEvents);
         setEvents(updatedEvents);
       });

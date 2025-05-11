@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Plus, Edit } from 'lucide-react';
 import Navbar from '@/components/Navbar';
@@ -12,10 +12,12 @@ const CreateEventPage = () => {
   const { getEventById } = useEvents();
   const [event, setEvent] = useState(id ? getEventById(id) : undefined);
   const isEditing = !!id;
+  const initialLoadDoneRef = useRef(false);
   
   // Only fetch event data when editing an existing event
   useEffect(() => {
-    if (id) {
+    if (id && !initialLoadDoneRef.current) {
+      initialLoadDoneRef.current = true;
       const eventData = getEventById(id);
       setEvent(eventData);
     }

@@ -27,7 +27,7 @@ export const uploadEventImage = async (file: File): Promise<string | null> => {
       console.log('Events bucket not found, creating it');
       const { data: newBucket, error: createError } = await supabase.storage.createBucket('events', {
         public: true,
-        fileSizeLimit: 10485760 // 10MB
+        fileSizeLimit: 20971520 // 20MB to allow larger images
       });
       
       if (createError) {
@@ -36,20 +36,19 @@ export const uploadEventImage = async (file: File): Promise<string | null> => {
       }
       
       console.log('New bucket created:', newBucket);
-      // Fix: Don't reassign the variable directly, just use the bucket name for future operations
-      console.log('Using newly created events bucket');
-      // We don't need to reassign eventsBucket as we know it exists now
     }
     
-    // Upload the file
-    const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9-_.]/g, '')}`;
+    // Generate a unique filename with original extension
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
     console.log(`Uploading file: ${fileName} to events bucket`);
     
     const { data, error } = await supabase.storage
       .from('events')
       .upload(fileName, file, {
         cacheControl: '3600',
-        upsert: false
+        upsert: true, // Changed to true to allow overwriting if needed
+        contentType: file.type // Set the correct content type
       });
       
     if (error) {

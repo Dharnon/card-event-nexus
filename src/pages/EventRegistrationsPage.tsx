@@ -9,38 +9,36 @@ import { Event } from '@/types';
 
 const EventRegistrationsPage = () => {
   const { id } = useParams<{ id: string }>();
-  const { getEventById, refreshEvents } = useEvents();
+  const { getEventById } = useEvents();
   const [event, setEvent] = useState<Event | null>(null);
-  const refreshInProgressRef = useRef(false);
+  const channelRef = useRef<any>(null);
   const initialLoadDoneRef = useRef(false);
-  const subscriptionSetupRef = useRef(false);
+  const [isLoading, setIsLoading] = useState(true);
   
-  // Load event data only once on initial render
+  // Load event data just once on initial render
   useEffect(() => {
     if (!id || initialLoadDoneRef.current) return;
     
     initialLoadDoneRef.current = true;
+    setIsLoading(true);
     
     // Initial fetch of event
     const loadEventData = async () => {
-      refreshInProgressRef.current = true;
       try {
-        await refreshEvents();
         const currentEvent = getEventById(id);
         setEvent(currentEvent || null);
       } finally {
-        refreshInProgressRef.current = false;
+        setIsLoading(false);
       }
     };
     
     loadEventData();
-  }, [id, getEventById, refreshEvents]);
+  }, [id, getEventById]);
   
   // Setup real-time listener separately from the initial data load
   useEffect(() => {
-    if (!id || subscriptionSetupRef.current) return;
+    if (!id) return;
     
-    subscriptionSetupRef.current = true;
     console.log('Setting up real-time subscription for event:', id);
     
     // Setup real-time listener for changes to event registrations
@@ -48,30 +46,25 @@ const EventRegistrationsPage = () => {
       .channel(`public:event_registrations:${id}`)
       .on('postgres_changes', 
           { event: '*', schema: 'public', table: 'event_registrations', filter: `event_id=eq.${id}` },
-          async (payload) => {
-            console.log('Registration change detected:', payload);
-            
-            // Only refresh if we're not already refreshing
-            if (!refreshInProgressRef.current) {
-              refreshInProgressRef.current = true;
-              try {
-                await refreshEvents();
-                const updatedEvent = getEventById(id);
-                setEvent(updatedEvent || null);
-              } finally {
-                refreshInProgressRef.current = false;
-              }
-            }
+          async () => {
+            console.log('Registration change detected for event:', id);
+            const updatedEvent = getEventById(id);
+            setEvent(updatedEvent || null);
           }
       )
       .subscribe();
     
+    // Store the channel reference for cleanup
+    channelRef.current = channel;
+    
     return () => {
       console.log('Cleaning up real-time subscription');
-      supabase.removeChannel(channel);
-      subscriptionSetupRef.current = false;
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
-  }, [id, getEventById, refreshEvents]);
+  }, [id, getEventById]);
   
   if (!id) return null;
   
@@ -80,7 +73,13 @@ const EventRegistrationsPage = () => {
       <Navbar />
       <main className="flex-grow bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <EventRegistrationManager eventId={id} event={event} />
+          {isLoading ? (
+            <div className="text-center py-12">
+              <p>Loading event details...</p>
+            </div>
+          ) : (
+            <EventRegistrationManager eventId={id} event={event} />
+          )}
         </div>
       </main>
     </div>
