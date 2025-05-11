@@ -1,4 +1,3 @@
-
 import * as dateFns from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useState, useEffect } from 'react';
@@ -78,6 +77,7 @@ const EventDetail = ({ event }: EventDetailProps) => {
     // Subscribe to event and registration updates
     const unsubscribe = subscribeToEventWithRegistrations(event.id, updatedEvent => {
       if (updatedEvent) {
+        console.log('Event updated:', updatedEvent);
         setCurrentEvent(updatedEvent);
       }
     });
@@ -136,11 +136,22 @@ const EventDetail = ({ event }: EventDetailProps) => {
                 currentEvent.currentParticipants !== undefined && 
                 currentEvent.currentParticipants >= currentEvent.maxParticipants;
   
+  // Log image URL for debugging
+  console.log('Event detail image URL:', currentEvent.image);
+
   return (
     <Card className="max-w-4xl mx-auto overflow-hidden">
       <div className="h-48 bg-magic-gradient-bg flex items-center justify-center">
         {currentEvent.image ? (
-          <img src={currentEvent.image} alt={currentEvent.title} className="w-full h-full object-cover" />
+          <img 
+            src={currentEvent.image} 
+            alt={currentEvent.title} 
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              console.error("Detail image failed to load:", currentEvent.image);
+              e.currentTarget.style.display = 'none';
+            }}
+          />
         ) : (
           <Calendar className="h-24 w-24 text-white opacity-30" />
         )}

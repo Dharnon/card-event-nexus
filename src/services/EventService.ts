@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Event, EventFormat, EventType, EventLocation } from "@/types";
 
@@ -275,6 +276,22 @@ export const registerForEvent = async (eventId: string): Promise<void> => {
   try {
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) throw new Error('User not authenticated');
+    
+    // Check if user is already registered to prevent duplicate registrations
+    const { data: existingReg, error: checkError } = await supabase
+      .from('event_registrations')
+      .select('*')
+      .eq('event_id', eventId)
+      .eq('user_id', userData.user.id)
+      .maybeSingle();
+    
+    if (checkError) throw checkError;
+    
+    // If user is already registered, don't register again
+    if (existingReg) {
+      console.log('User is already registered for this event');
+      return;
+    }
     
     const { error } = await supabase
       .from('event_registrations')

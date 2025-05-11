@@ -13,6 +13,7 @@ export const useEventsData = () => {
     try {
       setLoading(true);
       const eventsData = await getEvents();
+      console.log('Loaded events:', eventsData);
       setEvents(eventsData);
       setError(null);
       return eventsData;
@@ -31,6 +32,7 @@ export const useEventsData = () => {
 
     // Subscribe to event updates
     const unsubscribe = subscribeToEvents(updatedEvents => {
+      console.log('Events updated via subscription:', updatedEvents);
       setEvents(updatedEvents);
     });
 

@@ -1,4 +1,3 @@
-
 import * as dateFns from 'date-fns';
 import { CalendarClock, MapPin, Users, CreditCard, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -48,6 +47,9 @@ const EventCard = ({ event, className = '' }: EventCardProps) => {
     return dateFns.format(dateFns.parseISO(dateString), 'MMM d, yyyy • h:mm a');
   };
 
+  // Debugging to see if image URLs are coming through
+  console.log('Event image URL:', event.image);
+
   return (
     <Link to={`/events/${event.id}`} className="block h-full group">
       <Card className={`enhanced-card h-full ${className}`}>
@@ -58,6 +60,10 @@ const EventCard = ({ event, className = '' }: EventCardProps) => {
                 src={event.image} 
                 alt={event.title} 
                 className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
+                onError={(e) => {
+                  console.error("Image failed to load:", event.image);
+                  e.currentTarget.style.display = 'none';
+                }}
               />
             </div>
           </AspectRatio>
