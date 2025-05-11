@@ -19,6 +19,7 @@ interface EventContextType {
   updateEventData: (id: string, updates: Partial<Event>) => Promise<Event>;
   deleteEvent: (id: string) => Promise<void>;
   setFilters: (filters: EventFilters) => void;
+  showToastOnce?: (message: string, type: 'success' | 'error') => void;
 }
 
 const EventContext = createContext<EventContextType>({
@@ -44,7 +45,7 @@ export type { EventFilters } from '@/hooks/useEventFilters';
 
 export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Use our custom hooks to manage events data and operations
-  const { events, loading, error, refreshEvents } = useEventsData();
+  const { events, loading, error, refreshEvents, showToastOnce } = useEventsData();
   const { filteredEvents, featuredEvents, upcomingEvents, setFilters } = useEventFilters(events);
   const { getEventById, addEvent, updateEventData, deleteEvent } = useEventOperations(refreshEvents, events);
   
@@ -69,6 +70,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         updateEventData,
         deleteEvent,
         setFilters,
+        showToastOnce
       }}
     >
       {children}

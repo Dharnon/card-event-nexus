@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import EventRegistrationManager from '@/components/store/EventRegistrationManager';
@@ -11,6 +11,7 @@ const EventRegistrationsPage = () => {
   const { id } = useParams<{ id: string }>();
   const { getEventById, refreshEvents } = useEvents();
   const [event, setEvent] = useState<Event | null>(null);
+  const refreshInProgressRef = useRef(false);
   
   useEffect(() => {
     if (!id) return;
@@ -30,10 +31,15 @@ const EventRegistrationsPage = () => {
           { event: '*', schema: 'public', table: 'event_registrations', filter: `event_id=eq.${id}` },
           async (payload) => {
             console.log('Registration change detected:', payload);
-            // Avoid calling refreshEvents multiple times in quick succession
-            await refreshEvents();
-            const updatedEvent = getEventById(id);
-            setEvent(updatedEvent || null);
+            
+            // Only refresh if we're not already refreshing
+            if (!refreshInProgressRef.current) {
+              refreshInProgressRef.current = true;
+              await refreshEvents();
+              const updatedEvent = getEventById(id);
+              setEvent(updatedEvent || null);
+              refreshInProgressRef.current = false;
+            }
           }
       )
       .subscribe();
@@ -50,7 +56,7 @@ const EventRegistrationsPage = () => {
       <Navbar />
       <main className="flex-grow bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <EventRegistrationManager />
+          <EventRegistrationManager eventId={id} event={event} />
         </div>
       </main>
     </div>

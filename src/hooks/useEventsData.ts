@@ -9,13 +9,19 @@ export const useEventsData = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
   const toastShownRef = useRef<{[key: string]: boolean}>({});
+  const toastTimeouts = useRef<{[key: string]: NodeJS.Timeout}>({});
 
   const showToastOnce = (message: string, type: 'success' | 'error') => {
-    const toastKey = `${message}-${Date.now()}`;
+    const toastKey = `${type}-${message}`;
     
     // Only show toast if we haven't shown this one recently (within last 2s)
     if (!toastShownRef.current[toastKey]) {
       toastShownRef.current[toastKey] = true;
+      
+      // Clear any existing timeout for this toast key
+      if (toastTimeouts.current[toastKey]) {
+        clearTimeout(toastTimeouts.current[toastKey]);
+      }
       
       if (type === 'error') {
         toast.error(message);
@@ -24,8 +30,9 @@ export const useEventsData = () => {
       }
       
       // Clear this toast notification after a delay
-      setTimeout(() => {
+      toastTimeouts.current[toastKey] = setTimeout(() => {
         delete toastShownRef.current[toastKey];
+        delete toastTimeouts.current[toastKey];
       }, 2000);
     }
   };
@@ -58,6 +65,8 @@ export const useEventsData = () => {
     });
 
     return () => {
+      // Clean up timeouts
+      Object.values(toastTimeouts.current).forEach(timeout => clearTimeout(timeout));
       unsubscribe();
     };
   }, []);
@@ -67,6 +76,7 @@ export const useEventsData = () => {
     setEvents,
     loading,
     error,
-    refreshEvents: loadEvents
+    refreshEvents: loadEvents,
+    showToastOnce
   };
 };

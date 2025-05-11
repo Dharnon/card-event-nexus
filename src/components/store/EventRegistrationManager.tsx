@@ -1,5 +1,6 @@
+
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useEvents } from '@/context/EventContext';
 import { useAuth } from '@/context/AuthContext';
 import { Plus, PencilLine, Trash2, Users } from 'lucide-react';
@@ -25,45 +26,54 @@ const formatDate = (dateString: string) => {
   return format(new Date(dateString), 'MM/dd/yyyy • h:mm a');
 };
 
-const StoreEventManager = () => {
-  const { events, deleteEvent, refreshEvents } = useEvents();
+interface EventRegistrationManagerProps {
+  eventId?: string;
+  event?: Event | null;
+}
+
+const EventRegistrationManager = ({ eventId, event: propEvent }: EventRegistrationManagerProps = {}) => {
+  const params = useParams();
+  const resolvedEventId = eventId || params.id;
+  const { events, deleteEvent, refreshEvents, showToastOnce } = useEvents();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [storeEvents, setStoreEvents] = useState<Event[]>([]);
   const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
-  const toastShownRef = useRef<{[key: string]: boolean}>({});
+  const refreshRequestedRef = useRef(false);
 
   useEffect(() => {
+    // Use propEvent only if we're looking at a specific event
+    if (resolvedEventId && propEvent) {
+      setStoreEvents([propEvent]);
+      return;
+    }
+
     if (user) {
+      // Only refresh events once when component mounts
+      if (!refreshRequestedRef.current) {
+        refreshRequestedRef.current = true;
+        refreshEvents();
+      }
+      
       // Filter events for this store (or all events for admin)
       const filteredEvents = user.role === 'admin' 
         ? events
         : events.filter(event => event.createdBy === user.id);
       setStoreEvents(filteredEvents);
     }
-  }, [events, user]);
+  }, [events, user, refreshEvents, resolvedEventId, propEvent]);
 
-  useEffect(() => {
-    // Refresh events when component mounts
-    refreshEvents();
-  }, [refreshEvents]);
-
-  // Helper function to prevent duplicate toasts
-  const showToastOnce = (message: string, type: 'success' | 'error') => {
-    const toastKey = `${type}-${message}`;
-    if (!toastShownRef.current[toastKey]) {
-      toastShownRef.current[toastKey] = true;
-      
+  // Prevent duplicate toasts using the shared function from useEventsData
+  const showToast = (message: string, type: 'success' | 'error') => {
+    if (showToastOnce) {
+      showToastOnce(message, type);
+    } else {
+      // Fallback if showToastOnce is not available
       if (type === 'error') {
         toast.error(message);
       } else {
         toast.success(message);
       }
-      
-      // Clear this toast after a delay
-      setTimeout(() => {
-        delete toastShownRef.current[toastKey];
-      }, 2000);
     }
   };
 
@@ -84,10 +94,10 @@ const StoreEventManager = () => {
     
     try {
       await deleteEvent(eventToDelete.id);
-      showToastOnce('Event deleted successfully', 'success');
+      showToast('Event deleted successfully', 'success');
       setEventToDelete(null);
     } catch (error) {
-      showToastOnce('Failed to delete event', 'error');
+      showToast('Failed to delete event', 'error');
       console.error('Delete error:', error);
     }
   };
@@ -102,15 +112,22 @@ const StoreEventManager = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold">My Events</h2>
+          <h2 className="text-2xl font-bold">
+            {resolvedEventId ? 'Event Registrations' : 'My Events'}
+          </h2>
           <p className="text-muted-foreground">
-            {user.role === 'admin' ? 'Manage all events' : 'Manage your events'}
+            {resolvedEventId 
+              ? 'Manage registrations for this event'
+              : user.role === 'admin' ? 'Manage all events' : 'Manage your events'
+            }
           </p>
         </div>
-        <Button onClick={handleCreateEvent}>
-          <Plus className="mr-2 h-4 w-4" />
-          Create New Event
-        </Button>
+        {!resolvedEventId && (
+          <Button onClick={handleCreateEvent}>
+            <Plus className="mr-2 h-4 w-4" />
+            Create New Event
+          </Button>
+        )}
       </div>
 
       <Separator />
@@ -206,4 +223,4 @@ const StoreEventManager = () => {
   );
 };
 
-export default StoreEventManager;
+export default EventRegistrationManager;
