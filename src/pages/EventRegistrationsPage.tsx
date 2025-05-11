@@ -1,10 +1,40 @@
 
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import EventRegistrationManager from '@/components/store/EventRegistrationManager';
+import { supabase } from '@/integrations/supabase/client';
+import { useEvents } from '@/context/EventContext';
+import { Event } from '@/types';
 
 const EventRegistrationsPage = () => {
   const { id } = useParams<{ id: string }>();
+  const { getEventById, refreshEvents } = useEvents();
+  const [event, setEvent] = useState<Event | null>(null);
+  
+  useEffect(() => {
+    if (!id) return;
+    
+    // Initial fetch of event
+    setEvent(getEventById(id) || null);
+    
+    // Setup real-time listener for changes to event registrations
+    const channel = supabase
+      .channel(`public:event_registrations:${id}`)
+      .on('postgres_changes', 
+          { event: '*', schema: 'public', table: 'event_registrations', filter: `event_id=eq.${id}` },
+          async (payload) => {
+            console.log('Registration change detected:', payload);
+            await refreshEvents();
+            setEvent(getEventById(id) || null);
+          }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [id, getEventById, refreshEvents]);
   
   if (!id) return null;
   

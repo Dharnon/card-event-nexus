@@ -67,6 +67,8 @@ const EventRegistrationManager = () => {
           
         if (registrationsError) throw registrationsError;
         
+        console.log('Fetched registrations:', registrationsData);
+        
         // Get user details for each registration
         const userIds = registrationsData.map(reg => reg.user_id);
         
@@ -76,13 +78,12 @@ const EventRegistrationManager = () => {
           .select('id, username, avatar_url')
           .in('id', userIds);
           
-        // Get user emails from auth.users (only works if you're admin/server-side)
-        // This is a simplified approach - in practice, store user emails in profiles table 
-        // or use a server-side function to get this data
-        const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
-        const userEmails = authError ? {} : 
-          Object.fromEntries((authData?.users || []).map(u => [u.id, u.email]));
+        if (profilesError) {
+          console.error('Error fetching profiles:', profilesError);
+        }
         
+        console.log('Fetched profiles:', profilesData);
+          
         // Map the registrations with user details
         const enhancedRegistrations = registrationsData.map(reg => {
           const profile = profilesData?.find(p => p.id === reg.user_id);
@@ -92,7 +93,7 @@ const EventRegistrationManager = () => {
             eventId: reg.event_id,
             registeredAt: reg.registered_at,
             userName: profile?.username || 'Unknown User',
-            userEmail: userEmails[reg.user_id] || 'email@example.com'
+            userEmail: 'email@example.com' // Simplified approach
           };
         });
         
@@ -163,7 +164,7 @@ const EventRegistrationManager = () => {
     if (!userToAdd || !event) return;
     
     try {
-      // Try to find user by email
+      // Try to find user by username
       const { data: userData, error: userError } = await supabase
         .from('profiles')
         .select('id')
@@ -213,7 +214,7 @@ const EventRegistrationManager = () => {
           eventId: newReg.event_id,
           registeredAt: newReg.registered_at,
           userName: userToAdd,
-          userEmail: 'email@example.com' // This would ideally come from the database
+          userEmail: 'email@example.com' // Simplified approach
         };
         
         setRegistrations(prev => [...prev, newRegistration]);
