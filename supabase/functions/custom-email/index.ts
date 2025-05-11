@@ -2,84 +2,82 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
-const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "";
+const SITE_URL = "https://lovable-magic.vercel.app"; // Update with your actual domain
 
 serve(async (req) => {
-  // Handle CORS preflight requests
+  // Handle CORS
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders });
   }
-  
+
   try {
-    const body = await req.json();
-    const { email, template, data } = body;
+    const { type, email, redirectTo } = await req.json();
+
+    // Get base URL from request or use default
+    const host = req.headers.get("origin") || SITE_URL;
     
-    if (!email || !template) {
+    // Create beautiful HTML email template
+    if (type === "signup") {
+      const html = generateSignupEmailHTML(email, redirectTo || `${host}/auth/callback`);
+      
       return new Response(
-        JSON.stringify({ error: "Email and template are required" }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        JSON.stringify({
+          html,
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        }
+      );
+    } else if (type === "reset") {
+      const html = generateResetEmailHTML(email, redirectTo || `${host}/auth/callback`);
+      
+      return new Response(
+        JSON.stringify({
+          html,
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
         }
       );
     }
-    
-    // Handle different email templates
-    let subject = "";
-    let htmlContent = "";
-    
-    if (template === "confirm-signup") {
-      subject = "Welcome to Magic Events - Confirm Your Email";
-      htmlContent = generateConfirmationEmail(data);
-    } else {
-      return new Response(
-        JSON.stringify({ error: "Invalid template" }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, "Content-Type": "application/json" }
-        }
-      );
-    }
-    
-    // In a real implementation, you would send the email using your provider
-    // For demonstration, we'll just return the HTML content
+
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: "Email would be sent in production",
-        preview: htmlContent
+      JSON.stringify({
+        error: "Unsupported email type",
       }),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
       }
     );
-    
   } catch (error) {
-    console.error("Error in custom-email function:", error);
-    
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      JSON.stringify({
+        error: error.message,
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
       }
     );
   }
 });
 
-function generateConfirmationEmail(data: any): string {
-  const { confirmation_url, name } = data;
-  const userName = name || "Magic Fan";
-  
+function generateSignupEmailHTML(email: string, redirectTo: string) {
+  // Add the signup token to the URL
+  const signUpUrl = new URL(redirectTo);
+  signUpUrl.searchParams.append("email", encodeURIComponent(email));
+  signUpUrl.searchParams.append("type", "signup");
+
   return `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Confirm Your Email</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Welcome to Magic The Gathering Community</title>
       <style>
         body {
           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -89,97 +87,181 @@ function generateConfirmationEmail(data: any): string {
           padding: 0;
           background-color: #f9f9f9;
         }
-        .container {
+        .email-container {
           max-width: 600px;
           margin: 0 auto;
-          padding: 20px;
-          background-color: white;
+          background-color: #ffffff;
           border-radius: 8px;
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-          margin-top: 20px;
+          overflow: hidden;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
         .header {
+          background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+          padding: 30px 20px;
           text-align: center;
-          padding-bottom: 20px;
-          border-bottom: 1px solid #eee;
-          margin-bottom: 20px;
         }
-        .logo {
-          width: 120px;
-          height: auto;
+        .header h1 {
+          color: white;
+          margin: 0;
+          font-size: 28px;
+          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
         .content {
-          padding: 20px 0;
+          padding: 30px 20px;
         }
         .button {
           display: inline-block;
-          padding: 12px 24px;
-          background-color: #7C4DFF;
+          background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
           color: white;
           text-decoration: none;
-          border-radius: 4px;
+          padding: 14px 30px;
+          border-radius: 50px;
           font-weight: bold;
-          margin: 20px 0;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-          transition: all 0.2s ease;
+          margin: 25px 0;
+          text-align: center;
+          box-shadow: 0 4px 8px rgba(106, 17, 203, 0.2);
+          transition: all 0.3s ease;
         }
         .button:hover {
-          background-color: #6C3BEE;
           transform: translateY(-2px);
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+          box-shadow: 0 6px 12px rgba(106, 17, 203, 0.3);
         }
         .footer {
-          margin-top: 20px;
+          background-color: #f1f1f1;
+          padding: 20px;
           text-align: center;
-          font-size: 12px;
-          color: #999;
-          border-top: 1px solid #eee;
-          padding-top: 20px;
+          color: #777;
+          font-size: 14px;
         }
-        .magic-illustration {
-          text-align: center;
-          margin-bottom: 20px;
-        }
-        .magic-illustration img {
-          width: 180px;
-          height: auto;
+        .magic-card {
+          margin: 20px auto;
+          border-radius: 12px;
+          overflow: hidden;
+          box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+          width: 220px;
+          height: 300px;
+          background-image: url('https://media.wizards.com/2019/images/daily/c4rd4r7_20191021_Showcase.jpg');
+          background-size: cover;
+          background-position: center;
         }
       </style>
     </head>
     <body>
-      <div class="container">
+      <div class="email-container">
         <div class="header">
-          <h1 style="color: #7C4DFF; margin: 0;">Magic Events</h1>
-          <p style="color: #666; margin-top: 5px;">Your Gathering Place for Magic Events</p>
+          <h1>Welcome to Magic: The Gathering Community</h1>
         </div>
-        
         <div class="content">
-          <div class="magic-illustration">
-            <img src="https://i.imgur.com/kUb0nKM.png" alt="Magic Illustration">
-          </div>
+          <h2>Confirm Your Email</h2>
+          <p>Hello Planeswalker,</p>
+          <p>Thank you for joining our Magic: The Gathering community! We're excited to have you on board. To complete your registration and access events, deck building tools, and more, please confirm your email address.</p>
           
-          <h2>Welcome, ${userName}! 🎉</h2>
+          <div class="magic-card"></div>
           
-          <p>Thanks for joining Magic Events! We're excited to have you be part of our growing community of Magic: The Gathering enthusiasts.</p>
+          <p>Click the button below to confirm your email address:</p>
+          <a href="${signUpUrl}" class="button">Confirm Email Address</a>
           
-          <p>Before you can start exploring events and connecting with other players, we need to verify your email address.</p>
-          
-          <div style="text-align: center;">
-            <a href="${confirmation_url}" class="button">Confirm My Email</a>
-          </div>
-          
-          <p>This link will expire in 24 hours. If you don't confirm your email within that time, you'll need to sign up again.</p>
-          
-          <p>If you didn't create an account with Magic Events, you can safely ignore this email.</p>
-          
-          <p>Happy gaming!</p>
-          
-          <p><strong>The Magic Events Team</strong></p>
+          <p>If you didn't create this account, you can safely ignore this email.</p>
+          <p>This link will expire in 24 hours.</p>
         </div>
-        
         <div class="footer">
-          <p>© 2025 Magic Events. All rights reserved.</p>
-          <p>This email was sent to you as part of your registration process.</p>
+          <p>&copy; ${new Date().getFullYear()} Magic: The Gathering Community. All rights reserved.</p>
+          <p>This email was sent to ${email}</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+function generateResetEmailHTML(email: string, redirectTo: string) {
+  // Add the signup token to the URL
+  const resetUrl = new URL(redirectTo);
+  resetUrl.searchParams.append("email", encodeURIComponent(email));
+  resetUrl.searchParams.append("type", "recovery");
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Reset Your Password</title>
+      <style>
+        body {
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          line-height: 1.6;
+          color: #333;
+          margin: 0;
+          padding: 0;
+          background-color: #f9f9f9;
+        }
+        .email-container {
+          max-width: 600px;
+          margin: 0 auto;
+          background-color: #ffffff;
+          border-radius: 8px;
+          overflow: hidden;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+          background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+          padding: 30px 20px;
+          text-align: center;
+        }
+        .header h1 {
+          color: white;
+          margin: 0;
+          font-size: 28px;
+          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .content {
+          padding: 30px 20px;
+        }
+        .button {
+          display: inline-block;
+          background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+          color: white;
+          text-decoration: none;
+          padding: 14px 30px;
+          border-radius: 50px;
+          font-weight: bold;
+          margin: 25px 0;
+          text-align: center;
+          box-shadow: 0 4px 8px rgba(106, 17, 203, 0.2);
+          transition: all 0.3s ease;
+        }
+        .button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 12px rgba(106, 17, 203, 0.3);
+        }
+        .footer {
+          background-color: #f1f1f1;
+          padding: 20px;
+          text-align: center;
+          color: #777;
+          font-size: 14px;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="email-container">
+        <div class="header">
+          <h1>Reset Your Password</h1>
+        </div>
+        <div class="content">
+          <h2>Password Reset Request</h2>
+          <p>Hello Planeswalker,</p>
+          <p>We received a request to reset your password for the Magic: The Gathering Community. Click the button below to reset your password:</p>
+          
+          <a href="${resetUrl}" class="button">Reset Password</a>
+          
+          <p>If you didn't request a password reset, you can safely ignore this email.</p>
+          <p>This link will expire in 1 hour.</p>
+        </div>
+        <div class="footer">
+          <p>&copy; ${new Date().getFullYear()} Magic: The Gathering Community. All rights reserved.</p>
+          <p>This email was sent to ${email}</p>
         </div>
       </div>
     </body>

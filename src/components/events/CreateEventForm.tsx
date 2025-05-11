@@ -18,6 +18,7 @@ import {
   LocationSection,
   AdditionalDetailsSection,
 } from './EventFormSections';
+import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
   title: z.string().min(5, { message: 'Title must be at least 5 characters' }),
@@ -100,13 +101,20 @@ const CreateEventForm = ({ eventId, initialEvent }: CreateEventFormProps) => {
     }
     
     setIsSubmitting(true);
-    toast.loading(isEditing ? 'Updating event...' : 'Creating event...');
+    const toastId = toast.loading(isEditing ? 'Updating event...' : 'Creating event...', {
+      duration: 60000, // Long duration as we'll dismiss it manually
+    });
     
     try {
       // Upload image if one is selected
       let imageUrl = initialEvent?.image || null;
       if (imageFile) {
-        imageUrl = await uploadEventImage(imageFile);
+        try {
+          imageUrl = await uploadEventImage(imageFile);
+        } catch (error) {
+          console.error("Image upload error:", error);
+          toast.error("Failed to upload image, but continuing with event creation", { id: toastId });
+        }
       }
       
       // Parse date and time
@@ -140,28 +148,46 @@ const CreateEventForm = ({ eventId, initialEvent }: CreateEventFormProps) => {
         createdBy: user.id,
       };
       
+      console.log('Saving event with data:', eventData);
+      
       if (isEditing && eventId) {
         // Update existing event
-        const updated = await updateEventData(eventId, eventData);
-        toast.dismiss();
-        toast.success('Event updated successfully', {
-          description: `Event "${updated.title}" has been updated in the database.`
-        });
-        navigate(`/events/${eventId}`);
+        try {
+          const updated = await updateEventData(eventId, eventData);
+          toast.dismiss(toastId);
+          toast.success('Event updated successfully', {
+            description: `Event "${updated.title}" has been updated in the database.`
+          });
+          navigate(`/events/${eventId}`);
+        } catch (error: any) {
+          console.error('Error updating event:', error);
+          toast.dismiss(toastId);
+          toast.error('Failed to update event', {
+            description: error instanceof Error ? error.message : String(error)
+          });
+        }
       } else {
         // Create new event
-        const event = await addEvent(eventData);
-        toast.dismiss();
-        toast.success('Event created successfully', {
-          description: `Event "${event.title}" has been added to the database.`
-        });
-        navigate(`/events/${event.id}`);
+        try {
+          const event = await addEvent(eventData);
+          toast.dismiss(toastId);
+          toast.success('Event created successfully', {
+            description: `Event "${event.title}" has been added to the database.`
+          });
+          navigate(`/events/${event.id}`);
+        } catch (error: any) {
+          console.error('Error saving event:', error);
+          toast.dismiss(toastId);
+          toast.error('Failed to create event', {
+            description: error instanceof Error ? error.message : String(error)
+          });
+        }
       }
-    } catch (error) {
-      console.error('Error saving event:', error);
-      toast.dismiss();
+    } catch (error: any) {
+      console.error('Error in form submission:', error);
+      toast.dismiss(toastId);
       toast.error('There was an error saving your event', {
-        description: error instanceof Error ? error.message : 'Please try again later'
+        description: error instanceof Error ? error.message : String(error)
       });
     } finally {
       setIsSubmitting(false);
@@ -193,8 +219,19 @@ const CreateEventForm = ({ eventId, initialEvent }: CreateEventFormProps) => {
             <AdditionalDetailsSection isAdmin={user?.role === 'admin'} />
           </div>
           
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? (isEditing ? 'Updating Event...' : 'Creating Event...') : (isEditing ? 'Update Event' : 'Create Event')}
+          <Button 
+            type="submit" 
+            className="w-full" 
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {isEditing ? 'Updating Event...' : 'Creating Event...'}
+              </>
+            ) : (
+              isEditing ? 'Update Event' : 'Create Event'
+            )}
           </Button>
         </form>
       </Form>

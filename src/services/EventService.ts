@@ -138,28 +138,36 @@ export const createEvent = async (event: Omit<Event, 'id' | 'createdBy' | 'creat
         featured: event.featured || false,
         created_by: userData.user.id
       })
-      .select()
-      .single();
+      .select();
     
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase error:', error);
+      throw error;
+    }
+    
+    if (!data || data.length === 0) {
+      throw new Error('No data returned from insert operation');
+    }
+    
+    const newEvent = data[0];
     
     return {
-      id: data.id,
-      title: data.title,
-      description: data.description || '',
-      format: data.format as EventFormat,
-      type: data.type as EventType,
-      startDate: data.start_date,
-      endDate: data.end_date || undefined,
-      location: convertToEventLocation(data.location),
-      price: data.price ? Number(data.price) : undefined,
-      maxParticipants: data.max_participants || undefined,
-      currentParticipants: data.current_participants || 0,
-      image: data.image || undefined,
-      featured: data.featured || false,
-      createdBy: data.created_by,
-      createdAt: data.created_at,
-      updatedAt: data.updated_at
+      id: newEvent.id,
+      title: newEvent.title,
+      description: newEvent.description || '',
+      format: newEvent.format as EventFormat,
+      type: newEvent.type as EventType,
+      startDate: newEvent.start_date,
+      endDate: newEvent.end_date || undefined,
+      location: convertToEventLocation(newEvent.location),
+      price: newEvent.price ? Number(newEvent.price) : undefined,
+      maxParticipants: newEvent.max_participants || undefined,
+      currentParticipants: newEvent.current_participants || 0,
+      image: newEvent.image || undefined,
+      featured: newEvent.featured || false,
+      createdBy: newEvent.created_by,
+      createdAt: newEvent.created_at,
+      updatedAt: newEvent.updated_at
     };
   } catch (error) {
     console.error('Error creating event:', error);

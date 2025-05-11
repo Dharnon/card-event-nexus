@@ -87,7 +87,6 @@ const EventTracker = () => {
     createEventMutation.mutate({
       name,
       date,
-      games: [],
     });
   };
   

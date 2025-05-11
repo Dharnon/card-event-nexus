@@ -128,7 +128,7 @@ export const register = async (name: string, email: string, password: string, ro
       }
     };
     
-    // Register new user
+    // Register new user with our custom email template
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
