@@ -1,5 +1,7 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { UserEvent, GameResult, Deck, SideboardGuide, Card as MagicCard, EventFormat } from '@/types';
+import { Json } from '@/integrations/supabase/types';
 
 export interface StoreProfile {
   id: string;
@@ -482,7 +484,7 @@ export async function getUserEvents(): Promise<UserEvent[]> {
     const userEvents: UserEvent[] = [];
     
     if (data && Array.isArray(data)) {
-      data.forEach((event: any) => {
+      data.forEach((event) => {
         userEvents.push({
           id: event.id,
           name: event.name,
@@ -610,7 +612,7 @@ export async function getUserGames(): Promise<GameResult[]> {
     const gameResults: GameResult[] = [];
     
     if (data && Array.isArray(data)) {
-      data.forEach((game: any) => {
+      data.forEach((game) => {
         // Parse match_score if it exists
         let matchScore = undefined;
         if (game.match_score) {
@@ -652,10 +654,10 @@ export async function createGameResult(gameResult: Omit<GameResult, 'id'>): Prom
       throw new Error('No user logged in');
     }
     
-    // Insert new game result
+    // Insert new game result - Fix the type mismatch for match_score
     const { data, error } = await supabase
       .from('game_results')
-      .insert([{
+      .insert({
         event_id: gameResult.eventId,
         win: gameResult.win,
         opponent_deck_name: gameResult.opponentDeckName,
@@ -663,9 +665,9 @@ export async function createGameResult(gameResult: Omit<GameResult, 'id'>): Prom
         deck_used: gameResult.deckUsed,
         notes: gameResult.notes || '',
         date: gameResult.date || new Date().toISOString(),
-        match_score: gameResult.matchScore || null,
+        match_score: gameResult.matchScore as unknown as Json,
         user_id: userData.user.id
-      }])
+      })
       .select()
       .single();
       
@@ -686,7 +688,7 @@ export async function createGameResult(gameResult: Omit<GameResult, 'id'>): Prom
       notes: data.notes,
       eventId: data.event_id,
       date: data.date,
-      matchScore: data.match_score as {
+      matchScore: data.match_score as unknown as {
         playerWins: number;
         opponentWins: number;
       } | undefined
