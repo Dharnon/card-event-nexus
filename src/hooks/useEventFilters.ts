@@ -13,6 +13,9 @@ export interface EventFilters {
 
 export const useEventFilters = (events: Event[]) => {
   const [filters, setFilters] = useState<EventFilters>({});
+  const [activeFormat, setActiveFormat] = useState<string>('all');
+  const [activeType, setActiveType] = useState<string>('all');
+  const [sortOrder, setSortOrder] = useState<string>('date-asc');
 
   // Filter upcoming events (events that haven't started yet)
   const upcomingEvents = events
@@ -37,12 +40,12 @@ export const useEventFilters = (events: Event[]) => {
     }
     
     // Format filter
-    if (filters.format && event.format !== filters.format) {
+    if (activeFormat !== 'all' && event.format !== activeFormat) {
       return false;
     }
     
     // Type filter
-    if (filters.type && event.type !== filters.type) {
+    if (activeType !== 'all' && event.type !== activeType) {
       return false;
     }
     
@@ -60,6 +63,14 @@ export const useEventFilters = (events: Event[]) => {
     }
     
     return true;
+  }).sort((a, b) => {
+    if (sortOrder === 'date-asc') {
+      return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+    } else if (sortOrder === 'date-desc') {
+      return new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
+    } else {
+      return 0;
+    }
   });
 
   return {
@@ -67,6 +78,12 @@ export const useEventFilters = (events: Event[]) => {
     setFilters,
     filteredEvents,
     upcomingEvents,
-    featuredEvents
+    featuredEvents,
+    activeFormat,
+    setActiveFormat,
+    activeType,
+    setActiveType,
+    sortOrder,
+    setSortOrder
   };
 };

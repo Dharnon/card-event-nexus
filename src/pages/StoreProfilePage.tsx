@@ -1,389 +1,341 @@
 
-import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
+import { getStoreProfile, uploadProfileImage, uploadBannerImage, updateProfile } from '@/services/ProfileService';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAuth } from '@/context/AuthContext';
-import EventRegistrationManager from '@/components/store/EventRegistrationManager';
-import { getProfile, updateProfile, uploadProfileImage, uploadBannerImage } from '@/services/ProfileService';
-import { 
-  Form, 
-  FormControl, 
-  FormDescription, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormMessage 
-} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-import * as z from 'zod';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
-import { ImagePlus, Save } from 'lucide-react';
-import { AspectRatio } from '@/components/ui/aspect-ratio';
-import { Separator } from '@/components/ui/separator';
-import { useEvents } from '@/context/EventContext';
-
-const formSchema = z.object({
-  username: z.string().min(2).max(50),
-  description: z.string().optional(),
-  address: z.string().optional(),
-  phone: z.string().optional(),
-  website: z.string().url({ message: 'Please enter a valid URL' }).optional().or(z.literal('')),
-});
 
 const StoreProfilePage = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
-  const { events } = useEvents();
+  const navigate = useNavigate();
+  const [profile, setProfile] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [bannerUrl, setBannerUrl] = useState<string | null>(null);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [bannerFile, setBannerFile] = useState<File | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [storeEvents, setStoreEvents] = useState([]);
+  const [isOwner, setIsOwner] = useState(false);
   
-  const form = useForm({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      username: '',
-      description: '',
-      address: '',
-      phone: '',
-      website: '',
-    },
+  const [formData, setFormData] = useState({
+    username: '',
+    description: '',
+    address: '',
+    phone: '',
+    website: '',
+    avatar_url: '',
+    banner_url: ''
   });
   
   useEffect(() => {
-    const loadProfile = async () => {
-      const profile = await getProfile();
-      if (profile) {
-        form.reset({
-          username: profile.username || '',
-          description: profile.description || '',
-          address: profile.address || '',
-          phone: profile.phone || '',
-          website: profile.website || '',
-        });
-        setAvatarUrl(profile.avatar_url);
-        setBannerUrl(profile.banner_url);
+    if (!id) {
+      navigate('/');
+      return;
+    }
+    
+    const fetchProfile = async () => {
+      setIsLoading(true);
+      try {
+        const profileData = await getStoreProfile(id);
+        if (profileData) {
+          setProfile(profileData);
+          setFormData({
+            username: profileData.username || '',
+            description: profileData.description || '',
+            address: profileData.address || '',
+            phone: profileData.phone || '',
+            website: profileData.website || '',
+            avatar_url: profileData.avatar_url || '',
+            banner_url: profileData.banner_url || ''
+          });
+          
+          // Check if current user is the store owner
+          setIsOwner(user && user.id === id);
+        } else {
+          toast.error('Store profile not found');
+          navigate('/');
+        }
+      } catch (error) {
+        console.error('Error fetching store profile:', error);
+        toast.error('Failed to load store profile');
+      } finally {
+        setIsLoading(false);
       }
     };
     
-    if (user && user.id === id) {
-      loadProfile();
-    }
-    
-    // Filter events for this store
-    if (events.length > 0 && id) {
-      const filteredEvents = events.filter(event => event.createdBy === id);
-      setStoreEvents(filteredEvents);
-    }
-  }, [user, id, events, form]);
+    fetchProfile();
+  }, [id, navigate, user]);
   
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setAvatarFile(file);
-      
-      // Create a preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarUrl(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
   
-  const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setBannerFile(file);
-      
-      // Create a preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setBannerUrl(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-  
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (!user) return;
+  const handleSave = async () => {
+    if (!id) return;
     
-    setIsSubmitting(true);
     try {
-      const updates: any = { ...values };
+      const updatedProfile = await updateProfile({
+        username: formData.username,
+        description: formData.description,
+        address: formData.address,
+        phone: formData.phone,
+        website: formData.website
+      });
       
-      // Upload avatar if changed
-      if (avatarFile) {
-        const avatarUrl = await uploadProfileImage(avatarFile);
-        updates.avatar_url = avatarUrl;
+      if (updatedProfile) {
+        setProfile(updatedProfile);
+        setIsEditing(false);
+        toast.success('Profile updated successfully');
       }
-      
-      // Upload banner if changed
-      if (bannerFile) {
-        const bannerUrl = await uploadBannerImage(bannerFile);
-        updates.banner_url = bannerUrl;
-      }
-      
-      await updateProfile(updates);
-      toast.success('Profile updated successfully');
-      setIsEditing(false);
     } catch (error) {
-      toast.error('Failed to update profile');
       console.error('Error updating profile:', error);
-    } finally {
-      setIsSubmitting(false);
+      toast.error('Failed to update profile');
     }
   };
   
-  const isCurrentUserStore = user && user.id === id;
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0]) return;
+    
+    try {
+      const imageUrl = await uploadProfileImage(e.target.files[0]);
+      setFormData(prev => ({ ...prev, avatar_url: imageUrl }));
+      
+      // Update profile in database
+      await updateProfile({ avatar_url: imageUrl });
+      toast.success('Avatar updated successfully');
+    } catch (error) {
+      console.error('Error updating avatar:', error);
+      toast.error('Failed to update avatar');
+    }
+  };
+  
+  const handleBannerChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0]) return;
+    
+    try {
+      const imageUrl = await uploadBannerImage(e.target.files[0]);
+      setFormData(prev => ({ ...prev, banner_url: imageUrl }));
+      
+      // Update profile in database
+      await updateProfile({ banner_url: imageUrl });
+      toast.success('Banner updated successfully');
+    } catch (error) {
+      console.error('Error updating banner:', error);
+      toast.error('Failed to update banner');
+    }
+  };
+  
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="flex-grow flex items-center justify-center">
+          <div className="text-center">
+            <p>Loading store profile...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <main className="flex-grow bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Banner */}
-          <div className="relative w-full h-48 bg-muted rounded-b-lg overflow-hidden">
-            {bannerUrl ? (
+        {/* Banner */}
+        <div className="relative h-60 w-full bg-gradient-to-r from-purple-800 to-indigo-800 overflow-hidden">
+          {formData.banner_url && (
+            <img 
+              src={formData.banner_url} 
+              alt="Store Banner" 
+              className="w-full h-full object-cover"
+            />
+          )}
+          {isOwner && isEditing && (
+            <div className="absolute bottom-4 right-4">
+              <label htmlFor="banner-upload" className="cursor-pointer">
+                <div className="bg-card hover:bg-card/90 text-primary px-4 py-2 rounded-md shadow">
+                  Upload Banner
+                </div>
+                <input 
+                  id="banner-upload" 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handleBannerChange} 
+                  className="hidden" 
+                />
+              </label>
+            </div>
+          )}
+        </div>
+        
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 -mt-16 relative z-10">
+          {/* Avatar */}
+          <div className="relative rounded-full h-32 w-32 bg-gray-200 border-4 border-background overflow-hidden">
+            {formData.avatar_url ? (
               <img 
-                src={bannerUrl} 
-                alt="Store banner" 
+                src={formData.avatar_url} 
+                alt="Store Avatar" 
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full bg-gradient-to-r from-purple-900 to-blue-900 flex items-center justify-center">
-                <p className="text-white text-lg opacity-50">Store Banner</p>
+              <div className="flex items-center justify-center h-full text-3xl font-bold text-gray-400">
+                {profile?.username?.charAt(0) || 'S'}
               </div>
             )}
-            
-            {isEditing && (
-              <label htmlFor="banner" className="absolute bottom-4 right-4 bg-background/80 backdrop-blur-sm p-2 rounded-full cursor-pointer hover:bg-background">
-                <ImagePlus className="h-5 w-5" />
+            {isOwner && isEditing && (
+              <label htmlFor="avatar-upload" className="absolute inset-0 flex items-center justify-center bg-black/50 cursor-pointer">
+                <div className="text-white text-sm">Change</div>
                 <input 
-                  id="banner" 
+                  id="avatar-upload" 
                   type="file" 
                   accept="image/*" 
+                  onChange={handleAvatarChange} 
                   className="hidden" 
-                  onChange={handleBannerChange}
                 />
               </label>
             )}
           </div>
           
-          <div className="flex flex-col md:flex-row gap-6 mt-6">
-            {/* Sidebar with Store Info */}
-            <div className="w-full md:w-1/3 space-y-4">
+          <div className="mt-4 flex justify-between items-start">
+            <div>
+              {isEditing ? (
+                <Input
+                  name="username"
+                  value={formData.username}
+                  onChange={handleChange}
+                  placeholder="Store Name"
+                  className="text-2xl font-bold"
+                />
+              ) : (
+                <h1 className="text-2xl font-bold">{profile?.username || 'Store'}</h1>
+              )}
+            </div>
+            {isOwner && (
+              <div>
+                {isEditing ? (
+                  <div className="space-x-2">
+                    <Button variant="outline" onClick={() => setIsEditing(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleSave}>
+                      Save Changes
+                    </Button>
+                  </div>
+                ) : (
+                  <Button onClick={() => setIsEditing(true)}>
+                    Edit Profile
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+          
+          <Tabs defaultValue="info" className="mt-8">
+            <TabsList className="mb-4">
+              <TabsTrigger value="info">Information</TabsTrigger>
+              <TabsTrigger value="events">Events</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="info">
               <Card>
-                <CardHeader className="relative pb-2">
-                  <div className="flex justify-between items-start">
-                    <div className="relative">
-                      <div className="w-20 h-20 rounded-full overflow-hidden bg-muted border-4 border-background">
-                        {avatarUrl ? (
-                          <img 
-                            src={avatarUrl} 
-                            alt="Store avatar" 
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-primary/20 flex items-center justify-center">
-                            <span className="text-2xl font-bold text-primary">
-                              {form.watch('username')?.charAt(0) || 'S'}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                      
-                      {isEditing && (
-                        <label htmlFor="avatar" className="absolute -right-2 bottom-0 bg-background rounded-full p-1 cursor-pointer hover:bg-muted">
-                          <ImagePlus className="h-4 w-4" />
-                          <input 
-                            id="avatar" 
-                            type="file" 
-                            accept="image/*" 
-                            className="hidden" 
-                            onChange={handleAvatarChange}
-                          />
-                        </label>
-                      )}
-                    </div>
-                    
-                    {isCurrentUserStore && !isEditing && (
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => setIsEditing(true)}
-                      >
-                        Edit Profile
-                      </Button>
+                <CardContent className="pt-6 space-y-4">
+                  <div className="space-y-2">
+                    <h2 className="font-medium">Description</h2>
+                    {isEditing ? (
+                      <Textarea
+                        name="description"
+                        value={formData.description || ''}
+                        onChange={handleChange}
+                        placeholder="Store description"
+                        rows={4}
+                      />
+                    ) : (
+                      <p className="text-muted-foreground">
+                        {profile?.description || 'No description available'}
+                      </p>
                     )}
                   </div>
                   
-                  <CardTitle className="mt-3">
-                    {form.watch('username') || 'Store Name'}
-                  </CardTitle>
-                </CardHeader>
-                
-                <CardContent className="pt-2">
-                  {isEditing ? (
-                    <Form {...form}>
-                      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        <FormField
-                          control={form.control}
-                          name="username"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Store Name</FormLabel>
-                              <FormControl>
-                                <Input {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={form.control}
-                          name="description"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Description</FormLabel>
-                              <FormControl>
-                                <Textarea {...field} className="min-h-[100px]" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={form.control}
-                          name="address"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Address</FormLabel>
-                              <FormControl>
-                                <Input {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={form.control}
+                  <div className="space-y-2">
+                    <h2 className="font-medium">Address</h2>
+                    {isEditing ? (
+                      <Input
+                        name="address"
+                        value={formData.address || ''}
+                        onChange={handleChange}
+                        placeholder="Store address"
+                      />
+                    ) : (
+                      <p className="text-muted-foreground">
+                        {profile?.address || 'No address available'}
+                      </p>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <h2 className="font-medium">Phone</h2>
+                      {isEditing ? (
+                        <Input
                           name="phone"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Phone</FormLabel>
-                              <FormControl>
-                                <Input {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
+                          value={formData.phone || ''}
+                          onChange={handleChange}
+                          placeholder="Store phone"
                         />
-                        
-                        <FormField
-                          control={form.control}
-                          name="website"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Website</FormLabel>
-                              <FormControl>
-                                <Input {...field} placeholder="https://example.com" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <div className="flex justify-end space-x-2 pt-2">
-                          <Button 
-                            type="button" 
-                            variant="outline" 
-                            onClick={() => setIsEditing(false)}
-                            disabled={isSubmitting}
-                          >
-                            Cancel
-                          </Button>
-                          <Button 
-                            type="submit" 
-                            disabled={isSubmitting}
-                          >
-                            {isSubmitting ? (
-                              <>Saving...</>
-                            ) : (
-                              <>
-                                <Save className="h-4 w-4 mr-2" />
-                                Save
-                              </>
-                            )}
-                          </Button>
-                        </div>
-                      </form>
-                    </Form>
-                  ) : (
-                    <div className="space-y-4">
-                      {form.watch('description') && (
-                        <div>
-                          <h3 className="text-sm font-medium text-muted-foreground mb-1">About</h3>
-                          <p className="text-sm">{form.watch('description')}</p>
-                        </div>
-                      )}
-                      
-                      {(form.watch('address') || form.watch('phone') || form.watch('website')) && (
-                        <div className="border-t pt-3">
-                          <h3 className="text-sm font-medium text-muted-foreground mb-2">Contact Info</h3>
-                          {form.watch('address') && (
-                            <div className="text-sm mb-1">
-                              <span className="font-medium">Address: </span>
-                              {form.watch('address')}
-                            </div>
-                          )}
-                          {form.watch('phone') && (
-                            <div className="text-sm mb-1">
-                              <span className="font-medium">Phone: </span>
-                              {form.watch('phone')}
-                            </div>
-                          )}
-                          {form.watch('website') && (
-                            <div className="text-sm">
-                              <span className="font-medium">Website: </span>
-                              <a href={form.watch('website')} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                                {form.watch('website')}
-                              </a>
-                            </div>
-                          )}
-                        </div>
+                      ) : (
+                        <p className="text-muted-foreground">
+                          {profile?.phone || 'No phone available'}
+                        </p>
                       )}
                     </div>
-                  )}
+                    
+                    <div className="space-y-2">
+                      <h2 className="font-medium">Website</h2>
+                      {isEditing ? (
+                        <Input
+                          name="website"
+                          value={formData.website || ''}
+                          onChange={handleChange}
+                          placeholder="Store website"
+                        />
+                      ) : (
+                        <p className="text-muted-foreground">
+                          {profile?.website ? (
+                            <a 
+                              href={profile.website.startsWith('http') ? profile.website : `https://${profile.website}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline"
+                            >
+                              {profile.website}
+                            </a>
+                          ) : (
+                            'No website available'
+                          )}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            </div>
+            </TabsContent>
             
-            {/* Main Content */}
-            <div className="w-full md:w-2/3">
-              <Tabs defaultValue="events" className="w-full">
-                <TabsList className="mb-4">
-                  <TabsTrigger value="events">Store Events</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="events" className="pt-2">
-                  <EventRegistrationManager />
-                </TabsContent>
-              </Tabs>
-            </div>
-          </div>
+            <TabsContent value="events">
+              <Card>
+                <CardContent className="pt-6">
+                  <p className="text-center py-8 text-muted-foreground">
+                    Coming soon: List of events organized by this store
+                  </p>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
     </div>
