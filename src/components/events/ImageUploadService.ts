@@ -20,15 +20,6 @@ export const uploadEventImage = async (file: File): Promise<string | null> => {
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
     console.log(`Uploading file: ${fileName} to event_photos bucket`);
     
-    // Check if the bucket exists
-    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-    if (bucketsError) {
-      console.error('Error checking buckets:', bucketsError);
-      throw bucketsError;
-    }
-    
-    console.log('Available buckets:', buckets.map(b => b.name));
-    
     // Upload the file
     const { data, error } = await supabase.storage
       .from('event_photos')
@@ -95,6 +86,18 @@ export const uploadProfileImage = async (file: File, userId: string): Promise<st
     const { data: publicURL } = supabase.storage
       .from('avatars')
       .getPublicUrl(data.path);
+    
+    // Update the profile in the database with the new avatar URL
+    if (userId) {
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicURL.publicUrl })
+        .eq('id', userId);
+        
+      if (updateError) {
+        console.error('Error updating profile with avatar:', updateError);
+      }
+    }
       
     return publicURL.publicUrl;
   } catch (error) {
@@ -140,6 +143,18 @@ export const uploadBannerImage = async (file: File, userId: string): Promise<str
     const { data: publicURL } = supabase.storage
       .from('banners')
       .getPublicUrl(data.path);
+    
+    // Update the profile in the database with the new banner URL
+    if (userId) {
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ banner_url: publicURL.publicUrl })
+        .eq('id', userId);
+        
+      if (updateError) {
+        console.error('Error updating profile with banner:', updateError);
+      }
+    }
       
     return publicURL.publicUrl;
   } catch (error) {

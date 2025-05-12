@@ -1,9 +1,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { getStoreProfile, StoreProfile, uploadBannerImage, uploadProfileImage } from '@/services/ProfileService';
+import { getStoreProfile, StoreProfile, updateProfile } from '@/services/ProfileService';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import Layout from '@/components/Layout';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { uploadBannerImage, uploadProfileImage } from '@/components/events/ImageUploadService';
 
 // Rename to avoid conflict with imported interface
 interface ProfileData extends Omit<StoreProfile, 'id'> {
@@ -89,16 +90,20 @@ const StoreProfilePage: React.FC = () => {
     try {
       setUploading(true);
 
-      // For demonstration purposes, just update the state
-      // In a real app, you would call an API to save the changes
-      setProfile((prev) => ({
-        ...prev!,
-        ...formData,
-        id: prev!.id,
-      }));
+      // Save the profile changes to the database
+      if (profile && profile.id) {
+        const updatedProfile = await updateProfile({
+          ...formData,
+          id: profile.id
+        });
+        
+        if (updatedProfile) {
+          setProfile(updatedProfile);
+          toast.success('Profile updated successfully');
+        }
+      }
 
       setIsEditing(false);
-      toast.success('Profile updated successfully');
     } catch (error) {
       console.error('Error saving profile:', error);
       toast.error('Failed to update profile');
@@ -112,17 +117,34 @@ const StoreProfilePage: React.FC = () => {
       if (!e.target.files || e.target.files.length === 0) {
         return;
       }
+      
+      if (!profile || !profile.id) {
+        toast.error('Please save your profile first');
+        return;
+      }
 
       setUploading(true);
       const file = e.target.files[0];
-      const avatarUrl = await uploadProfileImage(file);
+      const avatarUrl = await uploadProfileImage(file, profile.id);
 
-      setFormData((prev) => ({
-        ...prev,
-        avatar_url: avatarUrl,
-      }));
-
-      toast.success('Avatar uploaded successfully');
+      if (avatarUrl) {
+        // Update the local state
+        setFormData((prev) => ({
+          ...prev,
+          avatar_url: avatarUrl,
+        }));
+        
+        // Update the profile in the database
+        await supabase
+          .from('profiles')
+          .update({ avatar_url: avatarUrl })
+          .eq('id', profile.id);
+          
+        setProfile(prev => prev ? { ...prev, avatar_url: avatarUrl } : null);
+        toast.success('Avatar uploaded successfully');
+      } else {
+        toast.error('Failed to upload avatar');
+      }
     } catch (error) {
       console.error('Error uploading avatar:', error);
       toast.error('Failed to upload avatar');
@@ -136,17 +158,34 @@ const StoreProfilePage: React.FC = () => {
       if (!e.target.files || e.target.files.length === 0) {
         return;
       }
+      
+      if (!profile || !profile.id) {
+        toast.error('Please save your profile first');
+        return;
+      }
 
       setUploading(true);
       const file = e.target.files[0];
-      const bannerUrl = await uploadBannerImage(file);
+      const bannerUrl = await uploadBannerImage(file, profile.id);
 
-      setFormData((prev) => ({
-        ...prev,
-        banner_url: bannerUrl,
-      }));
-
-      toast.success('Banner uploaded successfully');
+      if (bannerUrl) {
+        // Update the local state
+        setFormData((prev) => ({
+          ...prev,
+          banner_url: bannerUrl,
+        }));
+        
+        // Update the profile in the database
+        await supabase
+          .from('profiles')
+          .update({ banner_url: bannerUrl })
+          .eq('id', profile.id);
+          
+        setProfile(prev => prev ? { ...prev, banner_url: bannerUrl } : null);
+        toast.success('Banner uploaded successfully');
+      } else {
+        toast.error('Failed to upload banner');
+      }
     } catch (error) {
       console.error('Error uploading banner:', error);
       toast.error('Failed to upload banner');

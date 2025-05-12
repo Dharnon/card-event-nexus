@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { UserEvent, GameResult, Deck, SideboardGuide, Card as MagicCard, EventFormat } from '@/types';
 import { Json } from '@/integrations/supabase/types';
@@ -65,7 +64,7 @@ export async function updateProfile(updates: any) {
   }
 }
 
-export async function uploadProfileImage(file: File, bucketName: string = 'avatars') {
+export async function uploadProfileImage(file: File): Promise<string | null> {
   try {
     const { data: userData } = await supabase.auth.getUser();
     if (!userData || !userData.user) {
@@ -78,7 +77,7 @@ export async function uploadProfileImage(file: File, bucketName: string = 'avata
     
     // Upload the file
     const { data, error } = await supabase.storage
-      .from(bucketName)
+      .from('avatars')
       .upload(fileName, file, {
         cacheControl: '3600',
         upsert: true,
@@ -91,18 +90,70 @@ export async function uploadProfileImage(file: File, bucketName: string = 'avata
     
     // Get public URL
     const { data: publicURL } = supabase.storage
-      .from(bucketName)
+      .from('avatars')
       .getPublicUrl(data.path);
+      
+    // Update the user's profile with the new avatar URL
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ avatar_url: publicURL.publicUrl })
+      .eq('id', userData.user.id);
+      
+    if (updateError) {
+      console.error('Error updating profile with new avatar:', updateError);
+    }
       
     return publicURL.publicUrl;
   } catch (error) {
     console.error('Error uploading profile image:', error);
-    throw error;
+    return null;
   }
 }
 
-export async function uploadBannerImage(file: File) {
-  return uploadProfileImage(file, 'banners');
+export async function uploadBannerImage(file: File): Promise<string | null> {
+  try {
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData || !userData.user) {
+      throw new Error('No user logged in');
+    }
+    
+    // Generate a unique file name
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${userData.user.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+    
+    // Upload the file
+    const { data, error } = await supabase.storage
+      .from('banners')
+      .upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: true,
+        contentType: file.type
+      });
+      
+    if (error) {
+      throw error;
+    }
+    
+    // Get public URL
+    const { data: publicURL } = supabase.storage
+      .from('banners')
+      .getPublicUrl(data.path);
+      
+    // Update the user's profile with the new banner URL
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ banner_url: publicURL.publicUrl })
+      .eq('id', userData.user.id);
+      
+    if (updateError) {
+      console.error('Error updating profile with new banner:', updateError);
+    }
+      
+    return publicURL.publicUrl;
+  } catch (error) {
+    console.error('Error uploading banner image:', error);
+    return null;
+  }
 }
 
 export async function getStoreProfile(storeId: string): Promise<StoreProfile | null> {
