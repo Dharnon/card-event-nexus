@@ -116,7 +116,7 @@ const StatsDisplay = () => {
           <CardHeader>
             <CardTitle>Victorias / Derrotas</CardTitle>
           </CardHeader>
-          <CardContent className="h-[300px] my-0 py-[22px]">
+          <CardContent className="h-[300px] my-0 py-[2px]">
             <ChartContainer config={{
             Victorias: {
               color: '#10B981'
