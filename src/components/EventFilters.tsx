@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import * as dateFns from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -31,19 +32,6 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 import { useIsMobile } from '@/hooks/use-mobile';
-import { supabase } from '@/integrations/supabase/client';
-
-// Define store interface to type the store data from Supabase
-interface Store {
-  id: string;
-  name: string | null;
-}
-
-// Define the Profile type from Supabase to avoid deep type instantiation
-interface Profile {
-  id: string;
-  username: string | null;
-}
 
 const formatOptions: EventFormat[] = [
   'Standard', 'Modern', 'Legacy', 'Commander', 'Pioneer', 'Vintage', 'Draft', 'Sealed', 'Prerelease', 'Other'
@@ -86,37 +74,7 @@ const EventFilters = ({
   const [format, setFormat] = useState<EventFormat | undefined>(undefined);
   const [type, setType] = useState<EventType | undefined>(undefined);
   const [date, setDate] = useState<Date | undefined>(undefined);
-  const [storeId, setStoreId] = useState<string | undefined>(undefined);
-  const [stores, setStores] = useState<Store[]>([]);
   const isMobile = useIsMobile();
-  
-  // Fetch available stores
-  useEffect(() => {
-    const fetchStores = async () => {
-      try {
-        // Use explicit typing to avoid deep type instantiation
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('id, username')
-          .eq('store', true);
-          
-        if (error) throw error;
-        
-        if (data) {
-          // Explicitly map the data to our Store type
-          const storeData: Store[] = data.map((item: Profile) => ({
-            id: item.id,
-            name: item.username
-          }));
-          setStores(storeData);
-        }
-      } catch (error) {
-        console.error('Error fetching stores:', error);
-      }
-    };
-    
-    fetchStores();
-  }, []);
   
   const handleSearch = () => {
     const filters: EventFiltersType = {
@@ -125,7 +83,6 @@ const EventFilters = ({
       format,
       type,
       startDate: date,
-      storeId,
     };
     
     setFilters(filters);
@@ -137,11 +94,10 @@ const EventFilters = ({
     setFormat(undefined);
     setType(undefined);
     setDate(undefined);
-    setStoreId(undefined);
     setFilters({});
   };
   
-  const hasActiveFilters = searchTerm || location || format || type || date || storeId;
+  const hasActiveFilters = searchTerm || location || format || type || date;
 
   const FiltersContent = () => (
     <div className="space-y-5">
@@ -153,26 +109,6 @@ const EventFilters = ({
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-      </div>
-      
-      <div className="space-y-4">
-        <div className="font-medium text-sm">Store</div>
-        <Select 
-          value={storeId} 
-          onValueChange={(value) => setStoreId(value || undefined)}
-        >
-          <SelectTrigger className="w-full bg-background h-11">
-            <SelectValue placeholder="Select store" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Stores</SelectItem>
-            {stores.map((store) => (
-              <SelectItem key={store.id} value={store.id}>
-                {store.name || `Store ${store.id.substring(0, 6)}`}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
       
       <div className="space-y-4">

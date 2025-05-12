@@ -50,11 +50,6 @@ export const useEventFilters = (events: Event[]) => {
       return false;
     }
     
-    // Store filter
-    if (filters.storeId && filters.storeId !== 'all' && event.createdBy !== filters.storeId) {
-      return false;
-    }
-    
     // Date filter
     if (filters.startDate) {
       const eventDate = new Date(event.startDate);
