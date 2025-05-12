@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { UserEvent, GameResult, Deck, SideboardGuide, Card as MagicCard, EventFormat } from '@/types';
 
@@ -151,6 +150,17 @@ export async function getUserDecks(): Promise<Deck[]> {
       const maindeckCards = deck.cards.filter((card: any) => !card.is_sideboard);
       const sideboardCards = deck.cards.filter((card: any) => card.is_sideboard);
       
+      // Safely cast the sideboard_guide to SideboardGuide or undefined
+      let sideboardGuide: SideboardGuide | undefined = undefined;
+      if (deck.sideboard_guide) {
+        try {
+          // Type assertion with unknown as intermediate step
+          sideboardGuide = deck.sideboard_guide as unknown as SideboardGuide;
+        } catch (e) {
+          console.error('Failed to parse sideboard guide:', e);
+        }
+      }
+      
       return {
         id: deck.id,
         name: deck.name,
@@ -173,7 +183,7 @@ export async function getUserDecks(): Promise<Deck[]> {
         createdAt: deck.created_at,
         updatedAt: deck.updated_at,
         userId: deck.user_id,
-        sideboardGuide: deck.sideboard_guide as SideboardGuide | undefined
+        sideboardGuide
       };
     });
     
@@ -204,6 +214,17 @@ export async function getDeckById(deckId: string): Promise<Deck | null> {
     const maindeckCards = data.cards.filter((card: any) => !card.is_sideboard);
     const sideboardCards = data.cards.filter((card: any) => card.is_sideboard);
     
+    // Safely cast the sideboard_guide to SideboardGuide or undefined
+    let sideboardGuide: SideboardGuide | undefined = undefined;
+    if (data.sideboard_guide) {
+      try {
+        // Type assertion with unknown as intermediate step
+        sideboardGuide = data.sideboard_guide as unknown as SideboardGuide;
+      } catch (e) {
+        console.error('Failed to parse sideboard guide:', e);
+      }
+    }
+    
     const deck: Deck = {
       id: data.id,
       name: data.name,
@@ -226,7 +247,7 @@ export async function getDeckById(deckId: string): Promise<Deck | null> {
       createdAt: data.created_at,
       updatedAt: data.updated_at,
       userId: data.user_id,
-      sideboardGuide: data.sideboard_guide as SideboardGuide | undefined
+      sideboardGuide
     };
     
     return deck;
@@ -446,24 +467,31 @@ export async function getUserEvents(): Promise<UserEvent[]> {
       throw new Error('No user logged in');
     }
     
-    // Use the RPC function to get events safely
-    const { data, error } = await supabase.rpc('get_user_events', {
-      user_id_param: userData.user.id
-    });
+    // Get user events
+    const { data, error } = await supabase
+      .from('user_events')
+      .select('*')
+      .eq('user_id', userData.user.id);
     
     if (error) {
       console.error('Error fetching user events:', error);
       return [];
     }
     
-    // Convert raw data to UserEvent type
-    const userEvents: UserEvent[] = data && data.length > 0 ? data.map((event: any) => ({
-      id: event.id,
-      name: event.name,
-      date: event.date,
-      games: [], // We'll populate this with an additional query if needed
-      userId: event.user_id
-    })) : [];
+    // Convert raw data to UserEvent type with proper type checking
+    const userEvents: UserEvent[] = [];
+    
+    if (data && Array.isArray(data)) {
+      data.forEach((event: any) => {
+        userEvents.push({
+          id: event.id,
+          name: event.name,
+          date: event.date,
+          games: [], // We'll populate this with an additional query if needed
+          userId: event.user_id
+        });
+      });
+    }
     
     return userEvents;
   } catch (error) {
@@ -479,12 +507,16 @@ export async function createUserEvent(event: Partial<UserEvent>): Promise<UserEv
       throw new Error('No user logged in');
     }
     
-    // Use the RPC function to create an event safely
-    const { data, error } = await supabase.rpc('create_user_event', {
-      name_param: event.name || '',
-      date_param: event.date || new Date().toISOString(),
-      user_id_param: userData.user.id
-    });
+    // Insert new event
+    const { data, error } = await supabase
+      .from('user_events')
+      .insert([{
+        name: event.name || '',
+        date: event.date || new Date().toISOString(),
+        user_id: userData.user.id
+      }])
+      .select()
+      .single();
       
     if (error) {
       throw error;
@@ -509,12 +541,16 @@ export async function createUserEvent(event: Partial<UserEvent>): Promise<UserEv
 
 export async function updateUserEvent(eventId: string, updates: Partial<UserEvent>): Promise<UserEvent> {
   try {
-    // Use the RPC function to update an event safely
-    const { data, error } = await supabase.rpc('update_user_event', {
-      event_id_param: eventId,
-      name_param: updates.name || '',
-      date_param: updates.date || new Date().toISOString()
-    });
+    // Update event
+    const { data, error } = await supabase
+      .from('user_events')
+      .update({
+        name: updates.name,
+        date: updates.date
+      })
+      .eq('id', eventId)
+      .select()
+      .single();
       
     if (error) {
       throw error;
@@ -539,10 +575,10 @@ export async function updateUserEvent(eventId: string, updates: Partial<UserEven
 
 export async function deleteUserEvent(eventId: string): Promise<void> {
   try {
-    // Use the RPC function to delete an event safely
-    const { error } = await supabase.rpc('delete_user_event', {
-      event_id_param: eventId
-    });
+    const { error } = await supabase
+      .from('user_events')
+      .delete()
+      .eq('id', eventId);
       
     if (error) {
       throw error;
@@ -560,31 +596,47 @@ export async function getUserGames(): Promise<GameResult[]> {
       throw new Error('No user logged in');
     }
     
-    // Use the RPC function to get games safely
-    const { data, error } = await supabase.rpc('get_user_games', {
-      user_id_param: userData.user.id
-    });
+    // Get user games
+    const { data, error } = await supabase
+      .from('game_results')
+      .select('*')
+      .eq('user_id', userData.user.id);
       
     if (error) {
       throw error;
     }
     
-    if (!data) {
-      return [];
-    }
+    // Convert raw data to GameResult type with proper type checking
+    const gameResults: GameResult[] = [];
     
-    // Convert raw data to GameResult type
-    const gameResults: GameResult[] = data.map((game: any) => ({
-      id: game.id,
-      win: game.win,
-      opponentDeckName: game.opponent_deck_name,
-      opponentDeckFormat: game.opponent_deck_format as EventFormat,
-      deckUsed: game.deck_used,
-      notes: game.notes,
-      eventId: game.event_id,
-      date: game.date,
-      matchScore: game.match_score
-    }));
+    if (data && Array.isArray(data)) {
+      data.forEach((game: any) => {
+        // Parse match_score if it exists
+        let matchScore = undefined;
+        if (game.match_score) {
+          try {
+            matchScore = game.match_score as {
+              playerWins: number;
+              opponentWins: number;
+            };
+          } catch (e) {
+            console.error('Failed to parse match score:', e);
+          }
+        }
+        
+        gameResults.push({
+          id: game.id,
+          win: game.win,
+          opponentDeckName: game.opponent_deck_name,
+          opponentDeckFormat: game.opponent_deck_format as EventFormat,
+          deckUsed: game.deck_used,
+          notes: game.notes,
+          eventId: game.event_id,
+          date: game.date,
+          matchScore: matchScore
+        });
+      });
+    }
     
     return gameResults;
   } catch (error) {
@@ -600,18 +652,22 @@ export async function createGameResult(gameResult: Omit<GameResult, 'id'>): Prom
       throw new Error('No user logged in');
     }
     
-    // Use the RPC function to create a game result safely
-    const { data, error } = await supabase.rpc('create_game_result', {
-      event_id_param: gameResult.eventId,
-      win_param: gameResult.win,
-      opponent_deck_name_param: gameResult.opponentDeckName,
-      opponent_deck_format_param: gameResult.opponentDeckFormat,
-      deck_used_param: gameResult.deckUsed,
-      notes_param: gameResult.notes || '',
-      date_param: gameResult.date || new Date().toISOString(),
-      match_score_param: gameResult.matchScore ? JSON.stringify(gameResult.matchScore) : null,
-      user_id_param: userData.user.id
-    });
+    // Insert new game result
+    const { data, error } = await supabase
+      .from('game_results')
+      .insert([{
+        event_id: gameResult.eventId,
+        win: gameResult.win,
+        opponent_deck_name: gameResult.opponentDeckName,
+        opponent_deck_format: gameResult.opponentDeckFormat,
+        deck_used: gameResult.deckUsed,
+        notes: gameResult.notes || '',
+        date: gameResult.date || new Date().toISOString(),
+        match_score: gameResult.matchScore || null,
+        user_id: userData.user.id
+      }])
+      .select()
+      .single();
       
     if (error) {
       throw error;
@@ -630,7 +686,10 @@ export async function createGameResult(gameResult: Omit<GameResult, 'id'>): Prom
       notes: data.notes,
       eventId: data.event_id,
       date: data.date,
-      matchScore: data.match_score
+      matchScore: data.match_score as {
+        playerWins: number;
+        opponentWins: number;
+      } | undefined
     };
   } catch (error) {
     console.error('Error creating game result:', error);
@@ -645,24 +704,27 @@ export async function getUserStats() {
       throw new Error('No user logged in');
     }
     
-    // Use the RPC function to get games safely
-    const { data: games, error } = await supabase.rpc('get_user_games', {
-      user_id_param: userData.user.id
-    });
+    // Get user games
+    const { data, error } = await supabase
+      .from('game_results')
+      .select('*')
+      .eq('user_id', userData.user.id);
       
     if (error) {
       throw error;
     }
     
     // Calculate stats
-    const totalGames = games && games.length ? games.length : 0;
-    const wins = games && games.length ? games.filter((game: any) => game.win).length : 0;
+    const games = data || [];
+    const totalGames = games.length;
+    const wins = games.filter(game => game.win).length;
     const losses = totalGames - wins;
     const winRate = totalGames > 0 ? (wins / totalGames) * 100 : 0;
     
     // Calculate stats by format
     const statsByFormat: Record<string, { wins: number, losses: number, totalGames: number, winRate: number }> = {};
-    if (games && games.length > 0) {
+    
+    if (games.length > 0) {
       games.forEach((game: any) => {
         const format = game.opponent_deck_format || 'Unknown';
         if (!statsByFormat[format]) {
