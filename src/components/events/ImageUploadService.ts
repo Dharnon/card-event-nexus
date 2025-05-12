@@ -10,45 +10,22 @@ export const uploadEventImage = async (file: File): Promise<string | null> => {
   try {
     console.log('Starting image upload process');
     
-    // First check if 'events' bucket exists
-    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-    
-    if (bucketsError) {
-      console.error('Error listing buckets:', bucketsError);
-      throw bucketsError;
-    }
-    
-    console.log('Available buckets:', buckets);
-    
-    let eventsBucket = buckets?.find(b => b.name === 'events');
-    
-    // Create the bucket if it doesn't exist
-    if (!eventsBucket) {
-      console.log('Events bucket not found, creating it');
-      const { data: newBucket, error: createError } = await supabase.storage.createBucket('events', {
-        public: true,
-        fileSizeLimit: 20971520 // 20MB to allow larger images
-      });
-      
-      if (createError) {
-        console.error('Error creating events bucket:', createError);
-        throw createError;
-      }
-      
-      console.log('New bucket created:', newBucket);
+    if (!file) {
+      console.error('No file provided for upload');
+      return null;
     }
     
     // Generate a unique filename with original extension
     const fileExt = file.name.split('.').pop();
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-    console.log(`Uploading file: ${fileName} to events bucket`);
+    console.log(`Uploading file: ${fileName} to event_photos bucket`);
     
     const { data, error } = await supabase.storage
-      .from('events')
+      .from('event_photos')
       .upload(fileName, file, {
         cacheControl: '3600',
-        upsert: true, // Changed to true to allow overwriting if needed
-        contentType: file.type // Set the correct content type
+        upsert: true,
+        contentType: file.type
       });
       
     if (error) {
@@ -60,7 +37,7 @@ export const uploadEventImage = async (file: File): Promise<string | null> => {
     
     // Get public URL
     const { data: publicURL } = supabase.storage
-      .from('events')
+      .from('event_photos')
       .getPublicUrl(data.path);
       
     console.log('Generated public URL:', publicURL);

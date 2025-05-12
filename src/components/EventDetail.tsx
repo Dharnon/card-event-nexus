@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { useAuth } from '@/context/AuthContext';
 import { Event, EventFormat, EventType } from '@/types';
 import { registerForEvent, cancelRegistration, checkRegistration, subscribeToEventWithRegistrations } from '@/services/EventService';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 interface EventDetailProps {
   event: Event;
@@ -61,11 +62,13 @@ const EventDetail = ({ event }: EventDetailProps) => {
   const [currentEvent, setCurrentEvent] = useState<Event>(event);
   const [isRegistered, setIsRegistered] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [isImageLoading, setIsImageLoading] = useState(!!event.image);
   const { user } = useAuth();
   
   useEffect(() => {
     // Set initial event
     setCurrentEvent(event);
+    setIsImageLoading(!!event.image);
     
     // Check if user is registered
     if (user) {
@@ -141,17 +144,26 @@ const EventDetail = ({ event }: EventDetailProps) => {
 
   return (
     <Card className="max-w-4xl mx-auto overflow-hidden">
-      <div className="h-48 bg-magic-gradient-bg flex items-center justify-center">
+      <div className="relative h-52 bg-magic-gradient-bg flex items-center justify-center">
         {currentEvent.image ? (
-          <img 
-            src={currentEvent.image} 
-            alt={currentEvent.title} 
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              console.error("Detail image failed to load:", currentEvent.image);
-              e.currentTarget.style.display = 'none';
-            }}
-          />
+          <AspectRatio ratio={16/9} className="w-full h-full">
+            <img 
+              src={currentEvent.image} 
+              alt={currentEvent.title} 
+              className="w-full h-full object-cover"
+              onLoad={() => setIsImageLoading(false)}
+              onError={(e) => {
+                console.error("Detail image failed to load:", currentEvent.image);
+                setIsImageLoading(false);
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+            {isImageLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-muted">
+                <span className="text-muted-foreground">Loading image...</span>
+              </div>
+            )}
+          </AspectRatio>
         ) : (
           <Calendar className="h-24 w-24 text-white opacity-30" />
         )}

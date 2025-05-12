@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Event, EventFormat, EventType } from '@/types';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { useState } from 'react';
 
 const formatColors: Record<EventFormat, string> = {
   'Standard': 'bg-blue-900/50 text-blue-200 border-blue-700/50 dark:bg-blue-700/30',
@@ -43,6 +44,9 @@ interface EventCardProps {
 }
 
 const EventCard = ({ event, className = '' }: EventCardProps) => {
+  const [imageError, setImageError] = useState(false);
+  const [isImageLoading, setIsImageLoading] = useState(!!event.image);
+  
   const formatDate = (dateString: string) => {
     return dateFns.format(dateFns.parseISO(dateString), 'MMM d, yyyy • h:mm a');
   };
@@ -53,18 +57,25 @@ const EventCard = ({ event, className = '' }: EventCardProps) => {
   return (
     <Link to={`/events/${event.id}`} className="block h-full group">
       <Card className={`enhanced-card h-full ${className}`}>
-        {event.image && (
-          <AspectRatio ratio={16/9}>
-            <div className="h-full w-full overflow-hidden rounded-t-3xl">
+        {event.image && !imageError && (
+          <AspectRatio ratio={16/9} className="relative">
+            <div className="h-full w-full overflow-hidden rounded-t-lg">
               <img 
                 src={event.image} 
                 alt={event.title} 
                 className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
+                onLoad={() => setIsImageLoading(false)}
                 onError={(e) => {
                   console.error("Image failed to load:", event.image);
-                  e.currentTarget.style.display = 'none';
+                  setImageError(true);
+                  setIsImageLoading(false);
                 }}
               />
+              {isImageLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-muted">
+                  <span className="text-muted-foreground text-sm">Loading...</span>
+                </div>
+              )}
             </div>
           </AspectRatio>
         )}
