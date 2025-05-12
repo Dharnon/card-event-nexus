@@ -36,7 +36,7 @@ export const useEventFilters = (events: Event[]) => {
     }
     
     // Location filter
-    if (filters.location && event.location.city !== filters.location) {
+    if (filters.location && filters.location !== 'all' && event.location.city !== filters.location) {
       return false;
     }
     
@@ -51,7 +51,7 @@ export const useEventFilters = (events: Event[]) => {
     }
     
     // Store filter
-    if (filters.storeId && event.createdBy !== filters.storeId) {
+    if (filters.storeId && filters.storeId !== 'all' && event.createdBy !== filters.storeId) {
       return false;
     }
     

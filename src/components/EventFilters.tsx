@@ -85,8 +85,8 @@ const EventFilters = ({
       try {
         const { data, error } = await supabase
           .from('profiles')
-          .select('id, name:username')
-          .eq('role', 'store');
+          .select('id, name')  // Changed from 'name:username' to just 'name'
+          .eq('store', true);  // Changed from 'role', 'store' to 'store', true
           
         if (error) throw error;
         
@@ -148,7 +148,7 @@ const EventFilters = ({
             <SelectValue placeholder="Select store" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Stores</SelectItem>
+            <SelectItem value="all">All Stores</SelectItem>
             {stores.map((store) => (
               <SelectItem key={store.id} value={store.id}>
                 {store.name || `Store ${store.id.substring(0, 6)}`}
@@ -168,7 +168,7 @@ const EventFilters = ({
             <SelectValue placeholder="Select location" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Locations</SelectItem>
+            <SelectItem value="all">All Locations</SelectItem>
             <SelectItem value="Madrid">Madrid</SelectItem>
             <SelectItem value="Barcelona">Barcelona</SelectItem>
             <SelectItem value="Valencia">Valencia</SelectItem>
@@ -188,7 +188,7 @@ const EventFilters = ({
             <SelectValue placeholder="Select format" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Formats</SelectItem>
+            <SelectItem value="all">All Formats</SelectItem>
             {formatOptions.map((fmt) => (
               <SelectItem key={fmt} value={fmt}>
                 {fmt}
@@ -208,7 +208,7 @@ const EventFilters = ({
             <SelectValue placeholder="Select event type" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Types</SelectItem>
+            <SelectItem value="all">All Types</SelectItem>
             {typeOptions.map((t) => (
               <SelectItem key={t} value={t}>
                 {typeLabels[t]}
