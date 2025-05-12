@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import * as dateFns from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -53,7 +54,24 @@ const locationOptions = [
   'Madrid', 'Barcelona', 'Valencia', 'Sevilla', 'Bilbao'
 ];
 
-const EventFilters = () => {
+// Define props interface for EventFilters
+interface EventFiltersProps {
+  activeFormat: string;
+  setActiveFormat: (format: string) => void;
+  activeType: string;
+  setActiveType: (type: string) => void;
+  sortOrder: string;
+  setSortOrder: (order: string) => void;
+}
+
+const EventFilters = ({
+  activeFormat,
+  setActiveFormat,
+  activeType,
+  setActiveType,
+  sortOrder,
+  setSortOrder
+}: EventFiltersProps) => {
   const { setFilters } = useEvents();
   const [searchTerm, setSearchTerm] = useState('');
   const [location, setLocation] = useState<string | undefined>(undefined);

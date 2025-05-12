@@ -3,20 +3,33 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { getStoreProfile, uploadProfileImage, uploadBannerImage, updateProfile } from '@/services/ProfileService';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
+
+// Define the profile interface to match our database schema
+interface StoreProfile {
+  id: string;
+  username: string;
+  description?: string;
+  address?: string;
+  phone?: string;
+  website?: string;
+  avatar_url?: string;
+  banner_url?: string;
+  created_at: string;
+  updated_at: string;
+}
 
 const StoreProfilePage = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<StoreProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
@@ -42,7 +55,7 @@ const StoreProfilePage = () => {
       try {
         const profileData = await getStoreProfile(id);
         if (profileData) {
-          setProfile(profileData);
+          setProfile(profileData as StoreProfile);
           setFormData({
             username: profileData.username || '',
             description: profileData.description || '',
@@ -88,7 +101,7 @@ const StoreProfilePage = () => {
       });
       
       if (updatedProfile) {
-        setProfile(updatedProfile);
+        setProfile(updatedProfile as StoreProfile);
         setIsEditing(false);
         toast.success('Profile updated successfully');
       }

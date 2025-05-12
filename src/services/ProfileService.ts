@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { UserEvent, GameResult, Deck, SideboardGuide, Card as MagicCard } from '@/types';
+import { UserEvent, GameResult, Deck, SideboardGuide, Card as MagicCard, EventFormat } from '@/types';
 
 export async function getProfile() {
   try {
@@ -137,7 +137,7 @@ export async function getUserDecks(): Promise<Deck[]> {
       return {
         id: deck.id,
         name: deck.name,
-        format: deck.format,
+        format: deck.format as EventFormat,
         cards: maindeckCards.map((card: any) => ({
           id: card.id,
           name: card.name,
@@ -154,7 +154,9 @@ export async function getUserDecks(): Promise<Deck[]> {
         })),
         cardBackgroundUrl: deck.card_background_url,
         createdAt: deck.created_at,
-        updatedAt: deck.updated_at
+        updatedAt: deck.updated_at,
+        userId: deck.user_id,
+        sideboardGuide: deck.sideboard_guide
       };
     });
     
@@ -184,7 +186,7 @@ export async function getDeckById(deckId: string): Promise<Deck | null> {
     const deck: Deck = {
       id: data.id,
       name: data.name,
-      format: data.format,
+      format: data.format as EventFormat,
       cards: maindeckCards.map((card: any) => ({
         id: card.id,
         name: card.name,
@@ -202,6 +204,7 @@ export async function getDeckById(deckId: string): Promise<Deck | null> {
       cardBackgroundUrl: data.card_background_url,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
+      userId: data.user_id,
       sideboardGuide: data.sideboard_guide
     };
     
@@ -276,7 +279,11 @@ export async function createDeck(deck: Partial<Deck>): Promise<Deck> {
     }
     
     // Return the created deck with its cards
-    return getDeckById(deckData.id) as Promise<Deck>;
+    const newDeck = await getDeckById(deckData.id);
+    if (!newDeck) {
+      throw new Error('Failed to fetch the created deck');
+    }
+    return newDeck;
   } catch (error) {
     console.error('Error creating deck:', error);
     throw error;
@@ -372,7 +379,11 @@ export async function updateDeck(deckId: string, updates: Partial<Deck>): Promis
     }
     
     // Return the updated deck
-    return getDeckById(deckId) as Promise<Deck>;
+    const updatedDeck = await getDeckById(deckId);
+    if (!updatedDeck) {
+      throw new Error('Failed to fetch the updated deck');
+    }
+    return updatedDeck;
   } catch (error) {
     console.error('Error updating deck:', error);
     throw error;
@@ -406,6 +417,7 @@ export async function deleteDeck(deckId: string): Promise<void> {
   }
 }
 
+// Functions for UserEvents
 export async function getUserEvents(): Promise<UserEvent[]> {
   try {
     const { data: userData } = await supabase.auth.getUser();
@@ -413,6 +425,7 @@ export async function getUserEvents(): Promise<UserEvent[]> {
       throw new Error('No user logged in');
     }
     
+    // Check if user_events table exists by querying it
     const { data, error } = await supabase
       .from('user_events')
       .select('*')
@@ -420,10 +433,20 @@ export async function getUserEvents(): Promise<UserEvent[]> {
       .order('date', { ascending: false });
       
     if (error) {
-      throw error;
+      console.error('Error fetching user events:', error);
+      return [];
     }
     
-    return data;
+    // Convert raw data to UserEvent type
+    const userEvents: UserEvent[] = data.map((event: any) => ({
+      id: event.id,
+      name: event.name,
+      date: event.date,
+      games: [], // We'll populate this with an additional query if needed
+      userId: event.user_id
+    }));
+    
+    return userEvents;
   } catch (error) {
     console.error('Error getting user events:', error);
     return [];
@@ -451,7 +474,13 @@ export async function createUserEvent(event: Partial<UserEvent>): Promise<UserEv
       throw error;
     }
     
-    return data;
+    return {
+      id: data.id,
+      name: data.name,
+      date: data.date,
+      games: [],
+      userId: data.user_id
+    };
   } catch (error) {
     console.error('Error creating user event:', error);
     throw error;
@@ -462,7 +491,10 @@ export async function updateUserEvent(eventId: string, updates: Partial<UserEven
   try {
     const { data, error } = await supabase
       .from('user_events')
-      .update(updates)
+      .update({
+        name: updates.name,
+        date: updates.date
+      })
       .eq('id', eventId)
       .select()
       .single();
@@ -471,7 +503,13 @@ export async function updateUserEvent(eventId: string, updates: Partial<UserEven
       throw error;
     }
     
-    return data;
+    return {
+      id: data.id,
+      name: data.name,
+      date: data.date,
+      games: [],
+      userId: data.user_id
+    };
   } catch (error) {
     console.error('Error updating user event:', error);
     throw error;
@@ -522,7 +560,20 @@ export async function getUserGames(): Promise<GameResult[]> {
       throw error;
     }
     
-    return data;
+    // Convert raw data to GameResult type
+    const gameResults: GameResult[] = data.map((game: any) => ({
+      id: game.id,
+      win: game.win,
+      opponentDeckName: game.opponent_deck_name,
+      opponentDeckFormat: game.opponent_deck_format as EventFormat,
+      deckUsed: game.deck_used,
+      notes: game.notes,
+      eventId: game.event_id,
+      date: game.date,
+      matchScore: game.match_score
+    }));
+    
+    return gameResults;
   } catch (error) {
     console.error('Error getting user games:', error);
     return [];
@@ -556,7 +607,17 @@ export async function createGameResult(gameResult: Omit<GameResult, 'id'>): Prom
       throw error;
     }
     
-    return data;
+    return {
+      id: data.id,
+      win: data.win,
+      opponentDeckName: data.opponent_deck_name,
+      opponentDeckFormat: data.opponent_deck_format as EventFormat,
+      deckUsed: data.deck_used,
+      notes: data.notes,
+      eventId: data.event_id,
+      date: data.date,
+      matchScore: data.match_score
+    };
   } catch (error) {
     console.error('Error creating game result:', error);
     throw error;
@@ -586,18 +647,22 @@ export async function getUserStats() {
     const winRate = totalGames > 0 ? (wins / totalGames) * 100 : 0;
     
     // Calculate stats by format
-    const statsByFormat: Record<string, { wins: number, losses: number }> = {};
+    const statsByFormat: Record<string, { wins: number, losses: number, totalGames: number, winRate: number }> = {};
     games.forEach((game: any) => {
       const format = game.opponent_deck_format || 'Unknown';
       if (!statsByFormat[format]) {
-        statsByFormat[format] = { wins: 0, losses: 0 };
+        statsByFormat[format] = { wins: 0, losses: 0, totalGames: 0, winRate: 0 };
       }
       
+      statsByFormat[format].totalGames++;
       if (game.win) {
         statsByFormat[format].wins++;
       } else {
         statsByFormat[format].losses++;
       }
+      
+      statsByFormat[format].winRate = 
+        (statsByFormat[format].wins / statsByFormat[format].totalGames) * 100;
     });
     
     return {
