@@ -57,6 +57,7 @@ export type Database = {
           format: string
           id: string
           name: string
+          sideboard_guide: Json | null
           updated_at: string
           user_id: string
         }
@@ -66,6 +67,7 @@ export type Database = {
           format: string
           id?: string
           name: string
+          sideboard_guide?: Json | null
           updated_at?: string
           user_id: string
         }
@@ -75,6 +77,7 @@ export type Database = {
           format?: string
           id?: string
           name?: string
+          sideboard_guide?: Json | null
           updated_at?: string
           user_id?: string
         }
@@ -166,27 +169,116 @@ export type Database = {
         }
         Relationships: []
       }
-      profiles: {
+      game_results: {
         Row: {
-          avatar_url: string | null
           created_at: string
+          date: string
+          deck_used: string
+          event_id: string | null
           id: string
-          updated_at: string
-          username: string | null
+          match_score: Json | null
+          notes: string | null
+          opponent_deck_format: string
+          opponent_deck_name: string
+          user_id: string
+          win: boolean
         }
         Insert: {
-          avatar_url?: string | null
           created_at?: string
-          id: string
-          updated_at?: string
-          username?: string | null
+          date?: string
+          deck_used: string
+          event_id?: string | null
+          id?: string
+          match_score?: Json | null
+          notes?: string | null
+          opponent_deck_format: string
+          opponent_deck_name: string
+          user_id: string
+          win: boolean
         }
         Update: {
-          avatar_url?: string | null
           created_at?: string
+          date?: string
+          deck_used?: string
+          event_id?: string | null
           id?: string
+          match_score?: Json | null
+          notes?: string | null
+          opponent_deck_format?: string
+          opponent_deck_name?: string
+          user_id?: string
+          win?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_results_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "user_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          address: string | null
+          avatar_url: string | null
+          banner_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          phone: string | null
+          updated_at: string
+          username: string | null
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          avatar_url?: string | null
+          banner_url?: string | null
+          created_at?: string
+          description?: string | null
+          id: string
+          phone?: string | null
           updated_at?: string
           username?: string | null
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          avatar_url?: string | null
+          banner_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          username?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
+      user_events: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          name?: string
+          user_id?: string
         }
         Relationships: []
       }

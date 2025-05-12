@@ -2,6 +2,19 @@
 import { supabase } from '@/integrations/supabase/client';
 import { UserEvent, GameResult, Deck, SideboardGuide, Card as MagicCard, EventFormat } from '@/types';
 
+export interface StoreProfile {
+  id: string;
+  username: string | null;
+  description?: string | null;
+  address?: string | null;
+  phone?: string | null;
+  website?: string | null;
+  avatar_url?: string | null;
+  banner_url?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export async function getProfile() {
   try {
     const { data: user } = await supabase.auth.getUser();
@@ -91,7 +104,7 @@ export async function uploadBannerImage(file: File) {
   return uploadProfileImage(file, 'banners');
 }
 
-export async function getStoreProfile(storeId: string) {
+export async function getStoreProfile(storeId: string): Promise<StoreProfile | null> {
   try {
     const { data, error } = await supabase
       .from('profiles')
@@ -103,14 +116,14 @@ export async function getStoreProfile(storeId: string) {
       throw error;
     }
     
-    return data;
+    return data as StoreProfile;
   } catch (error) {
     console.error('Error getting store profile:', error);
     return null;
   }
 }
 
-// Add the missing functions needed by DeckManager, EventTracker, etc.
+// Functions for deck management
 
 export async function getUserDecks(): Promise<Deck[]> {
   try {
@@ -425,26 +438,24 @@ export async function getUserEvents(): Promise<UserEvent[]> {
       throw new Error('No user logged in');
     }
     
-    // Check if user_events table exists by querying it
-    const { data, error } = await supabase
-      .from('user_events')
-      .select('*')
-      .eq('user_id', userData.user.id)
-      .order('date', { ascending: false });
-      
+    // Use raw SQL query to work around type issues
+    const { data, error } = await supabase.rpc('get_user_events', {
+      user_id_param: userData.user.id
+    });
+    
     if (error) {
       console.error('Error fetching user events:', error);
       return [];
     }
     
     // Convert raw data to UserEvent type
-    const userEvents: UserEvent[] = data.map((event: any) => ({
+    const userEvents: UserEvent[] = data ? data.map((event: any) => ({
       id: event.id,
       name: event.name,
       date: event.date,
       games: [], // We'll populate this with an additional query if needed
       userId: event.user_id
-    }));
+    })) : [];
     
     return userEvents;
   } catch (error) {
@@ -460,15 +471,12 @@ export async function createUserEvent(event: Partial<UserEvent>): Promise<UserEv
       throw new Error('No user logged in');
     }
     
-    const { data, error } = await supabase
-      .from('user_events')
-      .insert({
-        user_id: userData.user.id,
-        name: event.name,
-        date: event.date
-      })
-      .select()
-      .single();
+    // Use raw SQL query to work around type issues
+    const { data, error } = await supabase.rpc('create_user_event', {
+      name_param: event.name || '',
+      date_param: event.date || new Date().toISOString(),
+      user_id_param: userData.user.id
+    });
       
     if (error) {
       throw error;
@@ -489,15 +497,12 @@ export async function createUserEvent(event: Partial<UserEvent>): Promise<UserEv
 
 export async function updateUserEvent(eventId: string, updates: Partial<UserEvent>): Promise<UserEvent> {
   try {
-    const { data, error } = await supabase
-      .from('user_events')
-      .update({
-        name: updates.name,
-        date: updates.date
-      })
-      .eq('id', eventId)
-      .select()
-      .single();
+    // Use raw SQL query to work around type issues
+    const { data, error } = await supabase.rpc('update_user_event', {
+      event_id_param: eventId,
+      name_param: updates.name || '',
+      date_param: updates.date || new Date().toISOString()
+    });
       
     if (error) {
       throw error;
@@ -518,21 +523,10 @@ export async function updateUserEvent(eventId: string, updates: Partial<UserEven
 
 export async function deleteUserEvent(eventId: string): Promise<void> {
   try {
-    // Delete all game results associated with this event
-    const { error: gamesError } = await supabase
-      .from('game_results')
-      .delete()
-      .eq('event_id', eventId);
-      
-    if (gamesError) {
-      throw gamesError;
-    }
-    
-    // Delete the event itself
-    const { error } = await supabase
-      .from('user_events')
-      .delete()
-      .eq('id', eventId);
+    // Use raw SQL query to work around type issues
+    const { error } = await supabase.rpc('delete_user_event', {
+      event_id_param: eventId
+    });
       
     if (error) {
       throw error;
@@ -550,18 +544,17 @@ export async function getUserGames(): Promise<GameResult[]> {
       throw new Error('No user logged in');
     }
     
-    const { data, error } = await supabase
-      .from('game_results')
-      .select('*')
-      .eq('user_id', userData.user.id)
-      .order('date', { ascending: false });
+    // Use raw SQL query to work around type issues
+    const { data, error } = await supabase.rpc('get_user_games', {
+      user_id_param: userData.user.id
+    });
       
     if (error) {
       throw error;
     }
     
     // Convert raw data to GameResult type
-    const gameResults: GameResult[] = data.map((game: any) => ({
+    const gameResults: GameResult[] = data ? data.map((game: any) => ({
       id: game.id,
       win: game.win,
       opponentDeckName: game.opponent_deck_name,
@@ -571,7 +564,7 @@ export async function getUserGames(): Promise<GameResult[]> {
       eventId: game.event_id,
       date: game.date,
       matchScore: game.match_score
-    }));
+    })) : [];
     
     return gameResults;
   } catch (error) {
@@ -587,21 +580,18 @@ export async function createGameResult(gameResult: Omit<GameResult, 'id'>): Prom
       throw new Error('No user logged in');
     }
     
-    const { data, error } = await supabase
-      .from('game_results')
-      .insert({
-        user_id: userData.user.id,
-        event_id: gameResult.eventId,
-        win: gameResult.win,
-        opponent_deck_name: gameResult.opponentDeckName,
-        opponent_deck_format: gameResult.opponentDeckFormat,
-        deck_used: gameResult.deckUsed,
-        notes: gameResult.notes,
-        date: gameResult.date,
-        match_score: gameResult.matchScore
-      })
-      .select()
-      .single();
+    // Use raw SQL query to work around type issues
+    const { data, error } = await supabase.rpc('create_game_result', {
+      event_id_param: gameResult.eventId,
+      win_param: gameResult.win,
+      opponent_deck_name_param: gameResult.opponentDeckName,
+      opponent_deck_format_param: gameResult.opponentDeckFormat,
+      deck_used_param: gameResult.deckUsed,
+      notes_param: gameResult.notes || '',
+      date_param: gameResult.date || new Date().toISOString(),
+      match_score_param: gameResult.matchScore ? JSON.stringify(gameResult.matchScore) : null,
+      user_id_param: userData.user.id
+    });
       
     if (error) {
       throw error;
@@ -631,39 +621,41 @@ export async function getUserStats() {
       throw new Error('No user logged in');
     }
     
-    const { data: games, error } = await supabase
-      .from('game_results')
-      .select('*')
-      .eq('user_id', userData.user.id);
+    // Use raw SQL query to work around type issues
+    const { data: games, error } = await supabase.rpc('get_user_games', {
+      user_id_param: userData.user.id
+    });
       
     if (error) {
       throw error;
     }
     
     // Calculate stats
-    const totalGames = games.length;
-    const wins = games.filter((game: any) => game.win).length;
+    const totalGames = games ? games.length : 0;
+    const wins = games ? games.filter((game: any) => game.win).length : 0;
     const losses = totalGames - wins;
     const winRate = totalGames > 0 ? (wins / totalGames) * 100 : 0;
     
     // Calculate stats by format
     const statsByFormat: Record<string, { wins: number, losses: number, totalGames: number, winRate: number }> = {};
-    games.forEach((game: any) => {
-      const format = game.opponent_deck_format || 'Unknown';
-      if (!statsByFormat[format]) {
-        statsByFormat[format] = { wins: 0, losses: 0, totalGames: 0, winRate: 0 };
-      }
-      
-      statsByFormat[format].totalGames++;
-      if (game.win) {
-        statsByFormat[format].wins++;
-      } else {
-        statsByFormat[format].losses++;
-      }
-      
-      statsByFormat[format].winRate = 
-        (statsByFormat[format].wins / statsByFormat[format].totalGames) * 100;
-    });
+    if (games) {
+      games.forEach((game: any) => {
+        const format = game.opponent_deck_format || 'Unknown';
+        if (!statsByFormat[format]) {
+          statsByFormat[format] = { wins: 0, losses: 0, totalGames: 0, winRate: 0 };
+        }
+        
+        statsByFormat[format].totalGames++;
+        if (game.win) {
+          statsByFormat[format].wins++;
+        } else {
+          statsByFormat[format].losses++;
+        }
+        
+        statsByFormat[format].winRate = 
+          (statsByFormat[format].wins / statsByFormat[format].totalGames) * 100;
+      });
+    }
     
     return {
       totalGames,

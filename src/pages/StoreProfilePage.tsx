@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
-import { getStoreProfile, uploadProfileImage, uploadBannerImage, updateProfile } from '@/services/ProfileService';
+import { getStoreProfile, uploadProfileImage, uploadBannerImage, updateProfile, StoreProfile } from '@/services/ProfileService';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,7 +54,7 @@ const StoreProfilePage = () => {
       try {
         const profileData = await getStoreProfile(id);
         if (profileData) {
-          setProfile(profileData as StoreProfile);
+          setProfile(profileData);
           setFormData({
             username: profileData.username || '',
             description: profileData.description || '',
@@ -263,7 +262,7 @@ const StoreProfilePage = () => {
                     {isEditing ? (
                       <Textarea
                         name="description"
-                        value={formData.description || ''}
+                        value={formData.description}
                         onChange={handleChange}
                         placeholder="Store description"
                         rows={4}
@@ -280,7 +279,7 @@ const StoreProfilePage = () => {
                     {isEditing ? (
                       <Input
                         name="address"
-                        value={formData.address || ''}
+                        value={formData.address}
                         onChange={handleChange}
                         placeholder="Store address"
                       />
@@ -297,7 +296,7 @@ const StoreProfilePage = () => {
                       {isEditing ? (
                         <Input
                           name="phone"
-                          value={formData.phone || ''}
+                          value={formData.phone}
                           onChange={handleChange}
                           placeholder="Store phone"
                         />
@@ -313,7 +312,7 @@ const StoreProfilePage = () => {
                       {isEditing ? (
                         <Input
                           name="website"
-                          value={formData.website || ''}
+                          value={formData.website}
                           onChange={handleChange}
                           placeholder="Store website"
                         />
