@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import * as dateFns from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -33,6 +32,12 @@ import {
 } from "@/components/ui/drawer";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
+
+// Define store interface to type the store data from Supabase
+interface Store {
+  id: string;
+  name: string | null;
+}
 
 const formatOptions: EventFormat[] = [
   'Standard', 'Modern', 'Legacy', 'Commander', 'Pioneer', 'Vintage', 'Draft', 'Sealed', 'Prerelease', 'Other'
@@ -76,7 +81,7 @@ const EventFilters = ({
   const [type, setType] = useState<EventType | undefined>(undefined);
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [storeId, setStoreId] = useState<string | undefined>(undefined);
-  const [stores, setStores] = useState<any[]>([]);
+  const [stores, setStores] = useState<Store[]>([]);
   const isMobile = useIsMobile();
   
   // Fetch available stores
@@ -85,13 +90,13 @@ const EventFilters = ({
       try {
         const { data, error } = await supabase
           .from('profiles')
-          .select('id, name')  // Changed from 'name:username' to just 'name'
-          .eq('store', true);  // Changed from 'role', 'store' to 'store', true
+          .select('id, name')
+          .eq('store', true);
           
         if (error) throw error;
         
         if (data) {
-          setStores(data);
+          setStores(data as Store[]);
         }
       } catch (error) {
         console.error('Error fetching stores:', error);
