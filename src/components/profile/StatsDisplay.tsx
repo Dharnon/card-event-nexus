@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getUserStats, getUserGames, getUserDecks } from '@/services/ProfileService';
@@ -6,69 +5,78 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { EventFormat } from '@/types';
-import { Calendar, Trophy } from "lucide-react"
-
+import { Calendar, Trophy } from "lucide-react";
 const StatsDisplay = () => {
   // Fetch user stats, games, and decks
-  const { data: stats, isLoading: isStatsLoading } = useQuery({
+  const {
+    data: stats,
+    isLoading: isStatsLoading
+  } = useQuery({
     queryKey: ['userStats'],
-    queryFn: () => getUserStats(),
+    queryFn: () => getUserStats()
   });
-  
-  const { data: games = [], isLoading: isGamesLoading } = useQuery({
+  const {
+    data: games = [],
+    isLoading: isGamesLoading
+  } = useQuery({
     queryKey: ['userGames'],
-    queryFn: () => getUserGames(),
+    queryFn: () => getUserGames()
   });
-  
-  const { data: decks = [], isLoading: isDecksLoading } = useQuery({
+  const {
+    data: decks = [],
+    isLoading: isDecksLoading
+  } = useQuery({
     queryKey: ['userDecks'],
-    queryFn: () => getUserDecks(),
+    queryFn: () => getUserDecks()
   });
-  
   const isLoading = isStatsLoading || isGamesLoading || isDecksLoading;
-  
   if (isLoading) {
     return <div className="flex justify-center my-8">Cargando estadísticas...</div>;
   }
-  
   if (!stats) {
     return <div className="text-center py-10">No hay estadísticas disponibles</div>;
   }
-  
+
   // Prepare data for win/loss pie chart
-  const winLossData = [
-    { name: 'Victorias', value: stats.wins, color: '#10B981' }, // green
-    { name: 'Derrotas', value: stats.losses, color: '#EF4444' }, // red
+  const winLossData = [{
+    name: 'Victorias',
+    value: stats.wins,
+    color: '#10B981'
+  },
+  // green
+  {
+    name: 'Derrotas',
+    value: stats.losses,
+    color: '#EF4444'
+  } // red
   ];
-  
+
   // Prepare data for format bar chart
   const formatData = Object.entries(stats.statsByFormat).map(([format, data]) => ({
     name: format,
     Victorias: data.wins,
-    Derrotas: data.losses,
+    Derrotas: data.losses
   }));
-  
+
   // Get recent games
-  const recentGames = [...games]
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 5);
-  
+  const recentGames = [...games].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
+
   // Format match score for display
-  const formatMatchScore = (game) => {
+  const formatMatchScore = game => {
     if (!game.matchScore) return '';
-    
-    const { playerWins, opponentWins } = game.matchScore;
+    const {
+      playerWins,
+      opponentWins
+    } = game.matchScore;
     return `${playerWins}-${opponentWins}`;
   };
-  
+
   // Get deck name from id
-  const getDeckName = (deckId) => {
+  const getDeckName = deckId => {
     const deck = decks.find(d => d.id === deckId);
     return deck ? deck.name : deckId;
   };
-  
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       <h2 className="text-2xl font-bold">Mis Estadísticas</h2>
       
       {/* Summary cards */}
@@ -108,28 +116,21 @@ const StatsDisplay = () => {
           <CardHeader>
             <CardTitle>Victorias / Derrotas</CardTitle>
           </CardHeader>
-          <CardContent className="h-[300px]">
-            <ChartContainer 
-              config={{
-                Victorias: { color: '#10B981' },
-                Derrotas: { color: '#EF4444' }
-              }}
-            >
+          <CardContent className="h-[300px] my-0 py-[22px]">
+            <ChartContainer config={{
+            Victorias: {
+              color: '#10B981'
+            },
+            Derrotas: {
+              color: '#EF4444'
+            }
+          }}>
               <PieChart>
-                <Pie
-                  data={winLossData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                  nameKey="name"
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                >
-                  {winLossData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
+                <Pie data={winLossData} cx="50%" cy="50%" labelLine={false} outerRadius={80} fill="#8884d8" dataKey="value" nameKey="name" label={({
+                name,
+                percent
+              }) => `${name}: ${(percent * 100).toFixed(0)}%`}>
+                  {winLossData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
                 </Pie>
                 <ChartTooltip content={<ChartTooltipContent />} />
               </PieChart>
@@ -143,12 +144,14 @@ const StatsDisplay = () => {
             <CardTitle>Estadísticas por formato</CardTitle>
           </CardHeader>
           <CardContent className="h-[300px]">
-            <ChartContainer 
-              config={{
-                Victorias: { color: '#10B981' },
-                Derrotas: { color: '#EF4444' }
-              }}
-            >
+            <ChartContainer config={{
+            Victorias: {
+              color: '#10B981'
+            },
+            Derrotas: {
+              color: '#EF4444'
+            }
+          }}>
               <BarChart data={formatData}>
                 <XAxis dataKey="name" />
                 <YAxis />
@@ -171,25 +174,17 @@ const StatsDisplay = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {recentGames.length === 0 ? (
-            <div className="text-center py-4 text-muted-foreground">
+          {recentGames.length === 0 ? <div className="text-center py-4 text-muted-foreground">
               No hay partidas registradas
-            </div>
-          ) : (
-            <div className="divide-y">
-              {recentGames.map((game) => (
-                <div key={game.id} className="py-3 flex justify-between items-center">
+            </div> : <div className="divide-y">
+              {recentGames.map(game => <div key={game.id} className="py-3 flex justify-between items-center">
                   <div className="flex items-center gap-2">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      game.win ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                    }`}>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${game.win ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                       {game.win ? 'Victoria' : 'Derrota'}
-                      {game.matchScore && (
-                        <span className="ml-1 flex items-center">
+                      {game.matchScore && <span className="ml-1 flex items-center">
                           <Trophy className="h-3 w-3 mx-1" /> 
                           {formatMatchScore(game)}
-                        </span>
-                      )}
+                        </span>}
                     </span>
                     <span>vs {game.opponentDeckName}</span>
                   </div>
@@ -199,14 +194,10 @@ const StatsDisplay = () => {
                       {new Date(game.date).toLocaleDateString()}
                     </span>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
+                </div>)}
+            </div>}
         </CardContent>
       </Card>
-    </div>
-  );
+    </div>;
 };
-
 export default StatsDisplay;
