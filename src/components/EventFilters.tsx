@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import * as dateFns from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -88,15 +89,21 @@ const EventFilters = ({
   useEffect(() => {
     const fetchStores = async () => {
       try {
+        // Using type assertion to avoid deep type instantiation
         const { data, error } = await supabase
           .from('profiles')
-          .select('id, name')
+          .select('id, username as name')
           .eq('store', true);
           
         if (error) throw error;
         
         if (data) {
-          setStores(data as Store[]);
+          // Safely convert data to Store[] type
+          const storeData = data.map(item => ({
+            id: item.id,
+            name: item.name
+          }));
+          setStores(storeData);
         }
       } catch (error) {
         console.error('Error fetching stores:', error);
