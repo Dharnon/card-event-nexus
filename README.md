@@ -1,73 +1,137 @@
-# Welcome to your Lovable project
+# MTG EVENT NEXUS APP
 
-## Project info
+**Project URL:** [https://lovable.dev/projects/deb813c6-6b33-48c9-9f6f-7921fd1fe18b](https://lovable.dev/projects/deb813c6-6b33-48c9-9f6f-7921fd1fe18b)
 
-**URL**: https://lovable.dev/projects/deb813c6-6b33-48c9-9f6f-7921fd1fe18b
+---
 
-## How can I edit this code?
+## Table of Contents
 
-There are several ways of editing your application.
+1. [Overview](#overview)
+2. [Tech Stack](#tech-stack)
+3. [Getting Started](#getting-started)
 
-**Use Lovable**
+   * [Prerequisites](#prerequisites)
+   * [Installation](#installation)
+   * [Development](#development)
+4. [Editing & Collaboration](#editing--collaboration)
+5. [Deployment](#deployment)
+6. [Custom Domain](#custom-domain)
+7. [Contributing](#contributing)
+8. [License](#license)
+9. [Contact](#contact)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/deb813c6-6b33-48c9-9f6f-7921fd1fe18b) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## Overview
 
-**Use your preferred IDE**
+This repository powers a modern, responsive web application built with Vite, TypeScript, React, Tailwind CSS, and shadcn/ui. It provides a flexible foundation for rapid development, testing, and deployment.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Tech Stack
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+* **Vite**: Blazing-fast development server and build tool
+* **TypeScript**: Statically-typed JavaScript for maintainable code
+* **React**: Component-driven user interface library
+* **Tailwind CSS**: Utility-first styling framework
+* **shadcn/ui**: Accessible, customizable React component library
 
-Follow these steps:
+## Getting Started
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
+Follow the steps below to run the project locally and start building.
+
+### Prerequisites
+
+* [Node.js](https://nodejs.org/) (v16+)
+* [npm](https://www.npmjs.com/) (v8+)
+* [nvm](https://github.com/nvm-sh/nvm) (optional, for Node version management)
+
+### Installation
+
+```bash
+# Clone the repository
 git clone <YOUR_GIT_URL>
 
-# Step 2: Navigate to the project directory.
+# Move into the project directory
 cd <YOUR_PROJECT_NAME>
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Install dependencies
+npm install
+```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+### Development
+
+```bash
+# Start the development server with live reload
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Open [http://localhost:5173](http://localhost:5173) in your browser. Changes to the source code will trigger automatic reloads.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Editing & Collaboration
 
-**Use GitHub Codespaces**
+You can edit this project through multiple workflows:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+**1. Local Development**
 
-## What technologies are used for this project?
+* Clone the repository as described in [Installation](#installation).
+* Open the code in your preferred IDE (e.g., VS Code).
+* Develop, test, and commit changes normally.
+* Push updates to the main branch or create feature branches for pull requests.
 
-This project is built with:
+**2. GitHub Web Interface**
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+* Navigate to any file in the GitHub repository.
+* Click the pencil icon to open the in-browser editor.
+* After editing, provide a commit message and push changes directly.
 
-## How can I deploy this project?
+**3. GitHub Codespaces**
 
-Simply open [Lovable](https://lovable.dev/projects/deb813c6-6b33-48c9-9f6f-7921fd1fe18b) and click on Share -> Publish.
+* From the repository main page, click **Code > Codespaces > New codespace**.
+* Edit and test in the cloud environment without local setup.
 
-## Can I connect a custom domain to my Lovable project?
+## Deployment
 
-Yes it is!
+To deploy the application, follow your preferred hosting provider’s workflow. For a quick static deploy:
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+```bash
+# Build the production bundle
+npm run build
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+# Preview the production build locally
+npm run preview
+```
+
+Deploy the contents of the `dist` directory to any static hosting service (e.g., Vercel, Netlify, GitHub Pages).
+
+## Custom Domain
+
+To add a custom domain:
+
+1. Configure your DNS provider to point a CNAME or A record to your hosting provider.
+2. In your hosting dashboard, add the custom domain under domain settings.
+3. Enable HTTPS—most providers offer automatic certificates.
+
+See your hosting platform’s documentation for detailed steps.
+
+## Contributing
+
+Contributions are welcome! Follow these guidelines:
+
+1. Fork the repository.
+2. Create a feature branch: `git checkout -b feature/your-feature`.
+3. Commit your changes: `git commit -m "Add your feature"`.
+4. Push to your fork: `git push origin feature/your-feature`.
+5. Open a Pull Request and describe your changes.
+
+Please ensure code adheres to existing style conventions and includes relevant tests where applicable.
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](./LICENSE) for full details.
+
+## Contact
+
+For questions or support, reach out via:
+
+* **Email:** [support@example.com](mailto:support@example.com)
+* **Documentation:** [https://docs.example.com](https://docs.example.com)
+
