@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, UserRole } from '@/types';
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +14,8 @@ interface AuthContextType {
   logout: () => void;
   register: (name: string, email: string, password: string, role: UserRole, adminPassword?: string) => Promise<void>;
   resendConfirmationEmail: (email: string) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  updatePassword: (newPassword: string) => Promise<void>;
   isAuthenticating: boolean;
   authError: string | null;
 }
@@ -25,6 +28,8 @@ const AuthContext = createContext<AuthContextType>({
   logout: () => {},
   register: async () => {},
   resendConfirmationEmail: async () => {},
+  resetPassword: async () => {},
+  updatePassword: async () => {},
   isAuthenticating: false,
   authError: null,
 });
@@ -72,6 +77,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             '/login', 
             '/auth', 
             '/auth/callback', 
+            '/auth/reset-password',
             '/register',
             '/', 
             '/events',
@@ -146,15 +152,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (name: string, email: string, password: string, role: UserRole = 'user', adminPassword?: string) => {
     setAuthError(null);
     setIsAuthenticating(true);
-    try {
-      // Check if admin password is correct if role is 'admin'
-      if (role === 'admin') {
-        if (adminPassword !== 'mondongo') {
-          throw new Error('Incorrect admin password');
-        }
-      }
-      
-      await AuthService.register(name, email, password, role);
+    try {      
+      await AuthService.register(name, email, password, role, adminPassword);
       toast.success("Registration successful! Please check your email to confirm your account.");
       // Redirect to a confirmation page or show confirmation message
       navigate('/login?verification=pending');
@@ -178,6 +177,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw error;
     }
   };
+  
+  const resetPassword = async (email: string) => {
+    setIsAuthenticating(true);
+    try {
+      await AuthService.resetPassword(email);
+      // No redirection needed as the user will receive an email with a link
+    } catch (error: any) {
+      const errorMessage = error.message || "Failed to send password reset email. Please try again.";
+      toast.error(errorMessage);
+      throw error;
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
+  
+  const updatePassword = async (newPassword: string) => {
+    setIsAuthenticating(true);
+    try {
+      await AuthService.updatePassword(newPassword);
+      // Redirect to login or home page after password update
+      navigate('/login');
+    } catch (error: any) {
+      const errorMessage = error.message || "Failed to update password. Please try again.";
+      toast.error(errorMessage);
+      throw error;
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
 
   return (
     <AuthContext.Provider value={{ 
@@ -188,6 +216,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       logout, 
       register, 
       resendConfirmationEmail,
+      resetPassword,
+      updatePassword,
       isAuthenticating,
       authError
     }}>

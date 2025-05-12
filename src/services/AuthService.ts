@@ -107,8 +107,13 @@ export const logout = async () => {
   }
 };
 
-export const register = async (name: string, email: string, password: string, role: UserRole = 'user') => {
+export const register = async (name: string, email: string, password: string, role: UserRole = 'user', adminPassword?: string) => {
   try {
+    // Check if admin password is correct if role is 'admin'
+    if (role === 'admin' && adminPassword !== 'mondongo') {
+      throw new Error('Incorrect admin password');
+    }
+    
     // Clean up existing state first
     cleanupAuthState();
     
@@ -168,6 +173,48 @@ export const resendConfirmationEmail = async (email: string) => {
   } catch (error: any) {
     console.error("Error resending confirmation email:", error.message);
     toast.error('Failed to send confirmation email', {
+      description: error.message
+    });
+    throw error;
+  }
+};
+
+export const resetPassword = async (email: string) => {
+  try {
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/auth/reset-password',
+    });
+    
+    if (error) throw error;
+    
+    toast.success('Password reset email sent', {
+      description: 'Check your email for the password reset link'
+    });
+    
+    return data;
+  } catch (error: any) {
+    console.error("Password reset error:", error.message);
+    toast.error('Failed to send password reset email', {
+      description: error.message
+    });
+    throw error;
+  }
+};
+
+export const updatePassword = async (newPassword: string) => {
+  try {
+    const { data, error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+    
+    if (error) throw error;
+    
+    toast.success('Password updated successfully');
+    
+    return data;
+  } catch (error: any) {
+    console.error("Password update error:", error.message);
+    toast.error('Failed to update password', {
       description: error.message
     });
     throw error;

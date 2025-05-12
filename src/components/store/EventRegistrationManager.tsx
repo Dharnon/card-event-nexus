@@ -29,6 +29,7 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { toast } from "sonner";
+import { supabase } from '@/integrations/supabase/client';
 
 const formatDate = (dateString: string) => {
   return format(new Date(dateString), 'MM/dd/yyyy • h:mm a');
@@ -53,6 +54,7 @@ const EventRegistrationManager = ({
   const [storeEvents, setStoreEvents] = useState<Event[]>([]);
   const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
   const [registrations, setRegistrations] = useState<any[]>(propRegistrations);
+  const [userDetails, setUserDetails] = useState<Record<string, any>>({});
 
   useEffect(() => {
     setRegistrations(propRegistrations);
@@ -73,6 +75,43 @@ const EventRegistrationManager = ({
       setStoreEvents(filteredEvents);
     }
   }, [events, user, resolvedEventId, propEvent]);
+
+  // Fetch user details for registrations
+  useEffect(() => {
+    if (!registrations.length) return;
+
+    const fetchUserDetails = async () => {
+      try {
+        // Get unique user IDs from registrations
+        const userIds = [...new Set(registrations.map(reg => reg.user_id))];
+        
+        // Fetch user profiles from Supabase
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, username, avatar_url')
+          .in('id', userIds);
+        
+        if (error) throw error;
+        
+        // Create a map of user_id to user details
+        const userMap = {};
+        if (data) {
+          data.forEach(profile => {
+            userMap[profile.id] = {
+              username: profile.username || 'Anonymous User',
+              avatarUrl: profile.avatar_url
+            };
+          });
+        }
+        
+        setUserDetails(userMap);
+      } catch (error) {
+        console.error('Error fetching user details:', error);
+      }
+    };
+    
+    fetchUserDetails();
+  }, [registrations]);
 
   // Prevent duplicate toasts using the shared function from useEventsData
   const showToast = (message: string, type: 'success' | 'error') => {
@@ -161,14 +200,16 @@ const EventRegistrationManager = ({
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>User ID</TableHead>
+                      <TableHead>User</TableHead>
                       <TableHead>Registered On</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {registrations.map((reg) => (
                       <TableRow key={reg.id}>
-                        <TableCell className="font-medium">{reg.user_id}</TableCell>
+                        <TableCell className="font-medium">
+                          {userDetails[reg.user_id]?.username || 'User ' + reg.user_id.substring(0, 6)}
+                        </TableCell>
                         <TableCell>{formatDate(reg.registered_at)}</TableCell>
                       </TableRow>
                     ))}

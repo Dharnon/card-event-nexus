@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import * as dateFns from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Calendar as CalendarIcon, Search, X, Filter, Sliders } from 'lucide-react';
@@ -32,6 +32,7 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 import { useIsMobile } from '@/hooks/use-mobile';
+import { supabase } from '@/integrations/supabase/client';
 
 const formatOptions: EventFormat[] = [
   'Standard', 'Modern', 'Legacy', 'Commander', 'Pioneer', 'Vintage', 'Draft', 'Sealed', 'Prerelease', 'Other'
@@ -49,10 +50,6 @@ const typeLabels: Record<EventType, string> = {
   'prerelease': 'Prerelease',
   'other': 'Other'
 };
-
-const locationOptions = [
-  'Madrid', 'Barcelona', 'Valencia', 'Sevilla', 'Bilbao'
-];
 
 // Define props interface for EventFilters
 interface EventFiltersProps {
@@ -78,7 +75,31 @@ const EventFilters = ({
   const [format, setFormat] = useState<EventFormat | undefined>(undefined);
   const [type, setType] = useState<EventType | undefined>(undefined);
   const [date, setDate] = useState<Date | undefined>(undefined);
+  const [storeId, setStoreId] = useState<string | undefined>(undefined);
+  const [stores, setStores] = useState<any[]>([]);
   const isMobile = useIsMobile();
+  
+  // Fetch available stores
+  useEffect(() => {
+    const fetchStores = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, name:username')
+          .eq('role', 'store');
+          
+        if (error) throw error;
+        
+        if (data) {
+          setStores(data);
+        }
+      } catch (error) {
+        console.error('Error fetching stores:', error);
+      }
+    };
+    
+    fetchStores();
+  }, []);
   
   const handleSearch = () => {
     const filters: EventFiltersType = {
@@ -87,6 +108,7 @@ const EventFilters = ({
       format,
       type,
       startDate: date,
+      storeId,
     };
     
     setFilters(filters);
@@ -98,13 +120,14 @@ const EventFilters = ({
     setFormat(undefined);
     setType(undefined);
     setDate(undefined);
+    setStoreId(undefined);
     setFilters({});
   };
   
-  const hasActiveFilters = searchTerm || location || format || type || date;
+  const hasActiveFilters = searchTerm || location || format || type || date || storeId;
 
   const FiltersContent = () => (
-    <div className="space-y-5 py-4">
+    <div className="space-y-5">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
@@ -113,6 +136,26 @@ const EventFilters = ({
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
+      </div>
+      
+      <div className="space-y-4">
+        <div className="font-medium text-sm">Store</div>
+        <Select 
+          value={storeId} 
+          onValueChange={(value) => setStoreId(value || undefined)}
+        >
+          <SelectTrigger className="w-full bg-background h-11">
+            <SelectValue placeholder="Select store" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">All Stores</SelectItem>
+            {stores.map((store) => (
+              <SelectItem key={store.id} value={store.id}>
+                {store.name || `Store ${store.id.substring(0, 6)}`}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       
       <div className="space-y-4">
@@ -125,11 +168,12 @@ const EventFilters = ({
             <SelectValue placeholder="Select location" />
           </SelectTrigger>
           <SelectContent>
-            {locationOptions.map((loc) => (
-              <SelectItem key={loc} value={loc}>
-                {loc}
-              </SelectItem>
-            ))}
+            <SelectItem value="">All Locations</SelectItem>
+            <SelectItem value="Madrid">Madrid</SelectItem>
+            <SelectItem value="Barcelona">Barcelona</SelectItem>
+            <SelectItem value="Valencia">Valencia</SelectItem>
+            <SelectItem value="Sevilla">Sevilla</SelectItem>
+            <SelectItem value="Bilbao">Bilbao</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -144,6 +188,7 @@ const EventFilters = ({
             <SelectValue placeholder="Select format" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="">All Formats</SelectItem>
             {formatOptions.map((fmt) => (
               <SelectItem key={fmt} value={fmt}>
                 {fmt}
@@ -163,6 +208,7 @@ const EventFilters = ({
             <SelectValue placeholder="Select event type" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="">All Types</SelectItem>
             {typeOptions.map((t) => (
               <SelectItem key={t} value={t}>
                 {typeLabels[t]}
@@ -246,7 +292,7 @@ const EventFilters = ({
   }
   
   return (
-    <div className="p-6 bg-card rounded-lg border shadow-md mb-6">
+    <div className="p-6 bg-card rounded-lg border shadow-md mb-6 sticky top-20">
       <div className="flex items-center justify-between mb-5">
         <h2 className="text-xl font-semibold flex items-center">
           <Filter className="h-5 w-5 mr-2" />

@@ -9,6 +9,7 @@ export interface EventFilters {
   format?: EventFormat;
   type?: EventType;
   startDate?: Date;
+  storeId?: string;
 }
 
 export const useEventFilters = (events: Event[]) => {
@@ -46,6 +47,11 @@ export const useEventFilters = (events: Event[]) => {
     
     // Type filter
     if (activeType !== 'all' && event.type !== activeType) {
+      return false;
+    }
+    
+    // Store filter
+    if (filters.storeId && event.createdBy !== filters.storeId) {
       return false;
     }
     
