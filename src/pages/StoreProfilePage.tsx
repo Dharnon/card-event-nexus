@@ -12,6 +12,7 @@ import Layout from '@/components/Layout';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { uploadBannerImage, uploadProfileImage } from '@/components/events/ImageUploadService';
+import StoreEventManager from '@/components/store/StoreEventManager';
 
 // Rename to avoid conflict with imported interface
 interface ProfileData extends Omit<StoreProfile, 'id'> {
@@ -25,6 +26,7 @@ const StoreProfilePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState("information");
   const [formData, setFormData] = useState<ProfileData>({
     username: '',
     description: '',
@@ -310,7 +312,7 @@ const StoreProfilePage: React.FC = () => {
           </div>
 
           <div className="w-full md:w-2/3">
-            <Tabs defaultValue="information">
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="mb-4">
                 <TabsTrigger value="information">Information</TabsTrigger>
                 <TabsTrigger value="events">Events</TabsTrigger>
@@ -416,9 +418,8 @@ const StoreProfilePage: React.FC = () => {
               <TabsContent value="events">
                 <Card>
                   <CardContent className="pt-6">
-                    <h2 className="text-xl font-semibold mb-4">Upcoming Events</h2>
-                    <p className="text-muted-foreground">No events found</p>
-                    {/* Event list would go here */}
+                    {/* Use the StoreEventManager component */}
+                    <StoreEventManager storeId={profile.id} />
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -428,7 +429,6 @@ const StoreProfilePage: React.FC = () => {
                   <CardContent className="pt-6">
                     <h2 className="text-xl font-semibold mb-4">Store Inventory</h2>
                     <p className="text-muted-foreground">Inventory management coming soon</p>
-                    {/* Inventory content would go here */}
                   </CardContent>
                 </Card>
               </TabsContent>

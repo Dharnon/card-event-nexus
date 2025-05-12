@@ -26,7 +26,7 @@ const formatDate = (dateString: string) => {
   return format(new Date(dateString), 'MM/dd/yyyy • h:mm a');
 };
 
-const StoreEventManager = () => {
+const StoreEventManager = ({ storeId }: { storeId?: string }) => {
   const { events, deleteEvent, refreshEvents, showToastOnce } = useEvents();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -52,10 +52,13 @@ const StoreEventManager = () => {
       // Filter events for this store (or all events for admin)
       const filteredEvents = user.role === 'admin' 
         ? events
-        : events.filter(event => event.createdBy === user.id);
+        : events.filter(event => storeId 
+            ? event.createdBy === storeId  // Use storeId if provided
+            : event.createdBy === user.id); // Otherwise use current user's ID
+            
       setStoreEvents(filteredEvents);
     }
-  }, [events, user]);
+  }, [events, user, storeId]);
 
   useEffect(() => {
     // Only refresh events once when component mounts
@@ -113,9 +116,9 @@ const StoreEventManager = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center flex-wrap gap-3">
         <div>
-          <h2 className="text-2xl font-bold">My Events</h2>
+          <h2 className="text-2xl font-bold">Store Events</h2>
           <p className="text-muted-foreground">
-            {user.role === 'admin' ? 'Manage all events' : 'Manage your events'}
+            {user.role === 'admin' ? 'Manage all events' : 'Manage your store events'}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -138,7 +141,7 @@ const StoreEventManager = () => {
           <p className="text-muted-foreground mb-6 px-4">
             {user.role === 'admin'
               ? 'There are no events in the system yet.'
-              : 'You have not created any events yet.'}
+              : 'This store has not created any events yet.'}
           </p>
           <Button onClick={handleCreateEvent}>Create Your First Event</Button>
         </div>
