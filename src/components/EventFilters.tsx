@@ -39,6 +39,12 @@ interface Store {
   name: string | null;
 }
 
+// Define the Profile type from Supabase to avoid deep type instantiation
+interface Profile {
+  id: string;
+  username: string | null;
+}
+
 const formatOptions: EventFormat[] = [
   'Standard', 'Modern', 'Legacy', 'Commander', 'Pioneer', 'Vintage', 'Draft', 'Sealed', 'Prerelease', 'Other'
 ];
@@ -88,7 +94,7 @@ const EventFilters = ({
   useEffect(() => {
     const fetchStores = async () => {
       try {
-        // Fix: Use separate select statements to avoid "as" syntax
+        // Use explicit typing to avoid deep type instantiation
         const { data, error } = await supabase
           .from('profiles')
           .select('id, username')
@@ -97,8 +103,8 @@ const EventFilters = ({
         if (error) throw error;
         
         if (data) {
-          // Convert the data to our Store type
-          const storeData: Store[] = data.map(item => ({
+          // Explicitly map the data to our Store type
+          const storeData: Store[] = data.map((item: Profile) => ({
             id: item.id,
             name: item.username
           }));
