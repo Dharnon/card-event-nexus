@@ -43,6 +43,7 @@ function App() {
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/auth" element={<AuthPage />} />
                   <Route path="/auth/callback" element={<AuthCallbackPage />} />
+                  <Route path="/store/:id" element={<StoreProfilePage />} />
                   <Route path="/store" element={<StoreProfilePage />} />
                   <Route path="/admin" element={<AdminDashboardPage />} />
                   <Route path="/admin/users" element={<AdminUsersPage />} />

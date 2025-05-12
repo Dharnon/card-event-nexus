@@ -49,6 +49,11 @@ const Navbar = () => {
       .toUpperCase();
   };
 
+  // Get the store profile URL with user ID if available
+  const getStoreUrl = () => {
+    return user ? `/store/${user.id}` : '/store';
+  };
+
   return (
     <nav className="sticky top-0 z-50 bg-card/80 backdrop-blur-xl shadow-sm border-b border-border/30 transition-all duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -78,7 +83,7 @@ const Navbar = () => {
                 <Link to="/events/create" className={`nav-link ${isActive('/events/create') ? 'active' : ''}`}>
                   Create Event
                 </Link>
-                <Link to="/store" className={`nav-link ${isActive('/store') ? 'active' : ''}`}>
+                <Link to={getStoreUrl()} className={`nav-link ${location.pathname.startsWith('/store') ? 'active' : ''}`}>
                   My Events
                 </Link>
               </>
@@ -127,7 +132,7 @@ const Navbar = () => {
                   {user.role === 'store' && (
                     <>
                       <DropdownMenuItem asChild>
-                        <Link to="/store" className="cursor-pointer">Store Dashboard</Link>
+                        <Link to={getStoreUrl()} className="cursor-pointer">Store Dashboard</Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link to="/events/create" className="cursor-pointer">Create Event</Link>
@@ -200,8 +205,8 @@ const Navbar = () => {
                   Create Event
                 </Link>
                 <Link 
-                  to="/store" 
-                  className={`px-3 py-3 rounded-md text-base font-medium ${isActive('/store') ? 'text-primary bg-primary/10' : 'hover:bg-primary/5'}`}
+                  to={getStoreUrl()} 
+                  className={`px-3 py-3 rounded-md text-base font-medium ${location.pathname.startsWith('/store') ? 'text-primary bg-primary/10' : 'hover:bg-primary/5'}`}
                   onClick={() => setIsMenuOpen(false)}
                 >
                   My Events
@@ -249,7 +254,7 @@ const Navbar = () => {
                 {user.role === 'store' && (
                   <>
                     <Link 
-                      to="/store" 
+                      to={getStoreUrl()} 
                       className="px-3 py-3 rounded-md text-base font-medium hover:bg-primary/5"
                       onClick={() => setIsMenuOpen(false)}
                     >
