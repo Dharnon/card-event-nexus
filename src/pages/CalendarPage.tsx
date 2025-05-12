@@ -1,10 +1,10 @@
 
-import Navbar from '@/components/Navbar';
 import { useEvents } from '@/context/EventContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CalendarDays } from 'lucide-react';
 import { FullScreenCalendar } from '@/components/ui/fullscreen-calendar';
 import { format, parseISO } from 'date-fns';
+import Layout from '@/components/Layout';
 
 const CalendarPage = () => {
   const { events, isLoading } = useEvents();
@@ -49,33 +49,30 @@ const CalendarPage = () => {
   }>);
   
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <main className="flex-grow bg-background">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-8">
-            <div className="flex items-center mb-2">
-              <CalendarDays className="h-7 w-7 mr-3 text-primary" />
-              <h1 className="text-3xl font-bold">Events Calendar</h1>
-            </div>
-            <p className="text-muted-foreground text-lg">
-              View all upcoming Magic: The Gathering events in calendar format
-            </p>
+    <Layout fullWidth>
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <div className="flex items-center mb-2">
+            <CalendarDays className="h-7 w-7 mr-3 text-primary" />
+            <h1 className="text-3xl font-bold">Events Calendar</h1>
           </div>
-          
-          {isLoading ? (
-            <div className="space-y-4">
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-[600px] w-full" />
-            </div>
-          ) : (
-            <div className="h-[700px] border overflow-hidden">
-              <FullScreenCalendar data={calendarData} />
-            </div>
-          )}
+          <p className="text-muted-foreground text-lg">
+            View all upcoming Magic: The Gathering events in calendar format
+          </p>
         </div>
-      </main>
-    </div>
+        
+        {isLoading ? (
+          <div className="space-y-4">
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-[600px] w-full" />
+          </div>
+        ) : (
+          <div className="h-[700px] sm:h-[700px] border overflow-hidden rounded-lg shadow-sm">
+            <FullScreenCalendar data={calendarData} />
+          </div>
+        )}
+      </div>
+    </Layout>
   );
 };
 

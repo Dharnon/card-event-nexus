@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useEvents } from '@/context/EventContext';
 import { useAuth } from '@/context/AuthContext';
-import { Plus, PencilLine, Trash2, Users } from 'lucide-react';
+import { Plus, PencilLine, Trash2, Users, CalendarDays } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Event } from '@/types';
@@ -103,6 +103,10 @@ const StoreEventManager = () => {
     navigate(`/events/${eventId}/registrations`);
   };
 
+  const handleViewCalendar = () => {
+    navigate('/calendar');
+  };
+
   if (!user) return null;
 
   return (
@@ -114,10 +118,16 @@ const StoreEventManager = () => {
             {user.role === 'admin' ? 'Manage all events' : 'Manage your events'}
           </p>
         </div>
-        <Button onClick={handleCreateEvent} className="whitespace-nowrap">
-          <Plus className="mr-2 h-4 w-4" />
-          Create New Event
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={handleViewCalendar} className="whitespace-nowrap">
+            <CalendarDays className="mr-2 h-4 w-4" />
+            Calendar View
+          </Button>
+          <Button onClick={handleCreateEvent} className="whitespace-nowrap">
+            <Plus className="mr-2 h-4 w-4" />
+            Create Event
+          </Button>
+        </div>
       </div>
 
       <Separator />

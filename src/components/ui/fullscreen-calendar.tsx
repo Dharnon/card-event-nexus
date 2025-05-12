@@ -21,15 +21,24 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   PlusCircleIcon,
-  SearchIcon,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { useMediaQuery } from "@/hooks/use-media-query"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { useAuth } from "@/context/AuthContext"
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogHeader, 
+  DialogTitle,
+  DialogTrigger,
+  DialogClose 
+} from "@/components/ui/dialog"
+import { X } from "lucide-react"
 
 interface Event {
   id: number | string
@@ -63,10 +72,12 @@ export function FullScreenCalendar({ data }: FullScreenCalendarProps) {
   const [currentMonth, setCurrentMonth] = React.useState(
     format(today, "MMM-yyyy"),
   )
+  const [showEventDetails, setShowEventDetails] = React.useState(false)
   const firstDayCurrentMonth = parse(currentMonth, "MMM-yyyy", new Date())
   const isDesktop = useMediaQuery("(min-width: 768px)")
-  const { user } = useAuth();
-  const isStoreUser = user && user.role === 'store';
+  const { user } = useAuth()
+  const isStoreUser = user && user.role === 'store'
+  const navigate = useNavigate()
 
   const days = eachDayOfInterval({
     start: startOfWeek(firstDayCurrentMonth),
@@ -85,6 +96,15 @@ export function FullScreenCalendar({ data }: FullScreenCalendarProps) {
 
   function goToToday() {
     setCurrentMonth(format(today, "MMM-yyyy"))
+    setSelectedDay(today)
+  }
+
+  const selectedDayEvents = data
+    .filter((date) => selectedDay && isSameDay(date.day, selectedDay))
+    .flatMap((date) => date.events)
+
+  const handleEventClick = (eventId: string | number) => {
+    navigate(`/events/${eventId}`)
   }
 
   const currentMonthLabel = format(firstDayCurrentMonth, "MMMM, yyyy");
@@ -183,94 +203,132 @@ export function FullScreenCalendar({ data }: FullScreenCalendarProps) {
         {/* Calendar Days */}
         <div className="flex text-xs leading-6 lg:flex-auto">
           <div className="hidden w-full border-x lg:grid lg:grid-cols-7 lg:grid-rows-5">
-            {days.map((day, dayIdx) => (
-              <div
-                key={dayIdx}
-                className={cn(
-                  dayIdx === 0 && colStartClasses[getDay(day)],
-                  !isEqual(day, selectedDay) &&
-                    !isToday(day) &&
-                    !isSameMonth(day, firstDayCurrentMonth) &&
-                    "bg-accent/50 text-muted-foreground",
-                  "relative flex flex-col border-b border-r hover:bg-muted/30 focus:z-10 min-h-28",
-                )}
-              >
-                <header className="flex items-center justify-between p-2">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedDay(day)}
-                    className={cn(
-                      isToday(day) && "bg-black text-white",
-                      "flex h-7 w-7 items-center justify-center text-xs",
-                      isEqual(day, selectedDay) && !isToday(day) && "border border-black",
-                    )}
-                  >
-                    <time dateTime={format(day, "yyyy-MM-dd")}>
-                      {format(day, "d")}
-                    </time>
-                  </button>
-                </header>
-                <div className="flex-1 px-2 pb-2">
-                  {data
-                    .filter((event) => isSameDay(event.day, day))
-                    .map((dayData) => (
-                      <div key={dayData.day.toString()} className="space-y-1">
-                        {dayData.events.map((event) => (
-                          <Link
-                            to={`/events/${event.id}`}
-                            key={event.id}
-                            className="flex items-center gap-1 text-xs hover:bg-accent/50 px-1 py-0.5 rounded-sm"
-                          >
-                            <span className="h-1.5 w-1.5 rounded-full bg-primary flex-shrink-0"></span>
-                            <span className="truncate">{event.name}</span>
-                          </Link>
-                        ))}
-                      </div>
+            {days.map((day, dayIdx) => {
+              const dayEvents = data.filter((date) => isSameDay(date.day, day))
+                .flatMap((date) => date.events);
+              const hasEvents = dayEvents.length > 0;
+              const isSelected = selectedDay ? isSameDay(day, selectedDay) : false;
+              const isCurrentDay = isToday(day);
+              
+              return (
+                <div
+                  key={dayIdx}
+                  className={cn(
+                    dayIdx === 0 && colStartClasses[getDay(day)],
+                    !isEqual(day, selectedDay) &&
+                      !isToday(day) &&
+                      !isSameMonth(day, firstDayCurrentMonth) &&
+                      "bg-accent/50 text-muted-foreground",
+                    "relative flex flex-col border-b border-r hover:bg-muted/30 focus:z-10 min-h-28",
+                  )}
+                >
+                  <header className="flex items-center justify-between p-2">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedDay(day)}
+                      className={cn(
+                        isToday(day) && "bg-black text-white",
+                        "flex h-7 w-7 items-center justify-center text-xs",
+                        isEqual(day, selectedDay) && !isToday(day) && "border border-black",
+                      )}
+                    >
+                      <time dateTime={format(day, "yyyy-MM-dd")}>
+                        {format(day, "d")}
+                      </time>
+                    </button>
+                  </header>
+                  <div className="flex-1 px-2 pb-2">
+                    {dayEvents.map((event, eventIdx) => (
+                      <button
+                        key={`${event.id}-${eventIdx}`}
+                        className="flex items-center gap-1 text-xs hover:bg-accent/50 px-1 py-0.5 rounded-sm w-full text-left"
+                        onClick={() => handleEventClick(event.id)}
+                      >
+                        <span className="h-1.5 w-1.5 rounded-full bg-primary flex-shrink-0"></span>
+                        <span className="truncate">{event.name}</span>
+                      </button>
                     ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="isolate grid w-full grid-cols-7 grid-rows-5 border-x lg:hidden">
-            {days.map((day, dayIdx) => (
-              <div
-                key={dayIdx}
-                className={cn(
-                  !isToday(day) &&
-                    !isSameMonth(day, firstDayCurrentMonth) &&
-                    "text-muted-foreground bg-accent/50",
-                  "flex h-14 flex-col border-b border-r py-2 px-2",
-                )}
-              >
-                <button
-                  onClick={() => setSelectedDay(day)}
-                  type="button"
-                  className={cn(
-                    isToday(day) && "bg-black text-white",
-                    "ml-auto flex h-6 w-6 items-center justify-center text-xs",
-                    isEqual(day, selectedDay) && !isToday(day) && "border border-black",
-                  )}
-                >
-                  {format(day, "d")}
-                </button>
-                {data.filter((date) => isSameDay(date.day, day)).length > 0 && (
-                  <div className="mt-1 flex justify-center">
-                    {data
-                      .filter((date) => isSameDay(date.day, day))
-                      .slice(0, 1)
-                      .map((date) => (
-                        <div
-                          key={date.day.toString()}
-                          className="flex items-center"
-                        >
+            {days.map((day, dayIdx) => {
+              const dayEvents = data.filter((date) => isSameDay(date.day, day))
+                .flatMap((date) => date.events);
+              const hasEvents = dayEvents.length > 0;
+              const isCurrentDay = isToday(day);
+              
+              return (
+                <Dialog key={dayIdx}>
+                  <DialogTrigger asChild>
+                    <div
+                      className={cn(
+                        !isToday(day) &&
+                          !isSameMonth(day, firstDayCurrentMonth) &&
+                          "text-muted-foreground bg-accent/50",
+                        "flex h-14 flex-col border-b border-r py-2 px-2 cursor-pointer",
+                      )}
+                      onClick={() => setSelectedDay(day)}
+                    >
+                      <span
+                        className={cn(
+                          isToday(day) && "bg-black text-white",
+                          "ml-auto flex h-6 w-6 items-center justify-center text-xs rounded-full",
+                        )}
+                      >
+                        {format(day, "d")}
+                      </span>
+                      {hasEvents && (
+                        <div className="mt-1 flex justify-center">
                           <span className="h-1 w-1 rounded-full bg-primary"></span>
+                          {dayEvents.length > 1 && (
+                            <span className="h-1 w-1 rounded-full bg-primary ml-1"></span>
+                          )}
                         </div>
-                      ))}
-                  </div>
-                )}
-              </div>
-            ))}
+                      )}
+                    </div>
+                  </DialogTrigger>
+                  
+                  {hasEvents && (
+                    <DialogContent className="max-w-[95vw] sm:max-w-[425px]">
+                      <DialogHeader>
+                        <div className="flex items-center justify-between">
+                          <DialogTitle>
+                            {format(day, "EEEE, MMMM d")}
+                          </DialogTitle>
+                          <DialogClose asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </DialogClose>
+                        </div>
+                        <DialogDescription>
+                          {dayEvents.length} event{dayEvents.length !== 1 ? 's' : ''} on this day
+                        </DialogDescription>
+                      </DialogHeader>
+                      
+                      <div className="space-y-3 py-2">
+                        {dayEvents.map((event, idx) => (
+                          <div 
+                            key={`${event.id}-${idx}`}
+                            className="border rounded-md p-3 hover:bg-accent/50 cursor-pointer"
+                            onClick={() => {
+                              handleEventClick(event.id);
+                            }}
+                          >
+                            <div className="font-medium">{event.name}</div>
+                            <div className="text-muted-foreground text-sm">{event.time}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </DialogContent>
+                  )}
+                </Dialog>
+              );
+            })}
           </div>
         </div>
       </div>
