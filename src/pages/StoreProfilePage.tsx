@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
-import { getStoreProfile, uploadProfileImage, uploadBannerImage, updateProfile, StoreProfile } from '@/services/ProfileService';
+import { getStoreProfile, uploadProfileImage, uploadBannerImage, updateProfile } from '@/services/ProfileService';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,15 +11,15 @@ import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 
 // Define the profile interface to match our database schema
-interface StoreProfile {
+interface ProfileData {
   id: string;
-  username: string;
-  description?: string;
-  address?: string;
-  phone?: string;
-  website?: string;
-  avatar_url?: string;
-  banner_url?: string;
+  username: string | null;
+  description?: string | null;
+  address?: string | null;
+  phone?: string | null;
+  website?: string | null;
+  avatar_url?: string | null;
+  banner_url?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -28,7 +28,7 @@ const StoreProfilePage = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<StoreProfile | null>(null);
+  const [profile, setProfile] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
@@ -100,7 +100,7 @@ const StoreProfilePage = () => {
       });
       
       if (updatedProfile) {
-        setProfile(updatedProfile as StoreProfile);
+        setProfile(updatedProfile as ProfileData);
         setIsEditing(false);
         toast.success('Profile updated successfully');
       }
