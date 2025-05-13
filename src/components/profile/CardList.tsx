@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { List, Image, Maximize2, AlertCircle, Loader2 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
-import { toast } from '@/components/ui/use-toast';
 import { 
   Dialog,
   DialogContent,
@@ -14,7 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { getCardImageUrl, getCardBySetAndNumber, getCardImageByName } from '@/services/ScryfallService';
+import { getCardImageUrl } from '@/services/ScryfallService';
 
 interface CardListProps {
   cards: MagicCard[];
@@ -25,22 +24,18 @@ interface CardListProps {
 const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUrl }) => {
   const [viewMode, setViewMode] = useState<'text' | 'images'>('text');
   const [previewCard, setPreviewCard] = useState<MagicCard | null>(null);
-  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
-  const [loadingImages, setLoadingImages] = useState<Record<string, boolean>>({});
+  const [imageStatus, setImageStatus] = useState<Record<string, 'loading' | 'loaded' | 'error'>>({});
   const isMobile = useIsMobile();
   
-  // Load status tracking
+  // Initialize loading status for all cards
   useEffect(() => {
-    // Initialize loading state for all cards
-    const newLoadingState: Record<string, boolean> = {};
+    const newStatus: Record<string, 'loading' | 'loaded' | 'error'> = {};
     cards.forEach(card => {
-      if (card.imageUrl || card.name) {
-        newLoadingState[card.id] = true;
-      }
+      newStatus[card.id] = 'loading';
     });
-    setLoadingImages(newLoadingState);
+    setImageStatus(newStatus);
   }, [cards]);
-  
+
   // Group cards by name and sum quantities
   const groupedCards = cards.reduce((acc, card) => {
     const existingCard = acc.find(c => c.name === card.name);
@@ -55,33 +50,6 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
   // Sort cards alphabetically
   const sortedCards = [...groupedCards].sort((a, b) => a.name.localeCompare(b.name));
 
-  // Helper function to get the best possible card image URL
-  const getCardImageDisplay = (card: MagicCard) => {
-    // If we already have an image URL, use it
-    if (card.imageUrl) {
-      console.log(`Using provided image URL for ${card.name}:`, card.imageUrl);
-      return card.imageUrl;
-    }
-    
-    // If we have set and collector number, use direct CDN URL
-    if (card.set && card.collectorNumber) {
-      const directUrl = `https://cards.scryfall.io/normal/front/${card.set}/${card.collectorNumber}.jpg`;
-      console.log(`Generated direct URL for ${card.name} using set ${card.set} and collector ${card.collectorNumber}:`, directUrl);
-      return directUrl;
-    }
-    
-    // If we only have the name, use the Scryfall API named endpoint
-    if (card.name) {
-      const namedUrl = getCardImageByName(card.name);
-      console.log(`Generated URL by name for ${card.name}:`, namedUrl);
-      return namedUrl;
-    }
-    
-    console.log(`No way to get image for ${card.name}, using fallback`);
-    // Fallback to card back
-    return "https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg";
-  };
-
   const handleCardClick = (card: MagicCard) => {
     if (onCardSelect) {
       onCardSelect(card);
@@ -89,29 +57,12 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
     setPreviewCard(card);
   };
 
-  const handleImageError = (cardId: string, card: MagicCard) => {
-    console.error(`Image loading failed for card: ${cardId} (${card.name})`);
-    setImageErrors(prev => ({ ...prev, [cardId]: true }));
-    setLoadingImages(prev => ({ ...prev, [cardId]: false }));
-    
-    // Try to get image by name as a last resort if not already done
-    if (card.name && !card.imageUrl?.includes('api.scryfall.com/cards/named')) {
-      console.log(`Trying to get image by name for ${card.name} as fallback`);
-      const newImageUrl = getCardImageByName(card.name);
-      // Update the card with the new URL
-      card.imageUrl = newImageUrl;
-      
-      // Reset error state to allow trying with the new URL
-      setTimeout(() => {
-        setImageErrors(prev => ({ ...prev, [cardId]: false }));
-        setLoadingImages(prev => ({ ...prev, [cardId]: true }));
-      }, 100);
-    }
-  };
-  
   const handleImageLoad = (cardId: string) => {
-    console.log(`Image loaded successfully for card: ${cardId}`);
-    setLoadingImages(prev => ({ ...prev, [cardId]: false }));
+    setImageStatus(prev => ({ ...prev, [cardId]: 'loaded' }));
+  };
+
+  const handleImageError = (cardId: string) => {
+    setImageStatus(prev => ({ ...prev, [cardId]: 'error' }));
   };
   
   // Display a message if there are no cards
@@ -158,13 +109,14 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
       <div className="flex flex-col md:flex-row gap-4">
         <ScrollArea className="h-[400px] rounded-md border p-4 flex-1 bg-card/50">
           {viewMode === 'text' ? (
+            // Text view implementation
             <div className="space-y-2">
               {sortedCards.map((card) => (
                 <div 
                   key={card.id} 
                   className={`p-3 rounded-md border ${
                     onCardSelect ? 'cursor-pointer hover:bg-muted transition-colors duration-200' : ''
-                  } ${selectedCardUrl === card.imageUrl ? 'bg-muted ring-1 ring-primary' : ''}`}
+                  } ${selectedCardUrl === getCardImageUrl({name: card.name, set: card.set, collector_number: card.collectorNumber}) ? 'bg-muted ring-1 ring-primary' : ''}`}
                   onClick={() => handleCardClick(card)}
                 >
                   <div className="flex items-center justify-between">
@@ -189,22 +141,22 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
                       <DialogContent className="max-w-xs sm:max-w-md md:max-w-lg p-0 overflow-hidden">
                         <AspectRatio ratio={63/88}>
                           <div className="relative h-full w-full">
-                            {loadingImages[card.id] && !imageErrors[card.id] && (
+                            {imageStatus[card.id] === 'loading' && (
                               <div className="absolute inset-0 flex items-center justify-center bg-muted z-10">
                                 <Loader2 className="h-8 w-8 text-muted-foreground animate-spin" />
                               </div>
                             )}
-                            {imageErrors[card.id] ? (
+                            {imageStatus[card.id] === 'error' ? (
                               <div className="h-full w-full flex flex-col items-center justify-center bg-muted">
                                 <AlertCircle className="h-8 w-8 text-muted-foreground mb-2" />
                                 <p className="text-center text-muted-foreground">{card.name}</p>
                               </div>
                             ) : (
                               <img 
-                                src={getCardImageDisplay(card)}
+                                src={getCardImageUrl({name: card.name, set: card.set, collector_number: card.collectorNumber})}
                                 alt={card.name}
                                 className="h-full w-full object-contain"
-                                onError={() => handleImageError(card.id, card)}
+                                onError={() => handleImageError(card.id)}
                                 onLoad={() => handleImageLoad(card.id)}
                               />
                             )}
@@ -224,13 +176,14 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
               ))}
             </div>
           ) : (
+            // Grid view implementation
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {sortedCards.map((card) => (
                 <Dialog key={card.id}>
                   <DialogTrigger asChild>
                     <div 
                       className={`rounded-md overflow-hidden border cursor-pointer hover:shadow-md transition-all duration-200 ${
-                        selectedCardUrl === card.imageUrl ? 'ring-2 ring-primary' : ''
+                        selectedCardUrl === getCardImageUrl({name: card.name, set: card.set, collector_number: card.collectorNumber}) ? 'ring-2 ring-primary' : ''
                       }`}
                       onClick={(e) => {
                         e.preventDefault();
@@ -240,22 +193,22 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
                       }}
                     >
                       <AspectRatio ratio={63/88} className="relative">
-                        {loadingImages[card.id] && !imageErrors[card.id] && (
+                        {imageStatus[card.id] === 'loading' && (
                           <div className="absolute inset-0 flex items-center justify-center bg-muted z-10">
                             <Loader2 className="h-6 w-6 text-muted-foreground animate-spin" />
                           </div>
                         )}
-                        {imageErrors[card.id] ? (
+                        {imageStatus[card.id] === 'error' ? (
                           <div className="h-full w-full flex flex-col items-center justify-center bg-muted">
                             <AlertCircle className="h-6 w-6 text-muted-foreground mb-1" />
                             <p className="text-center text-xs text-muted-foreground px-2">{card.name}</p>
                           </div>
                         ) : (
                           <img 
-                            src={getCardImageDisplay(card)}
+                            src={getCardImageUrl({name: card.name, set: card.set, collector_number: card.collectorNumber})}
                             alt={card.name}
                             className="h-full w-full object-cover"
-                            onError={() => handleImageError(card.id, card)}
+                            onError={() => handleImageError(card.id)}
                             onLoad={() => handleImageLoad(card.id)}
                             loading="lazy"
                           />
@@ -270,22 +223,22 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
                   <DialogContent className="max-w-xs sm:max-w-md md:max-w-lg p-0 overflow-hidden">
                     <AspectRatio ratio={63/88}>
                       <div className="relative h-full w-full">
-                        {loadingImages[card.id] && !imageErrors[card.id] && (
+                        {imageStatus[card.id] === 'loading' && (
                           <div className="absolute inset-0 flex items-center justify-center bg-muted z-10">
                             <Loader2 className="h-8 w-8 text-muted-foreground animate-spin" />
                           </div>
                         )}
-                        {imageErrors[card.id] ? (
+                        {imageStatus[card.id] === 'error' ? (
                           <div className="h-full w-full flex flex-col items-center justify-center bg-muted">
                             <AlertCircle className="h-10 w-10 text-muted-foreground mb-2" />
                             <p className="text-center text-muted-foreground">{card.name}</p>
                           </div>
                         ) : (
                           <img 
-                            src={getCardImageDisplay(card)}
+                            src={getCardImageUrl({name: card.name, set: card.set, collector_number: card.collectorNumber})}
                             alt={card.name}
                             className="h-full w-full object-contain"
-                            onError={() => handleImageError(card.id, card)}
+                            onError={() => handleImageError(card.id)}
                             onLoad={() => handleImageLoad(card.id)}
                           />
                         )}
@@ -310,22 +263,22 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
           <div className="hidden md:block w-60 shrink-0">
             <div className="sticky top-4 rounded-md overflow-hidden shadow-lg">
               <div className="relative w-full">
-                {loadingImages[previewCard.id] && !imageErrors[previewCard.id] && (
+                {imageStatus[previewCard.id] === 'loading' && (
                   <div className="absolute inset-0 flex items-center justify-center bg-muted z-10">
                     <Loader2 className="h-8 w-8 text-muted-foreground animate-spin" />
                   </div>
                 )}
-                {imageErrors[previewCard.id] ? (
+                {imageStatus[previewCard.id] === 'error' ? (
                   <div className="w-full h-80 flex flex-col items-center justify-center bg-muted rounded-md">
                     <AlertCircle className="h-12 w-12 text-muted-foreground mb-2" />
                     <p className="text-center text-muted-foreground">{previewCard.name}</p>
                   </div>
                 ) : (
                   <img 
-                    src={getCardImageDisplay(previewCard)}
+                    src={getCardImageUrl({name: previewCard.name, set: previewCard.set, collector_number: previewCard.collectorNumber})}
                     alt={previewCard.name}
                     className="w-full h-auto rounded-md"
-                    onError={() => handleImageError(previewCard.id, previewCard)}
+                    onError={() => handleImageError(previewCard.id)}
                     onLoad={() => handleImageLoad(previewCard.id)}
                   />
                 )}

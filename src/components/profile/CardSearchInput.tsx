@@ -6,16 +6,12 @@ import { Card as MagicCard } from '@/types';
 import { 
   searchCardByName, 
   ScryfallCard, 
-  getCardImageUrl, 
-  getBasicLand,
-  getCardByName,
-  getCardImageByName
+  getCardImageUrl,
+  getCardByName
 } from '@/services/ScryfallService';
 import { useDebounce } from '@/hooks/useDebounce';
 import { Loader2, Plus, Minus, AlertCircle } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-
-const BASIC_LANDS = ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest'];
 
 const CardSearchInput: React.FC<{ onCardSelect: (card: MagicCard) => void, placeholder?: string }> = ({ 
   onCardSelect, 
@@ -28,19 +24,9 @@ const CardSearchInput: React.FC<{ onCardSelect: (card: MagicCard) => void, place
   const [quantity, setQuantity] = useState(1);
   const [imageLoading, setImageLoading] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const [imageRetries, setImageRetries] = useState(0);
   
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
 
-  // Reset state when a new search begins
-  useEffect(() => {
-    if (debouncedSearchQuery.trim() !== searchQuery.trim()) {
-      setSelectedCard(null);
-      setImageError(false);
-      setImageRetries(0);
-    }
-  }, [debouncedSearchQuery, searchQuery]);
-  
   useEffect(() => {
     const fetchCards = async () => {
       if (debouncedSearchQuery.trim().length < 2) {
@@ -49,35 +35,11 @@ const CardSearchInput: React.FC<{ onCardSelect: (card: MagicCard) => void, place
       }
       
       setIsSearching(true);
+      
       try {
-        // Check if it's a basic land first
-        const trimmedQuery = debouncedSearchQuery.trim();
-        const isBasicLand = BASIC_LANDS.some(land => 
-          land.toLowerCase().includes(trimmedQuery.toLowerCase())
-        );
-        
-        let results;
-        if (isBasicLand) {
-          // Filter basic lands that match the search
-          const matchingLands = BASIC_LANDS.filter(land => 
-            land.toLowerCase().includes(trimmedQuery.toLowerCase())
-          );
-          
-          // Get data for each basic land
-          const landPromises = matchingLands.map(async land => {
-            const landCard = await getBasicLand(land);
-            return landCard;
-          });
-          
-          const landResults = await Promise.all(landPromises);
-          results = landResults.filter(Boolean) as ScryfallCard[];
-        } else {
-          // Normal search for non-basic lands
-          results = await searchCardByName(debouncedSearchQuery);
-        }
-        
+        const results = await searchCardByName(debouncedSearchQuery);
         console.log("Search results:", results.map(card => card.name));
-        setSearchResults(results.slice(0, 8)); // Limit results for better mobile experience
+        setSearchResults(results.slice(0, 8));
         
         if (results.length === 0 && debouncedSearchQuery.trim().length >= 3) {
           toast({
@@ -108,25 +70,20 @@ const CardSearchInput: React.FC<{ onCardSelect: (card: MagicCard) => void, place
     setSearchResults([]);
     setImageLoading(true);
     setImageError(false);
-    setImageRetries(0);
   };
   
   const handleAddCard = () => {
     if (!selectedCard) return;
     
-    // Get the best image URL available
-    const imageUrl = getCardImageUrl(selectedCard, 'normal');
-    console.log("Adding card with image URL:", imageUrl);
-    
-    // Extract set and collector number if available
+    // Create a card object with all the necessary data
     const newCard: MagicCard = {
-      id: `card-${selectedCard.id || Date.now()}-${Date.now()}`,
+      id: `card-${selectedCard.id || Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       name: selectedCard.name,
       quantity: quantity,
       scryfallId: selectedCard.id,
-      imageUrl: imageUrl,
       set: selectedCard.set,
-      collectorNumber: selectedCard.collector_number
+      collectorNumber: selectedCard.collector_number,
+      // Don't store the image URL - we'll generate it when needed
     };
     
     onCardSelect(newCard);
@@ -137,22 +94,6 @@ const CardSearchInput: React.FC<{ onCardSelect: (card: MagicCard) => void, place
       title: "Card added",
       description: `${quantity}x ${selectedCard.name} added to your deck.`,
     });
-  };
-  
-  const handleImageRetry = () => {
-    if (selectedCard && imageRetries < 3) {
-      console.log(`Retrying image load for ${selectedCard.name}, attempt ${imageRetries + 1}`);
-      setImageError(false);
-      setImageLoading(true);
-      setImageRetries(prev => prev + 1);
-      
-      // Try different image URL format based on retry count
-      if (imageRetries === 1 && selectedCard.name) {
-        // On second retry, use the direct API by name
-        const newImageUrl = getCardImageByName(selectedCard.name);
-        console.log(`Retry with direct API image URL: ${newImageUrl}`);
-      }
-    }
   };
   
   return (
@@ -211,16 +152,6 @@ const CardSearchInput: React.FC<{ onCardSelect: (card: MagicCard) => void, place
               <div className="w-40 h-56 border rounded-lg flex flex-col items-center justify-center bg-muted">
                 <AlertCircle className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
                 <p className="text-sm text-muted-foreground text-center px-2">{selectedCard.name}</p>
-                {imageRetries < 3 && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={handleImageRetry}
-                    className="mt-2"
-                  >
-                    Retry
-                  </Button>
-                )}
               </div>
             ) : (
               <img 
@@ -231,35 +162,10 @@ const CardSearchInput: React.FC<{ onCardSelect: (card: MagicCard) => void, place
                   console.log("Image loaded successfully");
                   setImageLoading(false);
                 }}
-                onError={(e) => {
-                  console.error("Image failed to load:", e);
+                onError={() => {
+                  console.error("Image failed to load");
                   setImageLoading(false);
                   setImageError(true);
-                  
-                  // Try alternative URL if available
-                  if (selectedCard.set && selectedCard.collector_number && imageRetries === 0) {
-                    console.log("Trying direct CDN URL");
-                    const alternativeUrl = `https://cards.scryfall.io/normal/front/${selectedCard.set}/${selectedCard.collector_number}.jpg`;
-                    (e.target as HTMLImageElement).src = alternativeUrl;
-                    setImageRetries(1);
-                    setImageError(false);
-                    return;
-                  }
-                  
-                  // Try by name URL for second retry
-                  if (selectedCard.name && imageRetries === 1) {
-                    console.log("Trying API named URL");
-                    const namedUrl = `https://api.scryfall.com/cards/named?format=image&exact=${encodeURIComponent(selectedCard.name)}`;
-                    (e.target as HTMLImageElement).src = namedUrl;
-                    setImageRetries(2);
-                    setImageError(false);
-                    return;
-                  }
-                  
-                  // Final fallback to card back
-                  if (imageRetries === 2) {
-                    (e.target as HTMLImageElement).src = "https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg";
-                  }
                 }}
               />
             )}
