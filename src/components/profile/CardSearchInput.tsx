@@ -6,7 +6,7 @@ import { Card as MagicCard, CardSearchInputProps } from '@/types';
 import { searchCardByName, ScryfallCard, getCardImageUrl, getBasicLand } from '@/services/ScryfallService';
 import { useDebounce } from '@/hooks/useDebounce';
 import { Loader2, Plus, Minus, AlertCircle } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from '@/components/ui/use-toast';
 
 const BASIC_LANDS = ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest'];
 
@@ -18,9 +18,18 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
   const [quantity, setQuantity] = useState(1);
   const [imageLoading, setImageLoading] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [imageRetries, setImageRetries] = useState(0);
   
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
-  const { toast } = useToast();
+
+  // Reset state when a new search begins
+  useEffect(() => {
+    if (debouncedSearchQuery.trim() !== searchQuery.trim()) {
+      setSelectedCard(null);
+      setImageError(false);
+      setImageRetries(0);
+    }
+  }, [debouncedSearchQuery, searchQuery]);
   
   useEffect(() => {
     const fetchCards = async () => {
@@ -80,7 +89,7 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
     };
     
     fetchCards();
-  }, [debouncedSearchQuery, toast]);
+  }, [debouncedSearchQuery]);
   
   const handleSelectCard = (card: ScryfallCard) => {
     console.log("Selected card:", card.name, card);
@@ -89,6 +98,7 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
     setSearchResults([]);
     setImageLoading(true);
     setImageError(false);
+    setImageRetries(0);
   };
   
   const handleAddCard = () => {
@@ -97,12 +107,15 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
     const imageUrl = getCardImageUrl(selectedCard, 'normal');
     console.log("Adding card with image URL:", imageUrl);
     
+    // Extract set and collector number if available
     const newCard: MagicCard = {
       id: `card-${selectedCard.id}-${Date.now()}`,
       name: selectedCard.name,
       quantity: quantity,
       scryfallId: selectedCard.id,
       imageUrl: imageUrl,
+      set: selectedCard.set,
+      collectorNumber: selectedCard.collector_number
     };
     
     onCardSelect(newCard);
@@ -113,6 +126,15 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
       title: "Card added",
       description: `${quantity}x ${selectedCard.name} added to your deck.`,
     });
+  };
+  
+  const handleImageRetry = () => {
+    if (selectedCard && imageRetries < 3) {
+      console.log(`Retrying image load for ${selectedCard.name}, attempt ${imageRetries + 1}`);
+      setImageError(false);
+      setImageLoading(true);
+      setImageRetries(prev => prev + 1);
+    }
   };
   
   return (
@@ -158,16 +180,24 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
         <div className="border rounded-xl p-4 flex flex-col sm:flex-row gap-4 bg-card shadow-md">
           <div className="shrink-0 relative flex justify-center">
             {imageLoading && !imageError && (
-              <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded-md">
+              <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded-md z-10">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
               </div>
             )}
             {imageError ? (
-              <div className="w-40 h-56 border rounded-lg flex items-center justify-center bg-muted">
-                <div className="text-center p-2">
-                  <AlertCircle className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                  <p className="text-sm text-muted-foreground">{selectedCard.name}</p>
-                </div>
+              <div className="w-40 h-56 border rounded-lg flex flex-col items-center justify-center bg-muted">
+                <AlertCircle className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground text-center px-2">{selectedCard.name}</p>
+                {imageRetries < 3 && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleImageRetry}
+                    className="mt-2"
+                  >
+                    Retry
+                  </Button>
+                )}
               </div>
             ) : (
               <img 
@@ -182,6 +212,18 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
                   console.error("Image failed to load:", e);
                   setImageLoading(false);
                   setImageError(true);
+                  
+                  // Try alternative URL if available
+                  if (selectedCard.set && selectedCard.collector_number && imageRetries === 0) {
+                    console.log("Trying direct CDN URL");
+                    const alternativeUrl = `https://cards.scryfall.io/normal/front/${selectedCard.set}/${selectedCard.collector_number}.jpg`;
+                    (e.target as HTMLImageElement).src = alternativeUrl;
+                    setImageRetries(1);
+                    setImageError(false);
+                    return;
+                  }
+                  
+                  // Final fallback to card back
                   (e.target as HTMLImageElement).src = "https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg";
                 }}
               />
@@ -192,6 +234,11 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
               <h3 className="font-bold text-lg">{selectedCard.name}</h3>
               {selectedCard.type_line && (
                 <p className="text-sm text-muted-foreground">{selectedCard.type_line}</p>
+              )}
+              {selectedCard.set && selectedCard.collector_number && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Set: {selectedCard.set.toUpperCase()} • #{selectedCard.collector_number}
+                </p>
               )}
             </div>
             <div className="flex flex-col sm:flex-row items-center gap-4 sm:justify-between mt-4">

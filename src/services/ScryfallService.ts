@@ -24,6 +24,8 @@ export interface ScryfallCard {
       border_crop: string;
     }
   }>;
+  set?: string;
+  collector_number?: string;
 }
 
 // Identificadores específicos para tierras básicas
@@ -35,6 +37,15 @@ const BASIC_LAND_ORACLES = {
   'Forest': '8f683968-8826-47cd-8c15-8ef33c6fc7bf'
 };
 
+// Added specific image URLs for basic lands
+const BASIC_LAND_IMAGES = {
+  'Plains': "https://cards.scryfall.io/normal/front/5/f/5fc26aa1-58b9-41b5-95b4-7e9bf2309b54.jpg",
+  'Island': "https://cards.scryfall.io/normal/front/d/c/dc41cb44-ebdb-4a58-b95e-c4c4cded7033.jpg",
+  'Swamp': "https://cards.scryfall.io/normal/front/8/3/83249211-164c-456c-8bda-ca3a607ada7e.jpg", 
+  'Mountain': "https://cards.scryfall.io/normal/front/4/4/44c1a862-00fc-4e79-a83a-289fef81503a.jpg",
+  'Forest': "https://cards.scryfall.io/normal/front/c/f/cfb41b34-4037-4a3c-9a6d-def7bfda5635.jpg"
+};
+
 export const searchCardByName = async (cardName: string): Promise<ScryfallCard[]> => {
   try {
     if (!cardName || cardName.trim().length < 2) {
@@ -42,6 +53,7 @@ export const searchCardByName = async (cardName: string): Promise<ScryfallCard[]
     }
     
     const encodedName = encodeURIComponent(cardName.trim());
+    console.log(`Searching for card: "${cardName.trim()}"`);
     
     // Check if it's a basic land
     const normalizedCardName = cardName.trim().toLowerCase();
@@ -50,22 +62,39 @@ export const searchCardByName = async (cardName: string): Promise<ScryfallCard[]
     );
     
     if (basicLandMatch) {
-      // For basic lands, search by oracle_id to get the latest version
+      // For basic lands, use direct image URLs
+      console.log(`Found basic land match: ${basicLandMatch}`);
       const oracleId = BASIC_LAND_ORACLES[basicLandMatch as keyof typeof BASIC_LAND_ORACLES];
+      
+      // Use scryfall API to get latest version
       const response = await fetch(
         `https://api.scryfall.com/cards/oracle/${oracleId}`
       );
       
       if (!response.ok) {
         console.error(`Failed to fetch basic land: ${basicLandMatch}`, response.statusText);
-        throw new Error('Error fetching basic land data');
+        
+        // Create a synthetic card with known image URL as fallback
+        const fallbackCard: ScryfallCard = {
+          id: `basic-land-${basicLandMatch.toLowerCase()}`,
+          name: basicLandMatch,
+          type_line: `Basic Land — ${basicLandMatch}`,
+          image_uris: {
+            small: BASIC_LAND_IMAGES[basicLandMatch as keyof typeof BASIC_LAND_IMAGES],
+            normal: BASIC_LAND_IMAGES[basicLandMatch as keyof typeof BASIC_LAND_IMAGES],
+            large: BASIC_LAND_IMAGES[basicLandMatch as keyof typeof BASIC_LAND_IMAGES],
+            png: BASIC_LAND_IMAGES[basicLandMatch as keyof typeof BASIC_LAND_IMAGES],
+            art_crop: BASIC_LAND_IMAGES[basicLandMatch as keyof typeof BASIC_LAND_IMAGES],
+            border_crop: BASIC_LAND_IMAGES[basicLandMatch as keyof typeof BASIC_LAND_IMAGES],
+          }
+        };
+        return [fallbackCard];
       }
       
       const data = await response.json();
+      console.log("Basic land data:", data.name, "Image URL:", data.image_uris?.normal);
       return [data];
     }
-    
-    // For all other cards, use a more robust search approach
     
     // Try an autocomplete search first (faster and more likely to find cards)
     try {
@@ -75,6 +104,7 @@ export const searchCardByName = async (cardName: string): Promise<ScryfallCard[]
       
       if (autocompleteResponse.ok) {
         const autocompleteData = await autocompleteResponse.json();
+        console.log("Autocomplete results:", autocompleteData.data);
         
         // If we have autocomplete results, search for the first one
         if (autocompleteData.data && autocompleteData.data.length > 0) {
@@ -86,7 +116,12 @@ export const searchCardByName = async (cardName: string): Promise<ScryfallCard[]
           
           if (exactResponse.ok) {
             const exactData = await exactResponse.json();
-            console.log("Found card with images:", exactData.name, exactData.image_uris || exactData.card_faces?.[0]?.image_uris);
+            console.log("Found card:", exactData.name);
+            console.log("Image URLs:", 
+              exactData.image_uris || 
+              (exactData.card_faces && exactData.card_faces[0].image_uris) || 
+              "No image URIs found"
+            );
             return [exactData];
           }
         }
@@ -95,7 +130,7 @@ export const searchCardByName = async (cardName: string): Promise<ScryfallCard[]
       console.log('Autocomplete search failed, trying direct search');
     }
     
-    // If autocomplete didn't work, try an exact match
+    // Try an exact match
     try {
       const exactResponse = await fetch(
         `https://api.scryfall.com/cards/named?exact=${encodedName}`
@@ -103,7 +138,18 @@ export const searchCardByName = async (cardName: string): Promise<ScryfallCard[]
       
       if (exactResponse.ok) {
         const data = await exactResponse.json();
-        console.log("Exact match found for:", data.name, data.image_uris || data.card_faces?.[0]?.image_uris);
+        console.log("Exact match found for:", data.name);
+        console.log("Card details:", {
+          id: data.id,
+          name: data.name,
+          set: data.set,
+          collector_number: data.collector_number
+        });
+        console.log("Image URLs:", 
+          data.image_uris || 
+          (data.card_faces && data.card_faces[0].image_uris) || 
+          "No image URIs found"
+        );
         return [data];
       }
     } catch (error) {
@@ -118,7 +164,12 @@ export const searchCardByName = async (cardName: string): Promise<ScryfallCard[]
       
       if (fuzzyResponse.ok) {
         const data = await fuzzyResponse.json();
-        console.log("Fuzzy match found for:", data.name, data.image_uris || data.card_faces?.[0]?.image_uris);
+        console.log("Fuzzy match found for:", data.name);
+        console.log("Image URLs:", 
+          data.image_uris || 
+          (data.card_faces && data.card_faces[0].image_uris) || 
+          "No image URIs found"
+        );
         return [data];
       }
     } catch (error) {
@@ -127,13 +178,13 @@ export const searchCardByName = async (cardName: string): Promise<ScryfallCard[]
     
     // If both exact and fuzzy fail, try a more general search
     const searchResponse = await fetch(
-      `https://api.scryfall.com/cards/search?q=${encodedName}`
+      `https://api.scryfall.com/cards/search?q=name:${encodedName}`
     );
     
     if (!searchResponse.ok) {
       // Try an even more lenient search if all else fails
       const fallbackResponse = await fetch(
-        `https://api.scryfall.com/cards/search?q=name:${encodedName}`
+        `https://api.scryfall.com/cards/search?q=${encodedName}`
       );
       
       if (!fallbackResponse.ok) {
@@ -161,30 +212,50 @@ export const getCardImageUrl = (card: ScryfallCard, size: 'small' | 'normal' | '
     return 'https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg';
   }
 
-  console.log("Getting image URL for card:", card.name);
+  // For basic lands, use our guaranteed working URLs
+  if (card.name && (card.name === "Plains" || card.name === "Island" || card.name === "Swamp" || 
+      card.name === "Mountain" || card.name === "Forest")) {
+    const basicLandUrl = BASIC_LAND_IMAGES[card.name as keyof typeof BASIC_LAND_IMAGES];
+    console.log(`Using fixed basic land image for ${card.name}:`, basicLandUrl);
+    return basicLandUrl;
+  }
+
+  // Try to construct a direct URL using set and collector number if available
+  if (card.set && card.collector_number) {
+    try {
+      // Use direct Scryfall CDN URL format which is more reliable
+      // Format: https://cards.scryfall.io/{size}/{front_or_back}/{set}/{collector_number}.jpg
+      const directUrl = `https://cards.scryfall.io/${size}/front/${card.set}/${card.collector_number}.jpg`;
+      console.log(`Generated direct Scryfall CDN URL for ${card.name}:`, directUrl);
+      return directUrl;
+    } catch (e) {
+      console.log(`Could not generate direct URL for ${card.name}, falling back to image_uris`);
+      // Continue to next method if this fails
+    }
+  }
 
   // Handle double-faced cards
   if (!card.image_uris && card.card_faces && card.card_faces[0]?.image_uris) {
     const imageUrl = card.card_faces[0].image_uris?.[size];
-    console.log("Using double-faced card front image:", imageUrl);
+    console.log(`Using double-faced card front image for ${card.name}:`, imageUrl);
     return imageUrl || 'https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg';
   }
   
   // Handle regular cards
   if (card.image_uris && card.image_uris[size]) {
-    console.log("Using standard card image:", card.image_uris[size]);
+    console.log(`Using standard card image for ${card.name}:`, card.image_uris[size]);
     return card.image_uris[size];
   }
   
   // Fallback to other size if requested size is not available
   if (card.image_uris) {
     const fallback = card.image_uris.normal || card.image_uris.small || card.image_uris.large || card.image_uris.png;
-    console.log("Using fallback card image:", fallback);
+    console.log(`Using fallback card image for ${card.name}:`, fallback);
     return fallback || 'https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg';
   }
   
   // Ultimate fallback
-  console.log("No suitable image found, using card back");
+  console.log(`No suitable image found for ${card.name}, using card back`);
   return 'https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg';
 };
 
@@ -200,19 +271,45 @@ export const getBasicLand = async (landName: string): Promise<ScryfallCard | nul
   }
   
   try {
-    const oracleId = BASIC_LAND_ORACLES[basicLandMatch as keyof typeof BASIC_LAND_ORACLES];
-    const response = await fetch(`https://api.scryfall.com/cards/oracle/${oracleId}`);
+    // Create a synthetic basic land card with reliable image URL
+    const basicLandCard: ScryfallCard = {
+      id: `basic-land-${basicLandMatch.toLowerCase()}`,
+      name: basicLandMatch,
+      type_line: `Basic Land — ${basicLandMatch}`,
+      image_uris: {
+        small: BASIC_LAND_IMAGES[basicLandMatch as keyof typeof BASIC_LAND_IMAGES],
+        normal: BASIC_LAND_IMAGES[basicLandMatch as keyof typeof BASIC_LAND_IMAGES],
+        large: BASIC_LAND_IMAGES[basicLandMatch as keyof typeof BASIC_LAND_IMAGES],
+        png: BASIC_LAND_IMAGES[basicLandMatch as keyof typeof BASIC_LAND_IMAGES],
+        art_crop: BASIC_LAND_IMAGES[basicLandMatch as keyof typeof BASIC_LAND_IMAGES],
+        border_crop: BASIC_LAND_IMAGES[basicLandMatch as keyof typeof BASIC_LAND_IMAGES],
+      }
+    };
     
-    if (!response.ok) {
-      console.error(`Error fetching basic land: ${basicLandMatch}`, response.statusText);
-      throw new Error(`Error fetching basic land: ${basicLandMatch}`);
+    // Also try to get the latest version from Scryfall
+    try {
+      const oracleId = BASIC_LAND_ORACLES[basicLandMatch as keyof typeof BASIC_LAND_ORACLES];
+      const response = await fetch(`https://api.scryfall.com/cards/oracle/${oracleId}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log(`Got basic land ${basicLandMatch} from Scryfall API:`, data.name);
+        console.log("Basic land image URL:", data.image_uris?.normal);
+        return data;
+      }
+    } catch (error) {
+      console.log(`Error getting ${basicLandMatch} from API, using synthetic card`);
     }
     
-    const data = await response.json();
-    console.log("Basic land image URL:", data.image_uris?.normal);
-    return data;
+    // Return our synthetic card as fallback
+    return basicLandCard;
   } catch (error) {
     console.error('Error fetching basic land:', error);
     return null;
   }
+};
+
+// Helper function to get card images by set and collector number
+export const getCardImageBySetAndNumber = (set: string, collectorNumber: string, size: 'small' | 'normal' | 'large' = 'normal'): string => {
+  return `https://cards.scryfall.io/${size}/front/${set}/${collectorNumber}.jpg`;
 };
