@@ -1,18 +1,7 @@
 import * as dateFns from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useState, useEffect } from 'react';
-import { 
-  CalendarClock, 
-  MapPin, 
-  Users, 
-  CreditCard, 
-  Clock, 
-  Store as StoreIcon, 
-  Calendar, 
-  CheckCircle,
-  XCircle, 
-  AlertCircle 
-} from 'lucide-react';
+import { CalendarClock, MapPin, Users, CreditCard, Clock, Store as StoreIcon, Calendar, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,11 +11,9 @@ import { useAuth } from '@/context/AuthContext';
 import { Event, EventFormat, EventType } from '@/types';
 import { registerForEvent, cancelRegistration, checkRegistration, subscribeToEventWithRegistrations } from '@/services/EventService';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
-
 interface EventDetailProps {
   event: Event;
 }
-
 const formatColors: Record<EventFormat, string> = {
   'Standard': 'bg-blue-100 text-blue-700',
   'Modern': 'bg-purple-100 text-purple-700',
@@ -39,7 +26,6 @@ const formatColors: Record<EventFormat, string> = {
   'Prerelease': 'bg-yellow-100 text-yellow-700',
   'Other': 'bg-slate-100 text-slate-700'
 };
-
 const typeColors: Record<string, string> = {
   'tournament': 'bg-magic-purple/10 text-magic-purple border-magic-purple/30',
   'casual': 'bg-green-100 text-green-700',
@@ -48,7 +34,6 @@ const typeColors: Record<string, string> = {
   'prerelease': 'bg-amber-100 text-amber-700',
   'other': 'bg-slate-100 text-slate-700'
 };
-
 const typeLabels: Record<EventType, string> = {
   'tournament': 'Tournament',
   'casual': 'Casual Play',
@@ -57,26 +42,26 @@ const typeLabels: Record<EventType, string> = {
   'prerelease': 'Prerelease',
   'other': 'Other'
 };
-
-const EventDetail = ({ event }: EventDetailProps) => {
+const EventDetail = ({
+  event
+}: EventDetailProps) => {
   const [currentEvent, setCurrentEvent] = useState<Event>(event);
   const [isRegistered, setIsRegistered] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [isImageLoading, setIsImageLoading] = useState(!!event.image);
-  const { user } = useAuth();
-  
+  const {
+    user
+  } = useAuth();
   useEffect(() => {
     // Set initial event
     setCurrentEvent(event);
     setIsImageLoading(!!event.image);
-    
+
     // Check if user is registered
     if (user) {
-      checkRegistration(event.id)
-        .then(registered => setIsRegistered(registered))
-        .catch(() => setIsRegistered(false));
+      checkRegistration(event.id).then(registered => setIsRegistered(registered)).catch(() => setIsRegistered(false));
     }
-    
+
     // Subscribe to event and registration updates
     const unsubscribe = subscribeToEventWithRegistrations(event.id, updatedEvent => {
       if (updatedEvent) {
@@ -84,28 +69,24 @@ const EventDetail = ({ event }: EventDetailProps) => {
         setCurrentEvent(updatedEvent);
       }
     });
-    
     return () => {
       unsubscribe();
     };
   }, [event, user]);
-  
   const formatDate = (dateString: string) => {
-    return dateFns.format(dateFns.parseISO(dateString), 'EEEE d MMMM, yyyy • h:mm a', { locale: es });
+    return dateFns.format(dateFns.parseISO(dateString), 'EEEE d MMMM, yyyy • h:mm a', {
+      locale: es
+    });
   };
-  
   const formatTime = (dateString: string) => {
     return dateFns.format(dateFns.parseISO(dateString), 'h:mm a');
   };
-
   const handleRegister = async () => {
     if (!user) {
       toast.error("Please log in to register for this event");
       return;
     }
-    
     setIsRegistering(true);
-    
     try {
       await registerForEvent(currentEvent.id);
       setIsRegistered(true);
@@ -117,12 +98,9 @@ const EventDetail = ({ event }: EventDetailProps) => {
       setIsRegistering(false);
     }
   };
-  
   const handleCancelRegistration = async () => {
     if (!user) return;
-    
     setIsRegistering(true);
-    
     try {
       await cancelRegistration(currentEvent.id);
       setIsRegistered(false);
@@ -134,39 +112,22 @@ const EventDetail = ({ event }: EventDetailProps) => {
       setIsRegistering(false);
     }
   };
-  
-  const isFull = currentEvent.maxParticipants !== undefined && 
-                currentEvent.currentParticipants !== undefined && 
-                currentEvent.currentParticipants >= currentEvent.maxParticipants;
-  
+  const isFull = currentEvent.maxParticipants !== undefined && currentEvent.currentParticipants !== undefined && currentEvent.currentParticipants >= currentEvent.maxParticipants;
+
   // Log image URL for debugging
   console.log('Event detail image URL:', currentEvent.image);
-
-  return (
-    <Card className="max-w-4xl mx-auto overflow-hidden">
+  return <Card className="max-w-4xl mx-auto overflow-hidden">
       <div className="relative h-52 bg-magic-gradient-bg flex items-center justify-center">
-        {currentEvent.image ? (
-          <AspectRatio ratio={16/9} className="w-full h-full">
-            <img 
-              src={currentEvent.image} 
-              alt={currentEvent.title} 
-              className="w-full h-full object-cover"
-              onLoad={() => setIsImageLoading(false)}
-              onError={(e) => {
-                console.error("Detail image failed to load:", currentEvent.image);
-                setIsImageLoading(false);
-                e.currentTarget.style.display = 'none';
-              }}
-            />
-            {isImageLoading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-muted">
+        {currentEvent.image ? <AspectRatio ratio={16 / 9} className="w-full h-full">
+            <img src={currentEvent.image} alt={currentEvent.title} className="w-full h-full object-cover" onLoad={() => setIsImageLoading(false)} onError={e => {
+          console.error("Detail image failed to load:", currentEvent.image);
+          setIsImageLoading(false);
+          e.currentTarget.style.display = 'none';
+        }} />
+            {isImageLoading && <div className="absolute inset-0 flex items-center justify-center bg-muted">
                 <span className="text-muted-foreground">Loading image...</span>
-              </div>
-            )}
-          </AspectRatio>
-        ) : (
-          <Calendar className="h-24 w-24 text-white opacity-30" />
-        )}
+              </div>}
+          </AspectRatio> : <Calendar className="h-24 w-24 text-white opacity-30" />}
       </div>
       <CardHeader>
         <div className="flex flex-wrap gap-2 mb-2">
@@ -191,12 +152,10 @@ const EventDetail = ({ event }: EventDetailProps) => {
               <div>
                 <div className="font-medium">Date & Time</div>
                 <div>{formatDate(currentEvent.startDate)}</div>
-                {currentEvent.endDate && (
-                  <div className="flex items-center text-sm text-muted-foreground mt-1">
+                {currentEvent.endDate && <div className="flex items-center text-sm text-muted-foreground mt-1">
                     <Clock className="h-4 w-4 mr-1" />
                     <span>Until {formatTime(currentEvent.endDate)}</span>
-                  </div>
-                )}
+                  </div>}
               </div>
             </div>
             <div className="flex items-start">
@@ -217,34 +176,24 @@ const EventDetail = ({ event }: EventDetailProps) => {
               <div>
                 <div className="font-medium">Participants</div>
                 <div className="flex items-center">
-                  {currentEvent.currentParticipants !== undefined && currentEvent.maxParticipants !== undefined ? (
-                    <>
+                  {currentEvent.currentParticipants !== undefined && currentEvent.maxParticipants !== undefined ? <>
                       <span>{currentEvent.currentParticipants}/{currentEvent.maxParticipants}</span>
-                      {isFull ? (
-                        <Badge variant="outline" className="ml-2 bg-red-100 text-red-700 border-red-200">
+                      {isFull ? <Badge variant="outline" className="ml-2 bg-red-100 text-red-700 border-red-200">
                           Full
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="ml-2 bg-green-100 text-green-700 border-green-200">
+                        </Badge> : <Badge variant="outline" className="ml-2 bg-green-100 text-green-700 border-green-200">
                           Available
-                        </Badge>
-                      )}
-                    </>
-                  ) : (
-                    <span>Unlimited</span>
-                  )}
+                        </Badge>}
+                    </> : <span>Unlimited</span>}
                 </div>
               </div>
             </div>
-            {currentEvent.price !== undefined && (
-              <div className="flex items-start">
+            {currentEvent.price !== undefined && <div className="flex items-start">
                 <CreditCard className="h-5 w-5 mr-3 mt-0.5 text-magic-purple" />
                 <div>
                   <div className="font-medium">Price</div>
                   <div>{currentEvent.price > 0 ? `${currentEvent.price}€` : 'Free'}</div>
                 </div>
-              </div>
-            )}
+              </div>}
           </div>
         </div>
         
@@ -261,36 +210,17 @@ const EventDetail = ({ event }: EventDetailProps) => {
             <span>Added on {dateFns.format(dateFns.parseISO(currentEvent.createdAt), 'PP')}</span>
           </div>
           
-          {user ? (
-            isRegistered ? (
-              <Button 
-                onClick={handleCancelRegistration} 
-                variant="outline" 
-                disabled={isRegistering}
-                className="px-8"
-              >
+          {user ? isRegistered ? <Button onClick={handleCancelRegistration} variant="outline" disabled={isRegistering} className="px-8">
                 <XCircle className="h-4 w-4 mr-2" />
                 Cancel Registration
-              </Button>
-            ) : !isFull && (
-              <Button 
-                onClick={handleRegister} 
-                disabled={isRegistering}
-                className="px-8"
-              >
+              </Button> : !isFull && <Button onClick={handleRegister} disabled={isRegistering} className="px-8">
                 <CheckCircle className="h-4 w-4 mr-2" />
                 Register
-              </Button>
-            )
-          ) : (
-            <Button onClick={() => toast.error("Please log in to register")} className="px-8">
+              </Button> : <Button onClick={() => toast.error("Please log in to register")} className="px-8">
               Register
-            </Button>
-          )}
+            </Button>}
         </div>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 };
-
 export default EventDetail;
