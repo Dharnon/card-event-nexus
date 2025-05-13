@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card as MagicCard } from '@/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { List, Image, Maximize2, AlertCircle, Loader2, ArrowsMaximize, ArrowsMinimize } from 'lucide-react';
+import { List, Image, Maximize2, AlertCircle, Loader2, Maximize, Minimize } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { 
