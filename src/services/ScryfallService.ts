@@ -35,28 +35,27 @@ const BASIC_LAND_ORACLES = {
   'Forest': '8f683968-8826-47cd-8c15-8ef33c6fc7bf'
 };
 
-// Fix: correct Forest oracle ID that had a typo "dotfaq1c033e"
-
 export const searchCardByName = async (cardName: string): Promise<ScryfallCard[]> => {
   try {
     if (!cardName || cardName.trim().length < 2) {
       return [];
     }
     
-    // Comprobamos si es una tierra básica
+    // Check if it's a basic land
     const normalizedCardName = cardName.trim().toLowerCase();
     const basicLandMatch = Object.keys(BASIC_LAND_ORACLES).find(
-      land => land.toLowerCase() === normalizedCardName
+      land => land.toLowerCase().includes(normalizedCardName)
     );
     
     if (basicLandMatch) {
-      // Para tierras básicas, buscamos por oracle_id para obtener la versión más reciente
+      // For basic lands, search by oracle_id to get the latest version
       const oracleId = BASIC_LAND_ORACLES[basicLandMatch as keyof typeof BASIC_LAND_ORACLES];
       const response = await fetch(
         `https://api.scryfall.com/cards/oracle/${oracleId}`
       );
       
       if (!response.ok) {
+        console.error(`Failed to fetch basic land: ${basicLandMatch}`, response.statusText);
         throw new Error('Error fetching basic land data');
       }
       
@@ -64,30 +63,44 @@ export const searchCardByName = async (cardName: string): Promise<ScryfallCard[]
       return [data];
     }
     
-    // For fuzzy search, use the /cards/named endpoint
-    const encodedName = encodeURIComponent(cardName);
-    
-    // First try fuzzy search for exact matches
+    // Try an exact match first
     try {
-      const namedResponse = await fetch(
-        `https://api.scryfall.com/cards/named?fuzzy=${encodedName}`
+      const encodedName = encodeURIComponent(cardName.trim());
+      const exactResponse = await fetch(
+        `https://api.scryfall.com/cards/named?exact=${encodedName}`
       );
       
-      if (namedResponse.ok) {
-        const data = await namedResponse.json();
+      if (exactResponse.ok) {
+        const data = await exactResponse.json();
         return [data];
       }
     } catch (error) {
-      console.log('Exact card match not found, trying search');
+      console.log('Exact match not found, trying fuzzy search');
     }
     
-    // If fuzzy search fails, try regular search
+    // Then try fuzzy search if exact match fails
+    try {
+      const encodedName = encodeURIComponent(cardName.trim());
+      const fuzzyResponse = await fetch(
+        `https://api.scryfall.com/cards/named?fuzzy=${encodedName}`
+      );
+      
+      if (fuzzyResponse.ok) {
+        const data = await fuzzyResponse.json();
+        return [data];
+      }
+    } catch (error) {
+      console.log('Fuzzy search failed, trying general search');
+    }
+    
+    // If both exact and fuzzy fail, try a more general search
+    const encodedName = encodeURIComponent(cardName.trim());
     const searchResponse = await fetch(
-      `https://api.scryfall.com/cards/search?q=name:"${encodedName}" OR name:/^${encodedName}/`
+      `https://api.scryfall.com/cards/search?q=name:"${encodedName}" OR name:/^${encodedName}/i`
     );
     
     if (!searchResponse.ok) {
-      // Try one more search with a more lenient query
+      // Try an even more lenient search
       const fallbackResponse = await fetch(
         `https://api.scryfall.com/cards/search?q=name:${encodedName}`
       );
@@ -98,11 +111,11 @@ export const searchCardByName = async (cardName: string): Promise<ScryfallCard[]
       }
       
       const data = await fallbackResponse.json();
-      return data.data.slice(0, 10); // Limit to 10 results
+      return data.data.slice(0, 8); // Limit to 8 results for better mobile experience
     }
     
     const data = await searchResponse.json();
-    return data.data.slice(0, 10); // Limit to 10 results
+    return data.data.slice(0, 8); // Limit to 8 results for better mobile experience
   } catch (error) {
     console.error('Error searching for card:', error);
     return [];
@@ -110,25 +123,34 @@ export const searchCardByName = async (cardName: string): Promise<ScryfallCard[]
 };
 
 export const getCardImageUrl = (card: ScryfallCard, size: 'small' | 'normal' | 'large' = 'normal'): string => {
+  if (!card) {
+    return 'https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg';
+  }
+
   // Handle double-faced cards
   if (!card.image_uris && card.card_faces && card.card_faces[0]?.image_uris) {
     return card.card_faces[0].image_uris[size];
   }
   
   // Handle regular cards
-  if (card.image_uris) {
+  if (card.image_uris && card.image_uris[size]) {
     return card.image_uris[size];
   }
   
-  // Fallback
-  return 'https://c2.scryfall.com/file/scryfall-card-backs/large/59/597b79b3-7d77-4261-871a-60dd17403388.jpg';
+  // Fallback to other size if requested size is not available
+  if (card.image_uris) {
+    return card.image_uris.normal || card.image_uris.small || card.image_uris.large || card.image_uris.png;
+  }
+  
+  // Ultimate fallback
+  return 'https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg';
 };
 
-// Función adicional para buscar tierras básicas por nombre específico
+// Function to search for basic lands by specific name
 export const getBasicLand = async (landName: string): Promise<ScryfallCard | null> => {
   const normalizedName = landName.trim();
   const basicLandMatch = Object.keys(BASIC_LAND_ORACLES).find(
-    land => land === normalizedName
+    land => land.toLowerCase().includes(normalizedName.toLowerCase())
   );
   
   if (!basicLandMatch) {
@@ -140,6 +162,7 @@ export const getBasicLand = async (landName: string): Promise<ScryfallCard | nul
     const response = await fetch(`https://api.scryfall.com/cards/oracle/${oracleId}`);
     
     if (!response.ok) {
+      console.error(`Error fetching basic land: ${basicLandMatch}`, response.statusText);
       throw new Error(`Error fetching basic land: ${basicLandMatch}`);
     }
     

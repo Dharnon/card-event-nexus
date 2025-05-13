@@ -3,8 +3,9 @@ import React, { useState } from 'react';
 import { Card as MagicCard } from '@/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { List, Image } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { List, Image, ExternalLink } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 interface CardListProps {
   cards: MagicCard[];
@@ -14,7 +15,8 @@ interface CardListProps {
 
 const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUrl }) => {
   const [viewMode, setViewMode] = useState<'text' | 'images'>('text');
-  const [hoveredCard, setHoveredCard] = useState<MagicCard | null>(null);
+  const [previewCard, setPreviewCard] = useState<MagicCard | null>(null);
+  const isMobile = useIsMobile();
   
   // Group cards by name and sum quantities
   const groupedCards = cards.reduce((acc, card) => {
@@ -51,6 +53,13 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
     // Fallback to card back if no image
     return "https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg";
   };
+
+  const handleCardClick = (card: MagicCard) => {
+    if (onCardSelect) {
+      onCardSelect(card);
+    }
+    setPreviewCard(card);
+  };
   
   // Display a message if there are no cards
   if (sortedCards.length === 0) {
@@ -60,7 +69,7 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
       </div>
     );
   }
-  
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -72,84 +81,131 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
             variant={viewMode === 'text' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setViewMode('text')}
+            title="List View"
           >
             <List className="h-4 w-4 mr-1" />
-            List
+            <span className="hidden sm:inline">List</span>
           </Button>
           <Button
             variant={viewMode === 'images' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setViewMode('images')}
+            title="Grid View"
           >
             <Image className="h-4 w-4 mr-1" />
-            Images
+            <span className="hidden sm:inline">Images</span>
           </Button>
         </div>
       </div>
       
-      <ScrollArea className="h-[400px] rounded-md border p-4">
-        {viewMode === 'text' ? (
-          <div className="space-y-2">
-            {sortedCards.map((card) => (
-              <div 
-                key={card.id} 
-                className={`p-2 rounded-md border ${
-                  onCardSelect ? 'cursor-pointer hover:bg-muted/50' : ''
-                } ${selectedCardUrl === card.imageUrl ? 'bg-muted' : ''}`}
-                onClick={() => onCardSelect && onCardSelect(card)}
-                onMouseEnter={() => setHoveredCard(card)}
-                onMouseLeave={() => setHoveredCard(null)}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="font-medium">{card.name}</div>
-                    <div className="ml-2 text-muted-foreground">x{card.quantity}</div>
-                  </div>
-                  {hoveredCard === card && (
-                    <div className="fixed ml-4 z-50 shadow-lg" style={{ transform: 'translateX(100%)' }}>
-                      <img
-                        src={getCardImageUrl(card)}
-                        alt={card.name}
-                        className="rounded-md h-64 w-auto"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = "https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg";
-                        }}
-                      />
+      <div className="flex flex-col md:flex-row gap-4">
+        <ScrollArea className="h-[400px] rounded-md border p-4 flex-1 bg-card/50">
+          {viewMode === 'text' ? (
+            <div className="space-y-2">
+              {sortedCards.map((card) => (
+                <div 
+                  key={card.id} 
+                  className={`p-3 rounded-md border ${
+                    onCardSelect ? 'cursor-pointer hover:bg-muted transition-colors duration-200' : ''
+                  } ${selectedCardUrl === card.imageUrl ? 'bg-muted ring-1 ring-primary' : ''}`}
+                  onClick={() => handleCardClick(card)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div className="font-medium">{card.name}</div>
+                      <div className="ml-2 text-muted-foreground">×{card.quantity}</div>
                     </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {sortedCards.map((card) => (
-              <div 
-                key={card.id}
-                className={`rounded-md overflow-hidden border cursor-pointer ${
-                  selectedCardUrl === card.imageUrl ? 'ring-2 ring-primary' : ''
-                }`}
-                onClick={() => onCardSelect && onCardSelect(card)}
-              >
-                <div className="aspect-[63/88] relative">
-                  <img 
-                    src={getCardImageUrl(card)}
-                    alt={card.name}
-                    className="h-full w-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = "https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg";
-                    }}
-                  />
-                  <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white p-1 text-xs">
-                    <div className="truncate">{card.name}</div>
-                    <div className="text-xs text-gray-300">x{card.quantity}</div>
+                    {!isMobile && (
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        className="h-6 w-6 rounded-full opacity-50 hover:opacity-100"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPreviewCard(card);
+                        }}
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                      </Button>
+                    )}
                   </div>
                 </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {sortedCards.map((card) => (
+                <div 
+                  key={card.id}
+                  className={`rounded-md overflow-hidden border cursor-pointer hover:shadow-md transition-all duration-200 ${
+                    selectedCardUrl === card.imageUrl ? 'ring-2 ring-primary' : ''
+                  }`}
+                  onClick={() => handleCardClick(card)}
+                >
+                  <AspectRatio ratio={63/88} className="relative">
+                    <img 
+                      src={getCardImageUrl(card)}
+                      alt={card.name}
+                      className="h-full w-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg";
+                      }}
+                      loading="lazy"
+                    />
+                    <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white p-1.5 text-xs">
+                      <div className="truncate">{card.name}</div>
+                      <div className="text-xs text-gray-300">×{card.quantity}</div>
+                    </div>
+                  </AspectRatio>
+                </div>
+              ))}
+            </div>
+          )}
+        </ScrollArea>
+        
+        {/* Card preview for desktop */}
+        {!isMobile && previewCard && (
+          <div className="hidden md:block w-60 shrink-0">
+            <div className="sticky top-4 rounded-md overflow-hidden shadow-lg">
+              <img 
+                src={getCardImageUrl(previewCard)}
+                alt={previewCard.name}
+                className="w-full h-auto rounded-md"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg";
+                }}
+              />
+              <div className="p-2 bg-card">
+                <div className="font-medium truncate">{previewCard.name}</div>
+                <div className="text-sm text-muted-foreground">Quantity: {previewCard.quantity}</div>
               </div>
-            ))}
+            </div>
           </div>
         )}
-      </ScrollArea>
+        
+        {/* Mobile preview overlay */}
+        {isMobile && previewCard && viewMode === 'text' && (
+          <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" 
+               onClick={() => setPreviewCard(null)}>
+            <div className="max-w-[300px] bg-card rounded-lg overflow-hidden" 
+                 onClick={(e) => e.stopPropagation()}>
+              <img 
+                src={getCardImageUrl(previewCard)}
+                alt={previewCard.name}
+                className="w-full h-auto"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg";
+                }}
+              />
+              <div className="p-3">
+                <div className="font-medium">{previewCard.name}</div>
+                <div className="text-sm text-muted-foreground">Quantity: {previewCard.quantity}</div>
+                <Button className="w-full mt-3" onClick={() => setPreviewCard(null)}>Close</Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Card as MagicCard, CardSearchInputProps } from '@/types';
 import { searchCardByName, ScryfallCard, getCardImageUrl, getBasicLand } from '@/services/ScryfallService';
 import { useDebounce } from '@/hooks/useDebounce';
-import { Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { Loader2, Plus, Minus } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
 
 const BASIC_LANDS = ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest'];
 
@@ -16,9 +16,9 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
   const [isSearching, setIsSearching] = useState(false);
   const [selectedCard, setSelectedCard] = useState<ScryfallCard | null>(null);
   const [quantity, setQuantity] = useState(1);
+  const [imageLoading, setImageLoading] = useState(false);
   
-  const debouncedSearchQuery = useDebounce(searchQuery, 500);
-  const { toast } = useToast();
+  const debouncedSearchQuery = useDebounce(searchQuery, 400);
   
   useEffect(() => {
     const fetchCards = async () => {
@@ -29,7 +29,7 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
       
       setIsSearching(true);
       try {
-        // Verificar si es una tierra básica primero
+        // Check if it's a basic land first
         const trimmedQuery = debouncedSearchQuery.trim();
         const isBasicLand = BASIC_LANDS.some(land => 
           land.toLowerCase().includes(trimmedQuery.toLowerCase())
@@ -37,12 +37,12 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
         
         let results;
         if (isBasicLand) {
-          // Filtrar las tierras básicas que coincidan con la búsqueda
+          // Filter basic lands that match the search
           const matchingLands = BASIC_LANDS.filter(land => 
             land.toLowerCase().includes(trimmedQuery.toLowerCase())
           );
           
-          // Obtener los datos de cada tierra básica
+          // Get data for each basic land
           const landPromises = matchingLands.map(async land => {
             const landCard = await getBasicLand(land);
             return landCard;
@@ -51,17 +51,16 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
           const landResults = await Promise.all(landPromises);
           results = landResults.filter(Boolean) as ScryfallCard[];
         } else {
-          // Búsqueda normal para cartas que no son tierras básicas
+          // Normal search for non-basic lands
           results = await searchCardByName(debouncedSearchQuery);
         }
         
-        setSearchResults(results.slice(0, 10)); // Limit to 10 results for better UX
+        setSearchResults(results.slice(0, 8)); // Limit results for better mobile experience
         
         if (results.length === 0 && debouncedSearchQuery.trim().length >= 3) {
           toast({
             title: "No results found",
             description: `No cards found matching "${debouncedSearchQuery}"`,
-            variant: "default",
           });
         }
       } catch (error) {
@@ -78,12 +77,13 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
     };
     
     fetchCards();
-  }, [debouncedSearchQuery, toast]);
+  }, [debouncedSearchQuery]);
   
   const handleSelectCard = (card: ScryfallCard) => {
     setSelectedCard(card);
     setSearchQuery('');
     setSearchResults([]);
+    setImageLoading(true);
   };
   
   const handleAddCard = () => {
@@ -92,7 +92,7 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
     const imageUrl = getCardImageUrl(selectedCard, 'normal');
     
     const newCard: MagicCard = {
-      id: `card-${Date.now()}`,
+      id: `card-${selectedCard.id}-${Date.now()}`,
       name: selectedCard.name,
       quantity: quantity,
       scryfallId: selectedCard.id,
@@ -116,26 +116,29 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
           placeholder={placeholder}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
+          className="bg-background"
         />
         
         {/* Search results dropdown */}
         {searchResults.length > 0 && (
-          <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
+          <div className="absolute z-20 w-full mt-1 bg-card border rounded-md shadow-lg max-h-[300px] overflow-auto">
             {searchResults.map((card) => (
               <div
                 key={card.id}
-                className="p-2 hover:bg-accent cursor-pointer"
+                className="p-3 hover:bg-accent cursor-pointer border-b border-border/30 last:border-0 flex items-center"
                 onClick={() => handleSelectCard(card)}
               >
-                {card.name}
-                {card.type_line && <span className="text-xs text-muted-foreground ml-2">{card.type_line}</span>}
+                <div className="flex-1">
+                  <div className="font-medium">{card.name}</div>
+                  {card.type_line && <div className="text-xs text-muted-foreground">{card.type_line}</div>}
+                </div>
               </div>
             ))}
           </div>
         )}
         
         {isSearching && (
-          <div className="absolute z-10 w-full mt-1 p-2 bg-background border rounded-md shadow-lg text-center">
+          <div className="absolute z-20 w-full mt-1 p-3 bg-card border rounded-md shadow-lg text-center">
             <div className="flex items-center justify-center space-x-2">
               <Loader2 className="h-4 w-4 animate-spin" />
               <span>Searching...</span>
@@ -146,13 +149,20 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
       
       {/* Selected card preview */}
       {selectedCard && (
-        <div className="border rounded-md p-4 flex flex-col sm:flex-row gap-4">
-          <div className="shrink-0">
+        <div className="border rounded-xl p-4 flex flex-col sm:flex-row gap-4 bg-card shadow-md">
+          <div className="shrink-0 relative flex justify-center">
+            {imageLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded-md">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            )}
             <img 
               src={getCardImageUrl(selectedCard, 'normal')} 
               alt={selectedCard.name} 
-              className="rounded-md w-40 h-auto"
+              className="rounded-lg w-40 h-auto mx-auto shadow-md"
+              onLoad={() => setImageLoading(false)}
               onError={(e) => {
+                setImageLoading(false);
                 (e.target as HTMLImageElement).src = "https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg";
               }}
             />
@@ -164,27 +174,33 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
                 <p className="text-sm text-muted-foreground">{selectedCard.type_line}</p>
               )}
             </div>
-            <div className="flex items-center justify-between mt-4">
+            <div className="flex flex-col sm:flex-row items-center gap-4 sm:justify-between mt-4">
               <div className="flex items-center">
                 <Button 
                   type="button"
                   variant="outline" 
-                  size="sm" 
+                  size="icon" 
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  className="h-8 w-8"
                 >
-                  -
+                  <Minus className="h-4 w-4" />
                 </Button>
-                <span className="mx-2">{quantity}</span>
+                <span className="mx-4 font-medium">{quantity}</span>
                 <Button 
                   type="button"
                   variant="outline" 
-                  size="sm" 
+                  size="icon" 
                   onClick={() => setQuantity(quantity + 1)}
+                  className="h-8 w-8"
                 >
-                  +
+                  <Plus className="h-4 w-4" />
                 </Button>
               </div>
-              <Button type="button" onClick={handleAddCard}>
+              <Button 
+                type="button" 
+                onClick={handleAddCard} 
+                className="w-full sm:w-auto"
+              >
                 Add to deck
               </Button>
             </div>
