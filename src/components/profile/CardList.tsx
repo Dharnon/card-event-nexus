@@ -48,8 +48,18 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
       return "https://cards.scryfall.io/normal/front/c/f/cfb41b34-4037-4a3c-9a6d-def7bfda5635.jpg";
     }
     
-    return "";
+    // Fallback to card back if no image
+    return "https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg";
   };
+  
+  // Display a message if there are no cards
+  if (sortedCards.length === 0) {
+    return (
+      <div className="text-center p-8">
+        <p className="text-muted-foreground">No cards in this deck</p>
+      </div>
+    );
+  }
   
   return (
     <div className="space-y-4">
@@ -95,12 +105,15 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
                     <div className="font-medium">{card.name}</div>
                     <div className="ml-2 text-muted-foreground">x{card.quantity}</div>
                   </div>
-                  {hoveredCard === card && card.imageUrl && (
+                  {hoveredCard === card && (
                     <div className="fixed ml-4 z-50 shadow-lg" style={{ transform: 'translateX(100%)' }}>
                       <img
                         src={getCardImageUrl(card)}
                         alt={card.name}
                         className="rounded-md h-64 w-auto"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg";
+                        }}
                       />
                     </div>
                   )}
@@ -118,24 +131,20 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
                 }`}
                 onClick={() => onCardSelect && onCardSelect(card)}
               >
-                {card.imageUrl || getCardImageUrl(card) ? (
-                  <div className="aspect-[63/88] relative">
-                    <img 
-                      src={getCardImageUrl(card)}
-                      alt={card.name}
-                      className="h-full w-full object-cover"
-                    />
-                    <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white p-1 text-xs">
-                      <div className="truncate">{card.name}</div>
-                      <div className="text-xs text-gray-300">x{card.quantity}</div>
-                    </div>
+                <div className="aspect-[63/88] relative">
+                  <img 
+                    src={getCardImageUrl(card)}
+                    alt={card.name}
+                    className="h-full w-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = "https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg";
+                    }}
+                  />
+                  <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white p-1 text-xs">
+                    <div className="truncate">{card.name}</div>
+                    <div className="text-xs text-gray-300">x{card.quantity}</div>
                   </div>
-                ) : (
-                  <div className="aspect-[63/88] bg-muted flex flex-col items-center justify-center p-2 text-center">
-                    <div className="font-medium truncate w-full">{card.name}</div>
-                    <div className="text-xs text-muted-foreground">x{card.quantity}</div>
-                  </div>
-                )}
+                </div>
               </div>
             ))}
           </div>

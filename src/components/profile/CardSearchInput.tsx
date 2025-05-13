@@ -22,7 +22,7 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
   
   useEffect(() => {
     const fetchCards = async () => {
-      if (debouncedSearchQuery.trim().length < 3) {
+      if (debouncedSearchQuery.trim().length < 2) {
         setSearchResults([]);
         return;
       }
@@ -55,12 +55,20 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
           results = await searchCardByName(debouncedSearchQuery);
         }
         
-        setSearchResults(results.slice(0, 5)); // Limit to 5 results
+        setSearchResults(results.slice(0, 10)); // Limit to 10 results for better UX
+        
+        if (results.length === 0 && debouncedSearchQuery.trim().length >= 3) {
+          toast({
+            title: "No results found",
+            description: `No cards found matching "${debouncedSearchQuery}"`,
+            variant: "default",
+          });
+        }
       } catch (error) {
         console.error('Error searching for cards:', error);
         toast({
-          title: "Error de búsqueda",
-          description: "No se pudieron encontrar cartas con ese nombre.",
+          title: "Search error",
+          description: "There was a problem searching for cards. Please try again.",
           variant: "destructive",
         });
         setSearchResults([]);
@@ -81,17 +89,24 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
   const handleAddCard = () => {
     if (!selectedCard) return;
     
+    const imageUrl = getCardImageUrl(selectedCard, 'normal');
+    
     const newCard: MagicCard = {
       id: `card-${Date.now()}`,
       name: selectedCard.name,
       quantity: quantity,
       scryfallId: selectedCard.id,
-      imageUrl: getCardImageUrl(selectedCard),
+      imageUrl: imageUrl,
     };
     
     onCardSelect(newCard);
     setSelectedCard(null);
     setQuantity(1);
+    
+    toast({
+      title: "Card added",
+      description: `${quantity}x ${selectedCard.name} added to your deck.`,
+    });
   };
   
   return (
@@ -123,7 +138,7 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
           <div className="absolute z-10 w-full mt-1 p-2 bg-background border rounded-md shadow-lg text-center">
             <div className="flex items-center justify-center space-x-2">
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Buscando...</span>
+              <span>Searching...</span>
             </div>
           </div>
         )}
@@ -137,6 +152,9 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
               src={getCardImageUrl(selectedCard, 'normal')} 
               alt={selectedCard.name} 
               className="rounded-md w-40 h-auto"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = "https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg";
+              }}
             />
           </div>
           <div className="flex flex-col justify-between flex-1">

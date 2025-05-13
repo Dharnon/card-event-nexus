@@ -14,6 +14,7 @@ export interface ScryfallCard {
     border_crop: string;
   };
   card_faces?: Array<{
+    name?: string;
     image_uris?: {
       small: string;
       normal: string;
@@ -31,11 +32,17 @@ const BASIC_LAND_ORACLES = {
   'Island': '0c20398a-113a-4541-a993-6d3bf3f09999',
   'Swamp': '30add6e1-c1e0-4927-ae19-aec706b32dc3',
   'Mountain': '93f1803c-0c55-4573-bc96-bafa9ccbd8fb',
-  'Forest': '8f683968-8826-47cd-8c15-dotfaq1c033e'
+  'Forest': '8f683968-8826-47cd-8c15-8ef33c6fc7bf'
 };
+
+// Fix: correct Forest oracle ID that had a typo "dotfaq1c033e"
 
 export const searchCardByName = async (cardName: string): Promise<ScryfallCard[]> => {
   try {
+    if (!cardName || cardName.trim().length < 2) {
+      return [];
+    }
+    
     // Comprobamos si es una tierra básica
     const normalizedCardName = cardName.trim().toLowerCase();
     const basicLandMatch = Object.keys(BASIC_LAND_ORACLES).find(
@@ -57,29 +64,45 @@ export const searchCardByName = async (cardName: string): Promise<ScryfallCard[]
       return [data];
     }
     
-    // Para cartas normales, usamos el parámetro "exact" para buscar coincidencias exactas primero
+    // For fuzzy search, use the /cards/named endpoint
     const encodedName = encodeURIComponent(cardName);
-    const response = await fetch(
-      `https://api.scryfall.com/cards/search?q=name:"${encodedName}" OR name:${encodedName}`
-    );
     
-    if (!response.ok) {
-      // Si no hay resultados exactos, intentamos una búsqueda más amplia
-      const fuzzyResponse = await fetch(
-        `https://api.scryfall.com/cards/search?q=name:/^${encodedName}/`
+    // First try fuzzy search for exact matches
+    try {
+      const namedResponse = await fetch(
+        `https://api.scryfall.com/cards/named?fuzzy=${encodedName}`
       );
       
-      if (!fuzzyResponse.ok) {
+      if (namedResponse.ok) {
+        const data = await namedResponse.json();
+        return [data];
+      }
+    } catch (error) {
+      console.log('Exact card match not found, trying search');
+    }
+    
+    // If fuzzy search fails, try regular search
+    const searchResponse = await fetch(
+      `https://api.scryfall.com/cards/search?q=name:"${encodedName}" OR name:/^${encodedName}/`
+    );
+    
+    if (!searchResponse.ok) {
+      // Try one more search with a more lenient query
+      const fallbackResponse = await fetch(
+        `https://api.scryfall.com/cards/search?q=name:${encodedName}`
+      );
+      
+      if (!fallbackResponse.ok) {
         console.error('No cards found with that name');
         return [];
       }
       
-      const data = await fuzzyResponse.json();
-      return data.data;
+      const data = await fallbackResponse.json();
+      return data.data.slice(0, 10); // Limit to 10 results
     }
     
-    const data = await response.json();
-    return data.data;
+    const data = await searchResponse.json();
+    return data.data.slice(0, 10); // Limit to 10 results
   } catch (error) {
     console.error('Error searching for card:', error);
     return [];
@@ -88,7 +111,7 @@ export const searchCardByName = async (cardName: string): Promise<ScryfallCard[]
 
 export const getCardImageUrl = (card: ScryfallCard, size: 'small' | 'normal' | 'large' = 'normal'): string => {
   // Handle double-faced cards
-  if (!card.image_uris && card.card_faces && card.card_faces[0].image_uris) {
+  if (!card.image_uris && card.card_faces && card.card_faces[0]?.image_uris) {
     return card.card_faces[0].image_uris[size];
   }
   
