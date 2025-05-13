@@ -44,12 +44,20 @@ const BASIC_LAND_IMAGES = {
 };
 
 /**
- * Clean up card name by removing set code and collector number
+ * Clean up card name by removing set code, collector number, and special characters
  * Example: "Caves of Koilos (DSC) 268" -> "Caves of Koilos"
  */
 const cleanCardName = (cardName: string): string => {
-  // Remove anything in parentheses and any numbers/characters that follow
-  return cardName.replace(/\s*\([^)]*\)\s*\d*.*$/, '').trim();
+  // First remove anything in parentheses and any numbers/characters that follow
+  let cleanedName = cardName.replace(/\s*\([^)]*\)\s*\d*.*$/, '').trim();
+  
+  // Remove angle brackets and their contents
+  cleanedName = cleanedName.replace(/<[^>]*>/g, '').trim();
+  
+  // Remove square brackets and their contents
+  cleanedName = cleanedName.replace(/\[[^\]]*\]/g, '').trim();
+  
+  return cleanedName;
 }
 
 /**
