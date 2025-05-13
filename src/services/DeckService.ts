@@ -132,7 +132,10 @@ export const getDeckById = async (deckId: string): Promise<Deck | null> => {
 
 // Create a new deck
 export const createDeck = async (
-  deck: Pick<Deck, 'name' | 'format'> & { cards?: Card[], sideboardCards?: Card[] }
+  deck: Pick<Deck, 'name' | 'format' | 'cardBackgroundUrl'> & { 
+    cards?: Card[], 
+    sideboardCards?: Card[] 
+  }
 ): Promise<Deck> => {
   try {
     const { data: userData } = await supabase.auth.getUser();
@@ -144,7 +147,8 @@ export const createDeck = async (
       .insert({
         name: deck.name,
         format: deck.format,
-        user_id: userData.user.id
+        user_id: userData.user.id,
+        card_background_url: deck.cardBackgroundUrl
       })
       .select()
       .single();
@@ -211,20 +215,95 @@ export const createDeck = async (
 // Update a deck
 export const updateDeck = async (
   deckId: string,
-  updates: Partial<Pick<Deck, 'name' | 'format' | 'cardBackgroundUrl'>>
+  updates: Partial<Pick<Deck, 'name' | 'format' | 'cardBackgroundUrl' | 'sideboardGuide' | 'photos'>> & {
+    cards?: Card[],
+    sideboardCards?: Card[]
+  }
 ): Promise<void> => {
   try {
-    const { error } = await supabase
+    // Update basic deck info if provided
+    if (updates.name || updates.format !== undefined || updates.cardBackgroundUrl !== undefined) {
+      const { error } = await supabase
+        .from('decks')
+        .update({
+          name: updates.name,
+          format: updates.format,
+          card_background_url: updates.cardBackgroundUrl,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', deckId);
+      
+      if (error) throw error;
+    }
+    
+    // Update cards if provided
+    if (updates.cards) {
+      // First delete all existing maindeck cards
+      const { error: deleteError } = await supabase
+        .from('cards')
+        .delete()
+        .eq('deck_id', deckId)
+        .eq('is_sideboard', false);
+      
+      if (deleteError) throw deleteError;
+      
+      // Then insert new maindeck cards
+      if (updates.cards.length > 0) {
+        const mainCardsToInsert = updates.cards.map(card => ({
+          deck_id: deckId,
+          name: card.name,
+          quantity: card.quantity,
+          image_url: card.imageUrl,
+          scryfall_id: card.scryfallId,
+          is_sideboard: false
+        }));
+        
+        const { error: insertError } = await supabase
+          .from('cards')
+          .insert(mainCardsToInsert);
+        
+        if (insertError) throw insertError;
+      }
+    }
+    
+    // Update sideboard cards if provided
+    if (updates.sideboardCards !== undefined) {
+      // First delete all existing sideboard cards
+      const { error: deleteError } = await supabase
+        .from('cards')
+        .delete()
+        .eq('deck_id', deckId)
+        .eq('is_sideboard', true);
+      
+      if (deleteError) throw deleteError;
+      
+      // Then insert new sideboard cards
+      if (updates.sideboardCards && updates.sideboardCards.length > 0) {
+        const sideboardCardsToInsert = updates.sideboardCards.map(card => ({
+          deck_id: deckId,
+          name: card.name,
+          quantity: card.quantity,
+          image_url: card.imageUrl,
+          scryfall_id: card.scryfallId,
+          is_sideboard: true
+        }));
+        
+        const { error: insertError } = await supabase
+          .from('cards')
+          .insert(sideboardCardsToInsert);
+        
+        if (insertError) throw insertError;
+      }
+    }
+    
+    // Update the updated_at timestamp
+    const { error: updateError } = await supabase
       .from('decks')
-      .update({
-        name: updates.name,
-        format: updates.format,
-        card_background_url: updates.cardBackgroundUrl,
-        updated_at: new Date().toISOString()
-      })
+      .update({ updated_at: new Date().toISOString() })
       .eq('id', deckId);
     
-    if (error) throw error;
+    if (updateError) throw updateError;
+    
   } catch (error) {
     console.error(`Error updating deck with ID ${deckId}:`, error);
     throw error;
@@ -234,6 +313,15 @@ export const updateDeck = async (
 // Delete a deck
 export const deleteDeck = async (deckId: string): Promise<void> => {
   try {
+    // First delete all cards associated with the deck
+    const { error: cardsError } = await supabase
+      .from('cards')
+      .delete()
+      .eq('deck_id', deckId);
+    
+    if (cardsError) throw cardsError;
+    
+    // Then delete the deck itself
     const { error } = await supabase
       .from('decks')
       .delete()
@@ -268,6 +356,14 @@ export const addCardToDeck = async (
     
     if (error) throw error;
     
+    // Update the deck's updated_at timestamp
+    const { error: updateError } = await supabase
+      .from('decks')
+      .update({ updated_at: new Date().toISOString() })
+      .eq('id', deckId);
+    
+    if (updateError) throw updateError;
+    
     return {
       id: data.id,
       name: data.name,
@@ -293,6 +389,23 @@ export const updateCard = async (
       .eq('id', cardId);
     
     if (error) throw error;
+    
+    // Get the deck ID for this card
+    const { data: cardData, error: cardError } = await supabase
+      .from('cards')
+      .select('deck_id')
+      .eq('id', cardId)
+      .single();
+    
+    if (cardError) throw cardError;
+    
+    // Update the deck's updated_at timestamp
+    const { error: updateError } = await supabase
+      .from('decks')
+      .update({ updated_at: new Date().toISOString() })
+      .eq('id', cardData.deck_id);
+    
+    if (updateError) throw updateError;
   } catch (error) {
     console.error(`Error updating card with ID ${cardId}:`, error);
     throw error;
@@ -302,12 +415,30 @@ export const updateCard = async (
 // Remove a card from a deck
 export const removeCardFromDeck = async (cardId: string): Promise<void> => {
   try {
+    // Get the deck ID for this card before deleting it
+    const { data: cardData, error: cardError } = await supabase
+      .from('cards')
+      .select('deck_id')
+      .eq('id', cardId)
+      .single();
+    
+    if (cardError) throw cardError;
+    
+    // Delete the card
     const { error } = await supabase
       .from('cards')
       .delete()
       .eq('id', cardId);
     
     if (error) throw error;
+    
+    // Update the deck's updated_at timestamp
+    const { error: updateError } = await supabase
+      .from('decks')
+      .update({ updated_at: new Date().toISOString() })
+      .eq('id', cardData.deck_id);
+    
+    if (updateError) throw updateError;
   } catch (error) {
     console.error(`Error removing card with ID ${cardId}:`, error);
     throw error;

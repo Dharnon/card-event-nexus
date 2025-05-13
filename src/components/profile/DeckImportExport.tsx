@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Deck, Card as MagicCard } from '@/types';
 import { Download, Upload } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface DeckImportExportProps {
   deck?: Deck;
@@ -15,12 +16,14 @@ interface DeckImportExportProps {
 
 const DeckImportExport: React.FC<DeckImportExportProps> = ({ deck, onImport }) => {
   const [importFile, setImportFile] = useState<File | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Handle file selection
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setImportFile(e.target.files[0]);
+      setImportError(null);
     }
   };
 
@@ -37,18 +40,21 @@ const DeckImportExport: React.FC<DeckImportExportProps> = ({ deck, onImport }) =
             cards: jsonData.cards.map((card: any, index: number) => ({
               id: `imported-card-${index}`,
               name: card.name,
-              quantity: card.quantity || 1
+              quantity: card.quantity || 1,
+              imageUrl: card.imageUrl
             })),
             sideboardCards: jsonData.sideboardCards?.map((card: any, index: number) => ({
               id: `imported-sideboard-${index}`,
               name: card.name,
-              quantity: card.quantity || 1
+              quantity: card.quantity || 1,
+              imageUrl: card.imageUrl
             }))
           };
         }
       } catch (jsonError) {
         // Not valid JSON, try parsing as text format
-        const lines = content.split('\n').filter(line => line.trim());
+        console.log("Not valid JSON, trying text format", jsonError);
+        let lines = content.split('\n').filter(line => line.trim());
         if (lines.length === 0) throw new Error('Empty file');
         
         // Assume first line might be the deck name
@@ -63,10 +69,17 @@ const DeckImportExport: React.FC<DeckImportExportProps> = ({ deck, onImport }) =
           name = 'Imported Deck';
         }
         
-        // Find sideboard marker
+        // Look for sideboard markers in any line
         for (let i = 0; i < lines.length; i++) {
           const line = lines[i].trim().toLowerCase();
-          if (line === 'sideboard' || line === 'sb' || line === 'sb:' || line === 'sideboard:') {
+          if (
+            line === 'sideboard' || 
+            line === 'sb' || 
+            line === 'sb:' || 
+            line === 'sideboard:' || 
+            line === '// sideboard' || 
+            line.includes('sideboard')
+          ) {
             sideboardStartIndex = i + 1;
             break;
           }
@@ -80,7 +93,11 @@ const DeckImportExport: React.FC<DeckImportExportProps> = ({ deck, onImport }) =
         const mainEndIndex = sideboardStartIndex === -1 ? lines.length : sideboardStartIndex - 1;
         for (let i = startIndex; i < mainEndIndex; i++) {
           const line = lines[i].trim();
-          if (!line || line.toLowerCase() === 'maindeck' || line.toLowerCase() === 'main deck') continue;
+          if (!line || 
+              line.toLowerCase() === 'maindeck' || 
+              line.toLowerCase() === 'main deck' ||
+              line.startsWith('//') ||
+              line.startsWith('#')) continue;
           
           // Try to match quantity and card name pattern (e.g., "4 Lightning Bolt" or "4x Lightning Bolt")
           const match = line.match(/^(\d+)(\s+|\s*x\s*)(.+)$/i);
@@ -104,7 +121,9 @@ const DeckImportExport: React.FC<DeckImportExportProps> = ({ deck, onImport }) =
         if (sideboardStartIndex !== -1) {
           for (let i = sideboardStartIndex; i < lines.length; i++) {
             const line = lines[i].trim();
-            if (!line) continue;
+            if (!line || 
+                line.startsWith('//') || 
+                line.startsWith('#')) continue;
             
             const match = line.match(/^(\d+)(\s+|\s*x\s*)(.+)$/i);
             if (match) {
@@ -135,11 +154,7 @@ const DeckImportExport: React.FC<DeckImportExportProps> = ({ deck, onImport }) =
       }
     } catch (error: any) {
       console.error('Error parsing deck file:', error);
-      toast({
-        title: 'Error importing deck',
-        description: error.message || 'Could not parse the deck file format',
-        variant: 'destructive'
-      });
+      setImportError(error.message || 'Could not parse the deck file format');
       return null;
     }
   };
@@ -170,8 +185,9 @@ const DeckImportExport: React.FC<DeckImportExportProps> = ({ deck, onImport }) =
           description: `Imported ${deckData.name} with ${deckData.cards.length} maindeck cards${sideboardMsg}`,
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error reading file:', error);
+      setImportError(error.message || 'Could not read the selected file');
       toast({
         title: 'Error reading file',
         description: 'Could not read the selected file',
@@ -198,11 +214,13 @@ const DeckImportExport: React.FC<DeckImportExportProps> = ({ deck, onImport }) =
         format: deck.format,
         cards: deck.cards.map(card => ({
           name: card.name,
-          quantity: card.quantity
+          quantity: card.quantity,
+          imageUrl: card.imageUrl
         })),
         sideboardCards: deck.sideboardCards?.map(card => ({
           name: card.name,
-          quantity: card.quantity
+          quantity: card.quantity,
+          imageUrl: card.imageUrl
         }))
       };
 
@@ -288,6 +306,13 @@ const DeckImportExport: React.FC<DeckImportExportProps> = ({ deck, onImport }) =
               Import
             </Button>
           </div>
+          
+          {importError && (
+            <Alert variant="destructive" className="mt-2">
+              <AlertDescription>{importError}</AlertDescription>
+            </Alert>
+          )}
+          
           <p className="text-sm text-muted-foreground">
             Supported formats: .txt (one card per line with quantity, "Sideboard" marker for sideboard) or .deck (JSON)
           </p>

@@ -3,9 +3,17 @@ import React, { useState } from 'react';
 import { Card as MagicCard } from '@/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { List, Image, ExternalLink } from 'lucide-react';
+import { List, Image, ExternalLink, Maximize2 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface CardListProps {
   cards: MagicCard[];
@@ -64,17 +72,21 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
   // Display a message if there are no cards
   if (sortedCards.length === 0) {
     return (
-      <div className="text-center p-8">
+      <div className="text-center p-8 border border-dashed rounded-lg">
         <p className="text-muted-foreground">No cards in this deck</p>
       </div>
     );
   }
 
+  // Calculate total cards
+  const totalCards = sortedCards.reduce((acc, card) => acc + card.quantity, 0);
+  const uniqueCards = sortedCards.length;
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div className="text-sm text-muted-foreground">
-          {sortedCards.reduce((acc, card) => acc + card.quantity, 0)} cards • {sortedCards.length} unique
+          {totalCards} cards • {uniqueCards} unique
         </div>
         <div className="flex space-x-2">
           <Button
@@ -93,7 +105,7 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
             title="Grid View"
           >
             <Image className="h-4 w-4 mr-1" />
-            <span className="hidden sm:inline">Images</span>
+            <span className="hidden sm:inline">Grid</span>
           </Button>
         </div>
       </div>
@@ -115,19 +127,37 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
                       <div className="font-medium">{card.name}</div>
                       <div className="ml-2 text-muted-foreground">×{card.quantity}</div>
                     </div>
-                    {!isMobile && (
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        className="h-6 w-6 rounded-full opacity-50 hover:opacity-100"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setPreviewCard(card);
-                        }}
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                      </Button>
-                    )}
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          className="h-6 w-6 rounded-full opacity-50 hover:opacity-100"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPreviewCard(card);
+                          }}
+                        >
+                          <Maximize2 className="h-3 w-3" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-xs sm:max-w-md md:max-w-lg p-0 overflow-hidden">
+                        <AspectRatio ratio={63/88}>
+                          <img 
+                            src={getCardImageUrl(card)}
+                            alt={card.name}
+                            className="h-full w-full object-contain"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = "https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg";
+                            }}
+                          />
+                        </AspectRatio>
+                        <div className="p-4">
+                          <h3 className="font-bold text-lg">{card.name}</h3>
+                          <p className="text-muted-foreground">Quantity: {card.quantity}</p>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 </div>
               ))}
@@ -135,29 +165,53 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {sortedCards.map((card) => (
-                <div 
-                  key={card.id}
-                  className={`rounded-md overflow-hidden border cursor-pointer hover:shadow-md transition-all duration-200 ${
-                    selectedCardUrl === card.imageUrl ? 'ring-2 ring-primary' : ''
-                  }`}
-                  onClick={() => handleCardClick(card)}
-                >
-                  <AspectRatio ratio={63/88} className="relative">
-                    <img 
-                      src={getCardImageUrl(card)}
-                      alt={card.name}
-                      className="h-full w-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = "https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg";
+                <Dialog key={card.id}>
+                  <DialogTrigger asChild>
+                    <div 
+                      className={`rounded-md overflow-hidden border cursor-pointer hover:shadow-md transition-all duration-200 ${
+                        selectedCardUrl === card.imageUrl ? 'ring-2 ring-primary' : ''
+                      }`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (onCardSelect) {
+                          onCardSelect(card);
+                        }
                       }}
-                      loading="lazy"
-                    />
-                    <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white p-1.5 text-xs">
-                      <div className="truncate">{card.name}</div>
-                      <div className="text-xs text-gray-300">×{card.quantity}</div>
+                    >
+                      <AspectRatio ratio={63/88} className="relative">
+                        <img 
+                          src={getCardImageUrl(card)}
+                          alt={card.name}
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = "https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg";
+                          }}
+                          loading="lazy"
+                        />
+                        <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white p-1.5 text-xs">
+                          <div className="truncate">{card.name}</div>
+                          <div className="text-xs text-gray-300">×{card.quantity}</div>
+                        </div>
+                      </AspectRatio>
                     </div>
-                  </AspectRatio>
-                </div>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-xs sm:max-w-md md:max-w-lg p-0 overflow-hidden">
+                    <AspectRatio ratio={63/88}>
+                      <img 
+                        src={getCardImageUrl(card)}
+                        alt={card.name}
+                        className="h-full w-full object-contain"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg";
+                        }}
+                      />
+                    </AspectRatio>
+                    <div className="p-4">
+                      <h3 className="font-bold text-lg">{card.name}</h3>
+                      <p className="text-muted-foreground">Quantity: {card.quantity}</p>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               ))}
             </div>
           )}
@@ -178,29 +232,6 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
               <div className="p-2 bg-card">
                 <div className="font-medium truncate">{previewCard.name}</div>
                 <div className="text-sm text-muted-foreground">Quantity: {previewCard.quantity}</div>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {/* Mobile preview overlay */}
-        {isMobile && previewCard && viewMode === 'text' && (
-          <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" 
-               onClick={() => setPreviewCard(null)}>
-            <div className="max-w-[300px] bg-card rounded-lg overflow-hidden" 
-                 onClick={(e) => e.stopPropagation()}>
-              <img 
-                src={getCardImageUrl(previewCard)}
-                alt={previewCard.name}
-                className="w-full h-auto"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = "https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg";
-                }}
-              />
-              <div className="p-3">
-                <div className="font-medium">{previewCard.name}</div>
-                <div className="text-sm text-muted-foreground">Quantity: {previewCard.quantity}</div>
-                <Button className="w-full mt-3" onClick={() => setPreviewCard(null)}>Close</Button>
               </div>
             </div>
           </div>

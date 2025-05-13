@@ -41,6 +41,8 @@ export const searchCardByName = async (cardName: string): Promise<ScryfallCard[]
       return [];
     }
     
+    const encodedName = encodeURIComponent(cardName.trim());
+    
     // Check if it's a basic land
     const normalizedCardName = cardName.trim().toLowerCase();
     const basicLandMatch = Object.keys(BASIC_LAND_ORACLES).find(
@@ -63,9 +65,37 @@ export const searchCardByName = async (cardName: string): Promise<ScryfallCard[]
       return [data];
     }
     
-    // Try an exact match first
+    // For all other cards, use a more robust search approach
+    
+    // Try an autocomplete search first (faster and more likely to find cards)
     try {
-      const encodedName = encodeURIComponent(cardName.trim());
+      const autocompleteResponse = await fetch(
+        `https://api.scryfall.com/cards/autocomplete?q=${encodedName}`
+      );
+      
+      if (autocompleteResponse.ok) {
+        const autocompleteData = await autocompleteResponse.json();
+        
+        // If we have autocomplete results, search for the first one
+        if (autocompleteData.data && autocompleteData.data.length > 0) {
+          // Use the first result from autocomplete to get the full card
+          const exactCardName = encodeURIComponent(autocompleteData.data[0]);
+          const exactResponse = await fetch(
+            `https://api.scryfall.com/cards/named?exact=${exactCardName}`
+          );
+          
+          if (exactResponse.ok) {
+            const exactData = await exactResponse.json();
+            return [exactData];
+          }
+        }
+      }
+    } catch (error) {
+      console.log('Autocomplete search failed, trying direct search');
+    }
+    
+    // If autocomplete didn't work, try an exact match
+    try {
       const exactResponse = await fetch(
         `https://api.scryfall.com/cards/named?exact=${encodedName}`
       );
@@ -80,7 +110,6 @@ export const searchCardByName = async (cardName: string): Promise<ScryfallCard[]
     
     // Then try fuzzy search if exact match fails
     try {
-      const encodedName = encodeURIComponent(cardName.trim());
       const fuzzyResponse = await fetch(
         `https://api.scryfall.com/cards/named?fuzzy=${encodedName}`
       );
@@ -94,13 +123,12 @@ export const searchCardByName = async (cardName: string): Promise<ScryfallCard[]
     }
     
     // If both exact and fuzzy fail, try a more general search
-    const encodedName = encodeURIComponent(cardName.trim());
     const searchResponse = await fetch(
-      `https://api.scryfall.com/cards/search?q=name:"${encodedName}" OR name:/^${encodedName}/i`
+      `https://api.scryfall.com/cards/search?q=${encodedName}`
     );
     
     if (!searchResponse.ok) {
-      // Try an even more lenient search
+      // Try an even more lenient search if all else fails
       const fallbackResponse = await fetch(
         `https://api.scryfall.com/cards/search?q=name:${encodedName}`
       );

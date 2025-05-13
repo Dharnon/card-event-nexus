@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getUserDecks, createDeck, updateDeck, deleteDeck } from '@/services/ProfileService';
@@ -14,6 +15,8 @@ import DeckImportExport from './DeckImportExport';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
+
 const DeckManager = () => {
   const [isAddingDeck, setIsAddingDeck] = useState(false);
   const [editingDeck, setEditingDeck] = useState<Deck | null>(null);
@@ -23,10 +26,10 @@ const DeckManager = () => {
     [key: string]: string;
   }>({});
   const [viewSideboard, setViewSideboard] = useState(false);
+  
   const queryClient = useQueryClient();
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
+  
   const {
     data: decks = [],
     isLoading
@@ -34,6 +37,7 @@ const DeckManager = () => {
     queryKey: ['userDecks'],
     queryFn: () => getUserDecks()
   });
+  
   const createDeckMutation = useMutation({
     mutationFn: createDeck,
     onSuccess: () => {
@@ -41,8 +45,13 @@ const DeckManager = () => {
         queryKey: ['userDecks']
       });
       setIsAddingDeck(false);
+      toast({
+        title: "Success",
+        description: "Deck created successfully"
+      });
     }
   });
+  
   const updateDeckMutation = useMutation({
     mutationFn: ({
       deckId,
@@ -56,8 +65,13 @@ const DeckManager = () => {
         queryKey: ['userDecks']
       });
       setEditingDeck(null);
+      toast({
+        title: "Success",
+        description: "Deck updated successfully"
+      });
     }
   });
+  
   const deleteDeckMutation = useMutation({
     mutationFn: deleteDeck,
     onSuccess: () => {
@@ -65,27 +79,36 @@ const DeckManager = () => {
         queryKey: ['userDecks']
       });
       if (selectedDeck) setSelectedDeck(null);
+      toast({
+        title: "Success",
+        description: "Deck deleted successfully"
+      });
     }
   });
-  const handleCreateDeck = (name: string, format: EventFormat, cards: MagicCard[], cardBackgroundUrl?: string) => {
+  
+  const handleCreateDeck = (name: string, format: EventFormat, cards: MagicCard[], sideboardCards: MagicCard[], cardBackgroundUrl?: string) => {
     createDeckMutation.mutate({
       name,
       format,
       cards,
+      sideboardCards,
       cardBackgroundUrl
     });
   };
-  const handleUpdateDeck = (deckId: string, name: string, format: EventFormat, cards: MagicCard[], cardBackgroundUrl?: string) => {
+  
+  const handleUpdateDeck = (deckId: string, name: string, format: EventFormat, cards: MagicCard[], sideboardCards: MagicCard[], cardBackgroundUrl?: string) => {
     updateDeckMutation.mutate({
       deckId,
       updates: {
         name,
         format,
         cards,
+        sideboardCards,
         cardBackgroundUrl
       }
     });
   };
+  
   const handleSaveSideboardGuide = (guide: SideboardGuide) => {
     if (!selectedDeck) return;
     updateDeckMutation.mutate({
@@ -95,6 +118,7 @@ const DeckManager = () => {
       }
     });
   };
+  
   const handleSavePhotos = (photos: DeckPhoto[]) => {
     if (!selectedDeck) return;
     updateDeckMutation.mutate({
@@ -104,20 +128,24 @@ const DeckManager = () => {
       }
     });
   };
+  
   const handleDeleteDeck = (deckId: string) => {
-    if (window.confirm('¿Estás seguro de que quieres eliminar este mazo?')) {
+    if (window.confirm('Are you sure you want to delete this deck?')) {
       deleteDeckMutation.mutate(deckId);
     }
   };
+  
   const handleSelectDeck = (deck: Deck) => {
     setSelectedDeck(deck);
     setIsAddingDeck(false);
     setEditingDeck(null);
   };
+  
   const handleCancelForm = () => {
     setIsAddingDeck(false);
     setEditingDeck(null);
   };
+  
   const handleSetCardAsBackground = (deckId: string, cardImageUrl: string) => {
     updateDeckMutation.mutate({
       deckId,
@@ -130,12 +158,14 @@ const DeckManager = () => {
       [deckId]: cardImageUrl
     }));
   };
+  
   const selectCardForBackground = (card: MagicCard) => {
     if (!selectedDeck) return;
     if (card.imageUrl) {
       handleSetCardAsBackground(selectedDeck.id, card.imageUrl);
     }
   };
+  
   const handleImportDeck = (deckData: {
     name: string;
     format: string;
@@ -146,22 +176,31 @@ const DeckManager = () => {
       name: deckData.name,
       format: deckData.format as EventFormat,
       cards: deckData.cards,
-      sideboardCards: deckData.sideboardCards
-    });
-    const sideboardMsg = deckData.sideboardCards?.length ? ` and ${deckData.sideboardCards.length} sideboard cards` : '';
-    toast({
-      title: "Deck imported",
-      description: `Successfully imported ${deckData.name} with ${deckData.cards.length} maindeck cards${sideboardMsg}`
+      sideboardCards: deckData.sideboardCards || []
     });
   };
+  
   if (isLoading) {
-    return <div className="flex justify-center my-4">Loading decks...</div>;
+    return <div className="flex justify-center items-center h-64">
+      <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+    </div>;
   }
+  
   if (isAddingDeck || editingDeck) {
-    return <DeckForm deck={editingDeck} onSubmit={editingDeck ? (name, format, cards, cardBackgroundUrl) => handleUpdateDeck(editingDeck.id, name, format, cards, cardBackgroundUrl) : handleCreateDeck} onCancel={handleCancelForm} />;
+    return <DeckForm 
+      deck={editingDeck} 
+      onSubmit={editingDeck 
+        ? (name, format, cards, sideboardCards, cardBackgroundUrl) => 
+            handleUpdateDeck(editingDeck.id, name, format, cards, sideboardCards, cardBackgroundUrl) 
+        : handleCreateDeck
+      } 
+      onCancel={handleCancelForm} 
+    />;
   }
+  
   if (selectedDeck) {
-    return <div className="space-y-4">
+    return (
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
           <Button variant="ghost" onClick={() => setSelectedDeck(null)} className="flex items-center gap-1">
             <ChevronLeft className="h-4 w-4" />
@@ -179,27 +218,35 @@ const DeckManager = () => {
           </div>
         </div>
         
-        <Card className="px-[20px]">
+        <Card>
           <CardHeader className="pb-2">
             <div className="flex flex-col md:flex-row gap-4 items-start">
-              {selectedDeck.cardBackgroundUrl && <div className="md:w-1/4 w-full">
-                  <AspectRatio ratio={488 / 680} className="rounded-lg overflow-hidden border">
-                    <img src={selectedDeck.cardBackgroundUrl} alt="Deck Featured Card" className="w-full h-full object-cover" />
+              {selectedDeck.cardBackgroundUrl && (
+                <div className="md:w-1/4 w-full">
+                  <AspectRatio ratio={488/680} className="rounded-lg overflow-hidden border">
+                    <img 
+                      src={selectedDeck.cardBackgroundUrl} 
+                      alt="Deck Featured Card" 
+                      className="w-full h-full object-cover" 
+                    />
                   </AspectRatio>
-                </div>}
+                </div>
+              )}
               <div className={selectedDeck.cardBackgroundUrl ? "md:w-3/4 w-full" : "w-full"}>
                 <CardTitle className="text-2xl">{selectedDeck.name}</CardTitle>
-                <CardDescription className="mt-2">
-                  <span className="inline-block bg-muted text-muted-foreground px-3 py-1 rounded-full text-sm">
-                    {selectedDeck.format}
-                  </span>
+                <CardDescription className="mt-2 flex flex-wrap gap-2">
+                  <Badge variant="outline">{selectedDeck.format}</Badge>
+                  <Badge variant="secondary">{selectedDeck.cards.reduce((sum, card) => sum + card.quantity, 0)} main deck cards</Badge>
+                  {selectedDeck.sideboardCards && selectedDeck.sideboardCards.length > 0 && (
+                    <Badge variant="secondary">{selectedDeck.sideboardCards.reduce((sum, card) => sum + card.quantity, 0)} sideboard cards</Badge>
+                  )}
                 </CardDescription>
               </div>
             </div>
           </CardHeader>
           
           <Tabs value={selectedTab} onValueChange={tab => setSelectedTab(tab as any)} className="mt-4">
-            <TabsList className="grid w-full max-w-md grid-cols-4 px-[7px]">
+            <TabsList className="grid w-full max-w-md grid-cols-4">
               <TabsTrigger value="cards">Cards</TabsTrigger>
               <TabsTrigger value="sideboard">Sideboard</TabsTrigger>
               <TabsTrigger value="photos">Photos</TabsTrigger>
@@ -217,32 +264,58 @@ const DeckManager = () => {
                       {viewSideboard ? 'View Maindeck' : 'View Sideboard'}
                     </Button>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => {
-                  const selectedCard = selectedDeck.cards.find(card => card.imageUrl);
-                  if (selectedCard && selectedCard.imageUrl) {
-                    handleSetCardAsBackground(selectedDeck.id, selectedCard.imageUrl);
-                  }
-                }} disabled={!selectedDeck.cards.some(card => card.imageUrl)}>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => {
+                      const cards = viewSideboard ? selectedDeck.sideboardCards : selectedDeck.cards;
+                      const selectedCard = cards?.find(card => card.imageUrl);
+                      if (selectedCard && selectedCard.imageUrl) {
+                        handleSetCardAsBackground(selectedDeck.id, selectedCard.imageUrl);
+                      }
+                    }} 
+                    disabled={
+                      viewSideboard 
+                        ? !selectedDeck.sideboardCards?.some(card => card.imageUrl) 
+                        : !selectedDeck.cards.some(card => card.imageUrl)
+                    }
+                  >
                     <ImageIcon className="h-4 w-4 mr-2" />
                     Set card as cover
                   </Button>
                 </div>
                 
-                {viewSideboard ? selectedDeck.sideboardCards && selectedDeck.sideboardCards.length > 0 ? <CardList cards={selectedDeck.sideboardCards} /> : <div className="text-center py-8 border border-dashed rounded-lg">
+                {viewSideboard ? (
+                  selectedDeck.sideboardCards && selectedDeck.sideboardCards.length > 0 ? (
+                    <CardList cards={selectedDeck.sideboardCards} />
+                  ) : (
+                    <div className="text-center py-8 border border-dashed rounded-lg">
                       <p className="text-muted-foreground">No sideboard cards</p>
-                    </div> : <CardList cards={selectedDeck.cards} />}
+                    </div>
+                  )
+                ) : (
+                  <CardList cards={selectedDeck.cards} />
+                )}
               </div>
             </TabsContent>
             
             <TabsContent value="sideboard">
               <div className="mt-4">
-                <SideboardGuideComponent deckId={selectedDeck.id} initialGuide={selectedDeck.sideboardGuide} onSave={handleSaveSideboardGuide} />
+                <SideboardGuideComponent 
+                  deckId={selectedDeck.id} 
+                  initialGuide={selectedDeck.sideboardGuide} 
+                  onSave={handleSaveSideboardGuide} 
+                />
               </div>
             </TabsContent>
             
             <TabsContent value="photos">
               <div className="mt-4">
-                <DeckPhotoGallery deckId={selectedDeck.id} initialPhotos={selectedDeck.photos} onSave={handleSavePhotos} />
+                <DeckPhotoGallery 
+                  deckId={selectedDeck.id} 
+                  initialPhotos={selectedDeck.photos} 
+                  onSave={handleSavePhotos} 
+                />
               </div>
             </TabsContent>
             
@@ -253,13 +326,24 @@ const DeckManager = () => {
             </TabsContent>
           </Tabs>
         </Card>
-      </div>;
+      </div>
+    );
   }
-  return <div className="space-y-4">
+  
+  return (
+    <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-medium">My Decks</h2>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setIsAddingDeck(true)} className="flex items-center gap-1" size="sm">
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              setIsAddingDeck(false);
+              setSelectedTab('import-export');
+            }} 
+            className="flex items-center gap-1" 
+            size="sm"
+          >
             <Upload className="h-4 w-4" />
             Import deck
           </Button>
@@ -270,7 +354,8 @@ const DeckManager = () => {
         </div>
       </div>
       
-      {decks.length === 0 ? <div className="text-center py-8 border border-dashed rounded-lg">
+      {decks.length === 0 ? (
+        <div className="text-center py-8 border border-dashed rounded-lg">
           <p className="text-muted-foreground mb-4">You don't have any decks yet</p>
           <div className="flex flex-col space-y-4 items-center">
             <Button onClick={() => setIsAddingDeck(true)}>
@@ -279,15 +364,31 @@ const DeckManager = () => {
             </Button>
             <DeckImportExport onImport={handleImportDeck} />
           </div>
-        </div> : <div>
+        </div>
+      ) : (
+        <div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-            {decks.map(deck => <Card key={deck.id} onClick={() => handleSelectDeck(deck)} className="cursor-pointer hover:border-primary/50 transition-colors">
-                {deck.cardBackgroundUrl && <AspectRatio ratio={16 / 9}>
+            {decks.map(deck => (
+              <Card 
+                key={deck.id} 
+                onClick={() => handleSelectDeck(deck)} 
+                className="cursor-pointer hover:border-primary/50 transition-colors overflow-hidden"
+              >
+                {deck.cardBackgroundUrl && (
+                  <AspectRatio ratio={16/9}>
                     <div className="relative w-full h-full">
-                      <img src={deck.cardBackgroundUrl} alt={deck.name} className="object-cover w-full h-full" />
+                      <img 
+                        src={deck.cardBackgroundUrl} 
+                        alt={deck.name} 
+                        className="object-cover w-full h-full"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg";
+                        }}
+                      />
                       <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
                     </div>
-                  </AspectRatio>}
+                  </AspectRatio>
+                )}
                 
                 <CardHeader className={deck.cardBackgroundUrl ? 'pt-3' : ''}>
                   <CardTitle className="text-lg">{deck.name}</CardTitle>
@@ -295,13 +396,23 @@ const DeckManager = () => {
                 </CardHeader>
                 
                 <CardContent>
-                  <p className="text-sm">{deck.cards.length} cards</p>
+                  <div className="flex gap-2 flex-wrap">
+                    <Badge variant="outline">
+                      {deck.cards.reduce((sum, card) => sum + card.quantity, 0)} cards
+                    </Badge>
+                    {deck.sideboardCards && deck.sideboardCards.length > 0 && (
+                      <Badge variant="outline">
+                        {deck.sideboardCards.reduce((sum, card) => sum + card.quantity, 0)} sideboard
+                      </Badge>
+                    )}
+                  </div>
                 </CardContent>
                 
                 <CardFooter className="text-sm text-muted-foreground">
                   Updated: {new Date(deck.updatedAt).toLocaleDateString()}
                 </CardFooter>
-              </Card>)}
+              </Card>
+            ))}
           </div>
           
           <Separator className="my-4" />
@@ -310,7 +421,10 @@ const DeckManager = () => {
             <h3 className="text-lg font-medium mb-2">Import a deck</h3>
             <DeckImportExport onImport={handleImportDeck} />
           </div>
-        </div>}
-    </div>;
+        </div>
+      )}
+    </div>
+  );
 };
+
 export default DeckManager;
