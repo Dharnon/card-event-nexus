@@ -3,13 +3,12 @@ import React, { useState } from 'react';
 import { Card as MagicCard } from '@/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { List, Image, ExternalLink, Maximize2 } from 'lucide-react';
+import { List, Image, Maximize2, AlertCircle } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { 
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -24,6 +23,7 @@ interface CardListProps {
 const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUrl }) => {
   const [viewMode, setViewMode] = useState<'text' | 'images'>('text');
   const [previewCard, setPreviewCard] = useState<MagicCard | null>(null);
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
   const isMobile = useIsMobile();
   
   // Group cards by name and sum quantities
@@ -43,7 +43,12 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
   // Helper function to handle special basic lands to get proper Scryfall images
   const getCardImageUrl = (card: MagicCard) => {
     // If we already have an image URL, use it
-    if (card.imageUrl) return card.imageUrl;
+    if (card.imageUrl) {
+      console.log(`Using provided image URL for ${card.name}:`, card.imageUrl);
+      return card.imageUrl;
+    }
+    
+    console.log(`No imageUrl for ${card.name}, using fallback`);
     
     // Basic land handling for consistent art
     if (card.name === "Plains") {
@@ -67,6 +72,11 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
       onCardSelect(card);
     }
     setPreviewCard(card);
+  };
+
+  const handleImageError = (cardId: string) => {
+    console.error(`Image loading failed for card: ${cardId}`);
+    setImageErrors(prev => ({ ...prev, [cardId]: true }));
   };
   
   // Display a message if there are no cards
@@ -143,14 +153,19 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
                       </DialogTrigger>
                       <DialogContent className="max-w-xs sm:max-w-md md:max-w-lg p-0 overflow-hidden">
                         <AspectRatio ratio={63/88}>
-                          <img 
-                            src={getCardImageUrl(card)}
-                            alt={card.name}
-                            className="h-full w-full object-contain"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = "https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg";
-                            }}
-                          />
+                          {imageErrors[card.id] ? (
+                            <div className="h-full w-full flex flex-col items-center justify-center bg-muted">
+                              <AlertCircle className="h-8 w-8 text-muted-foreground mb-2" />
+                              <p className="text-center text-muted-foreground">{card.name}</p>
+                            </div>
+                          ) : (
+                            <img 
+                              src={getCardImageUrl(card)}
+                              alt={card.name}
+                              className="h-full w-full object-contain"
+                              onError={() => handleImageError(card.id)}
+                            />
+                          )}
                         </AspectRatio>
                         <div className="p-4">
                           <h3 className="font-bold text-lg">{card.name}</h3>
@@ -179,15 +194,20 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
                       }}
                     >
                       <AspectRatio ratio={63/88} className="relative">
-                        <img 
-                          src={getCardImageUrl(card)}
-                          alt={card.name}
-                          className="h-full w-full object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = "https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg";
-                          }}
-                          loading="lazy"
-                        />
+                        {imageErrors[card.id] ? (
+                          <div className="h-full w-full flex flex-col items-center justify-center bg-muted">
+                            <AlertCircle className="h-6 w-6 text-muted-foreground mb-1" />
+                            <p className="text-center text-xs text-muted-foreground px-2">{card.name}</p>
+                          </div>
+                        ) : (
+                          <img 
+                            src={getCardImageUrl(card)}
+                            alt={card.name}
+                            className="h-full w-full object-cover"
+                            onError={() => handleImageError(card.id)}
+                            loading="lazy"
+                          />
+                        )}
                         <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white p-1.5 text-xs">
                           <div className="truncate">{card.name}</div>
                           <div className="text-xs text-gray-300">×{card.quantity}</div>
@@ -197,14 +217,19 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
                   </DialogTrigger>
                   <DialogContent className="max-w-xs sm:max-w-md md:max-w-lg p-0 overflow-hidden">
                     <AspectRatio ratio={63/88}>
-                      <img 
-                        src={getCardImageUrl(card)}
-                        alt={card.name}
-                        className="h-full w-full object-contain"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = "https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg";
-                        }}
-                      />
+                      {imageErrors[card.id] ? (
+                        <div className="h-full w-full flex flex-col items-center justify-center bg-muted">
+                          <AlertCircle className="h-10 w-10 text-muted-foreground mb-2" />
+                          <p className="text-center text-muted-foreground">{card.name}</p>
+                        </div>
+                      ) : (
+                        <img 
+                          src={getCardImageUrl(card)}
+                          alt={card.name}
+                          className="h-full w-full object-contain"
+                          onError={() => handleImageError(card.id)}
+                        />
+                      )}
                     </AspectRatio>
                     <div className="p-4">
                       <h3 className="font-bold text-lg">{card.name}</h3>
@@ -221,14 +246,19 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
         {!isMobile && previewCard && (
           <div className="hidden md:block w-60 shrink-0">
             <div className="sticky top-4 rounded-md overflow-hidden shadow-lg">
-              <img 
-                src={getCardImageUrl(previewCard)}
-                alt={previewCard.name}
-                className="w-full h-auto rounded-md"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = "https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg";
-                }}
-              />
+              {imageErrors[previewCard.id] ? (
+                <div className="w-full h-80 flex flex-col items-center justify-center bg-muted rounded-md">
+                  <AlertCircle className="h-12 w-12 text-muted-foreground mb-2" />
+                  <p className="text-center text-muted-foreground">{previewCard.name}</p>
+                </div>
+              ) : (
+                <img 
+                  src={getCardImageUrl(previewCard)}
+                  alt={previewCard.name}
+                  className="w-full h-auto rounded-md"
+                  onError={() => handleImageError(previewCard.id)}
+                />
+              )}
               <div className="p-2 bg-card">
                 <div className="font-medium truncate">{previewCard.name}</div>
                 <div className="text-sm text-muted-foreground">Quantity: {previewCard.quantity}</div>

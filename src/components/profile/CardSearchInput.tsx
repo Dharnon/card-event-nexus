@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Card as MagicCard, CardSearchInputProps } from '@/types';
 import { searchCardByName, ScryfallCard, getCardImageUrl, getBasicLand } from '@/services/ScryfallService';
 import { useDebounce } from '@/hooks/useDebounce';
-import { Loader2, Plus, Minus } from 'lucide-react';
-import { toast } from '@/components/ui/use-toast';
+import { Loader2, Plus, Minus, AlertCircle } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 
 const BASIC_LANDS = ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest'];
 
@@ -17,8 +17,10 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
   const [selectedCard, setSelectedCard] = useState<ScryfallCard | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [imageLoading, setImageLoading] = useState(false);
+  const [imageError, setImageError] = useState(false);
   
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
+  const { toast } = useToast();
   
   useEffect(() => {
     const fetchCards = async () => {
@@ -55,6 +57,7 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
           results = await searchCardByName(debouncedSearchQuery);
         }
         
+        console.log("Search results:", results.map(card => card.name));
         setSearchResults(results.slice(0, 8)); // Limit results for better mobile experience
         
         if (results.length === 0 && debouncedSearchQuery.trim().length >= 3) {
@@ -77,19 +80,22 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
     };
     
     fetchCards();
-  }, [debouncedSearchQuery]);
+  }, [debouncedSearchQuery, toast]);
   
   const handleSelectCard = (card: ScryfallCard) => {
+    console.log("Selected card:", card.name, card);
     setSelectedCard(card);
     setSearchQuery('');
     setSearchResults([]);
     setImageLoading(true);
+    setImageError(false);
   };
   
   const handleAddCard = () => {
     if (!selectedCard) return;
     
     const imageUrl = getCardImageUrl(selectedCard, 'normal');
+    console.log("Adding card with image URL:", imageUrl);
     
     const newCard: MagicCard = {
       id: `card-${selectedCard.id}-${Date.now()}`,
@@ -151,21 +157,35 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
       {selectedCard && (
         <div className="border rounded-xl p-4 flex flex-col sm:flex-row gap-4 bg-card shadow-md">
           <div className="shrink-0 relative flex justify-center">
-            {imageLoading && (
+            {imageLoading && !imageError && (
               <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded-md">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
               </div>
             )}
-            <img 
-              src={getCardImageUrl(selectedCard, 'normal')} 
-              alt={selectedCard.name} 
-              className="rounded-lg w-40 h-auto mx-auto shadow-md"
-              onLoad={() => setImageLoading(false)}
-              onError={(e) => {
-                setImageLoading(false);
-                (e.target as HTMLImageElement).src = "https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg";
-              }}
-            />
+            {imageError ? (
+              <div className="w-40 h-56 border rounded-lg flex items-center justify-center bg-muted">
+                <div className="text-center p-2">
+                  <AlertCircle className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                  <p className="text-sm text-muted-foreground">{selectedCard.name}</p>
+                </div>
+              </div>
+            ) : (
+              <img 
+                src={getCardImageUrl(selectedCard, 'normal')} 
+                alt={selectedCard.name} 
+                className="rounded-lg w-40 h-auto mx-auto shadow-md"
+                onLoad={() => {
+                  console.log("Image loaded successfully");
+                  setImageLoading(false);
+                }}
+                onError={(e) => {
+                  console.error("Image failed to load:", e);
+                  setImageLoading(false);
+                  setImageError(true);
+                  (e.target as HTMLImageElement).src = "https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg";
+                }}
+              />
+            )}
           </div>
           <div className="flex flex-col justify-between flex-1">
             <div>

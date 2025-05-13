@@ -86,6 +86,7 @@ export const searchCardByName = async (cardName: string): Promise<ScryfallCard[]
           
           if (exactResponse.ok) {
             const exactData = await exactResponse.json();
+            console.log("Found card with images:", exactData.name, exactData.image_uris || exactData.card_faces?.[0]?.image_uris);
             return [exactData];
           }
         }
@@ -102,6 +103,7 @@ export const searchCardByName = async (cardName: string): Promise<ScryfallCard[]
       
       if (exactResponse.ok) {
         const data = await exactResponse.json();
+        console.log("Exact match found for:", data.name, data.image_uris || data.card_faces?.[0]?.image_uris);
         return [data];
       }
     } catch (error) {
@@ -116,6 +118,7 @@ export const searchCardByName = async (cardName: string): Promise<ScryfallCard[]
       
       if (fuzzyResponse.ok) {
         const data = await fuzzyResponse.json();
+        console.log("Fuzzy match found for:", data.name, data.image_uris || data.card_faces?.[0]?.image_uris);
         return [data];
       }
     } catch (error) {
@@ -139,10 +142,12 @@ export const searchCardByName = async (cardName: string): Promise<ScryfallCard[]
       }
       
       const data = await fallbackResponse.json();
+      console.log(`Found ${data.data.length} cards in fallback search`);
       return data.data.slice(0, 8); // Limit to 8 results for better mobile experience
     }
     
     const data = await searchResponse.json();
+    console.log(`Found ${data.data.length} cards in general search`);
     return data.data.slice(0, 8); // Limit to 8 results for better mobile experience
   } catch (error) {
     console.error('Error searching for card:', error);
@@ -152,25 +157,34 @@ export const searchCardByName = async (cardName: string): Promise<ScryfallCard[]
 
 export const getCardImageUrl = (card: ScryfallCard, size: 'small' | 'normal' | 'large' = 'normal'): string => {
   if (!card) {
+    console.log("No card provided to getCardImageUrl");
     return 'https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg';
   }
 
+  console.log("Getting image URL for card:", card.name);
+
   // Handle double-faced cards
   if (!card.image_uris && card.card_faces && card.card_faces[0]?.image_uris) {
-    return card.card_faces[0].image_uris[size];
+    const imageUrl = card.card_faces[0].image_uris?.[size];
+    console.log("Using double-faced card front image:", imageUrl);
+    return imageUrl || 'https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg';
   }
   
   // Handle regular cards
   if (card.image_uris && card.image_uris[size]) {
+    console.log("Using standard card image:", card.image_uris[size]);
     return card.image_uris[size];
   }
   
   // Fallback to other size if requested size is not available
   if (card.image_uris) {
-    return card.image_uris.normal || card.image_uris.small || card.image_uris.large || card.image_uris.png;
+    const fallback = card.image_uris.normal || card.image_uris.small || card.image_uris.large || card.image_uris.png;
+    console.log("Using fallback card image:", fallback);
+    return fallback || 'https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg';
   }
   
   // Ultimate fallback
+  console.log("No suitable image found, using card back");
   return 'https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg';
 };
 
@@ -194,7 +208,9 @@ export const getBasicLand = async (landName: string): Promise<ScryfallCard | nul
       throw new Error(`Error fetching basic land: ${basicLandMatch}`);
     }
     
-    return await response.json();
+    const data = await response.json();
+    console.log("Basic land image URL:", data.image_uris?.normal);
+    return data;
   } catch (error) {
     console.error('Error fetching basic land:', error);
     return null;
