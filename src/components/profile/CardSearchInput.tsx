@@ -122,7 +122,7 @@ const CardSearchInput: React.FC<{
           console.error("Image failed to load");
           setImageLoading(false);
           setImageError(true);
-        }} className="rounded-s w-40 h-auto mx-auto shadow-md" />}
+        }} className=" w-40 h-auto mx-auto shadow-md" />}
           </div>
           <div className="flex flex-col justify-between flex-1">
             <div>
