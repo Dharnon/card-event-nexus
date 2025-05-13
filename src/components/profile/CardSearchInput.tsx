@@ -1,15 +1,26 @@
+
 import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Card as MagicCard, CardSearchInputProps } from '@/types';
-import { searchCardByName, ScryfallCard, getCardImageUrl, getBasicLand } from '@/services/ScryfallService';
+import { Card as MagicCard } from '@/types';
+import { 
+  searchCardByName, 
+  ScryfallCard, 
+  getCardImageUrl, 
+  getBasicLand,
+  getCardByName,
+  getCardImageByName
+} from '@/services/ScryfallService';
 import { useDebounce } from '@/hooks/useDebounce';
 import { Loader2, Plus, Minus, AlertCircle } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 
 const BASIC_LANDS = ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest'];
 
-const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeholder = "Search for a card..." }) => {
+const CardSearchInput: React.FC<{ onCardSelect: (card: MagicCard) => void, placeholder?: string }> = ({ 
+  onCardSelect, 
+  placeholder = "Search for a card..." 
+}) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<ScryfallCard[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -103,6 +114,7 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
   const handleAddCard = () => {
     if (!selectedCard) return;
     
+    // Get the best image URL available
     const imageUrl = getCardImageUrl(selectedCard, 'normal');
     console.log("Adding card with image URL:", imageUrl);
     
@@ -133,6 +145,13 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
       setImageError(false);
       setImageLoading(true);
       setImageRetries(prev => prev + 1);
+      
+      // Try different image URL format based on retry count
+      if (imageRetries === 1 && selectedCard.name) {
+        // On second retry, use the direct API by name
+        const newImageUrl = getCardImageByName(selectedCard.name);
+        console.log(`Retry with direct API image URL: ${newImageUrl}`);
+      }
     }
   };
   
@@ -159,6 +178,11 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
                   <div className="font-medium">{card.name}</div>
                   {card.type_line && <div className="text-xs text-muted-foreground">{card.type_line}</div>}
                 </div>
+                {card.set && card.collector_number && (
+                  <div className="text-xs text-muted-foreground ml-2">
+                    {card.set.toUpperCase()} #{card.collector_number}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -222,8 +246,20 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
                     return;
                   }
                   
+                  // Try by name URL for second retry
+                  if (selectedCard.name && imageRetries === 1) {
+                    console.log("Trying API named URL");
+                    const namedUrl = `https://api.scryfall.com/cards/named?format=image&exact=${encodeURIComponent(selectedCard.name)}`;
+                    (e.target as HTMLImageElement).src = namedUrl;
+                    setImageRetries(2);
+                    setImageError(false);
+                    return;
+                  }
+                  
                   // Final fallback to card back
-                  (e.target as HTMLImageElement).src = "https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg";
+                  if (imageRetries === 2) {
+                    (e.target as HTMLImageElement).src = "https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg";
+                  }
                 }}
               />
             )}
@@ -237,6 +273,16 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
               {selectedCard.set && selectedCard.collector_number && (
                 <p className="text-xs text-muted-foreground mt-1">
                   Set: {selectedCard.set.toUpperCase()} • #{selectedCard.collector_number}
+                </p>
+              )}
+              {selectedCard.set_name && (
+                <p className="text-xs text-muted-foreground">
+                  {selectedCard.set_name}
+                </p>
+              )}
+              {selectedCard.rarity && (
+                <p className="text-xs text-muted-foreground mt-1 capitalize">
+                  Rarity: {selectedCard.rarity}
                 </p>
               )}
             </div>

@@ -14,6 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { getCardImageUrl, getCardBySetAndNumber, getCardImageByName } from '@/services/ScryfallService';
 
 interface CardListProps {
   cards: MagicCard[];
@@ -33,7 +34,7 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
     // Initialize loading state for all cards
     const newLoadingState: Record<string, boolean> = {};
     cards.forEach(card => {
-      if (card.imageUrl) {
+      if (card.imageUrl || card.name) {
         newLoadingState[card.id] = true;
       }
     });
@@ -54,35 +55,30 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
   // Sort cards alphabetically
   const sortedCards = [...groupedCards].sort((a, b) => a.name.localeCompare(b.name));
 
-  // Helper function to handle special basic lands to get proper Scryfall images
-  const getCardImageUrl = (card: MagicCard) => {
+  // Helper function to get the best possible card image URL
+  const getCardImageDisplay = (card: MagicCard) => {
     // If we already have an image URL, use it
     if (card.imageUrl) {
       console.log(`Using provided image URL for ${card.name}:`, card.imageUrl);
       return card.imageUrl;
     }
     
-    console.log(`No imageUrl for ${card.name}, using fallback`);
-    
-    // Fixed image URLs for basic lands to ensure they always work
-    if (card.name === "Plains") {
-      return "https://cards.scryfall.io/normal/front/5/f/5fc26aa1-58b9-41b5-95b4-7e9bf2309b54.jpg";
-    } else if (card.name === "Island") {
-      return "https://cards.scryfall.io/normal/front/d/c/dc41cb44-ebdb-4a58-b95e-c4c4cded7033.jpg";
-    } else if (card.name === "Swamp") {
-      return "https://cards.scryfall.io/normal/front/8/3/83249211-164c-456c-8bda-ca3a607ada7e.jpg";
-    } else if (card.name === "Mountain") {
-      return "https://cards.scryfall.io/normal/front/4/4/44c1a862-00fc-4e79-a83a-289fef81503a.jpg";
-    } else if (card.name === "Forest") {
-      return "https://cards.scryfall.io/normal/front/c/f/cfb41b34-4037-4a3c-9a6d-def7bfda5635.jpg";
-    }
-    
-    // Try to construct URL from set and collector number if they exist in the card object
+    // If we have set and collector number, use direct CDN URL
     if (card.set && card.collectorNumber) {
-      return `https://cards.scryfall.io/normal/front/${card.set}/${card.collectorNumber}.jpg`;
+      const directUrl = `https://cards.scryfall.io/normal/front/${card.set}/${card.collectorNumber}.jpg`;
+      console.log(`Generated direct URL for ${card.name} using set ${card.set} and collector ${card.collectorNumber}:`, directUrl);
+      return directUrl;
     }
     
-    // Fallback to card back if no image
+    // If we only have the name, use the Scryfall API named endpoint
+    if (card.name) {
+      const namedUrl = getCardImageByName(card.name);
+      console.log(`Generated URL by name for ${card.name}:`, namedUrl);
+      return namedUrl;
+    }
+    
+    console.log(`No way to get image for ${card.name}, using fallback`);
+    // Fallback to card back
     return "https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg";
   };
 
@@ -93,13 +89,24 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
     setPreviewCard(card);
   };
 
-  const handleImageError = (cardId: string) => {
-    console.error(`Image loading failed for card: ${cardId}`);
+  const handleImageError = (cardId: string, card: MagicCard) => {
+    console.error(`Image loading failed for card: ${cardId} (${card.name})`);
     setImageErrors(prev => ({ ...prev, [cardId]: true }));
     setLoadingImages(prev => ({ ...prev, [cardId]: false }));
     
-    // Try alternative Gatherer image URL as last resort
-    // Not doing this now as Gatherer images are not reliable either
+    // Try to get image by name as a last resort if not already done
+    if (card.name && !card.imageUrl?.includes('api.scryfall.com/cards/named')) {
+      console.log(`Trying to get image by name for ${card.name} as fallback`);
+      const newImageUrl = getCardImageByName(card.name);
+      // Update the card with the new URL
+      card.imageUrl = newImageUrl;
+      
+      // Reset error state to allow trying with the new URL
+      setTimeout(() => {
+        setImageErrors(prev => ({ ...prev, [cardId]: false }));
+        setLoadingImages(prev => ({ ...prev, [cardId]: true }));
+      }, 100);
+    }
   };
   
   const handleImageLoad = (cardId: string) => {
@@ -194,10 +201,10 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
                               </div>
                             ) : (
                               <img 
-                                src={getCardImageUrl(card)}
+                                src={getCardImageDisplay(card)}
                                 alt={card.name}
                                 className="h-full w-full object-contain"
-                                onError={() => handleImageError(card.id)}
+                                onError={() => handleImageError(card.id, card)}
                                 onLoad={() => handleImageLoad(card.id)}
                               />
                             )}
@@ -206,6 +213,9 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
                         <div className="p-4">
                           <h3 className="font-bold text-lg">{card.name}</h3>
                           <p className="text-muted-foreground">Quantity: {card.quantity}</p>
+                          {card.set && (
+                            <p className="text-sm text-muted-foreground">Set: {card.set.toUpperCase()}</p>
+                          )}
                         </div>
                       </DialogContent>
                     </Dialog>
@@ -242,10 +252,10 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
                           </div>
                         ) : (
                           <img 
-                            src={getCardImageUrl(card)}
+                            src={getCardImageDisplay(card)}
                             alt={card.name}
                             className="h-full w-full object-cover"
-                            onError={() => handleImageError(card.id)}
+                            onError={() => handleImageError(card.id, card)}
                             onLoad={() => handleImageLoad(card.id)}
                             loading="lazy"
                           />
@@ -272,10 +282,10 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
                           </div>
                         ) : (
                           <img 
-                            src={getCardImageUrl(card)}
+                            src={getCardImageDisplay(card)}
                             alt={card.name}
                             className="h-full w-full object-contain"
-                            onError={() => handleImageError(card.id)}
+                            onError={() => handleImageError(card.id, card)}
                             onLoad={() => handleImageLoad(card.id)}
                           />
                         )}
@@ -284,6 +294,9 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
                     <div className="p-4">
                       <h3 className="font-bold text-lg">{card.name}</h3>
                       <p className="text-muted-foreground">Quantity: {card.quantity}</p>
+                      {card.set && (
+                        <p className="text-sm text-muted-foreground">Set: {card.set.toUpperCase()}</p>
+                      )}
                     </div>
                   </DialogContent>
                 </Dialog>
@@ -309,10 +322,10 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
                   </div>
                 ) : (
                   <img 
-                    src={getCardImageUrl(previewCard)}
+                    src={getCardImageDisplay(previewCard)}
                     alt={previewCard.name}
                     className="w-full h-auto rounded-md"
-                    onError={() => handleImageError(previewCard.id)}
+                    onError={() => handleImageError(previewCard.id, previewCard)}
                     onLoad={() => handleImageLoad(previewCard.id)}
                   />
                 )}
@@ -320,6 +333,9 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
               <div className="p-2 bg-card">
                 <div className="font-medium truncate">{previewCard.name}</div>
                 <div className="text-sm text-muted-foreground">Quantity: {previewCard.quantity}</div>
+                {previewCard.set && (
+                  <div className="text-xs text-muted-foreground">Set: {previewCard.set.toUpperCase()}</div>
+                )}
               </div>
             </div>
           </div>
