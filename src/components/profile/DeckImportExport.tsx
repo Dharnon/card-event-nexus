@@ -19,6 +19,12 @@ const DeckImportExport: React.FC<DeckImportExportProps> = ({ deck, onImport }) =
   const [importError, setImportError] = useState<string | null>(null);
   const { toast } = useToast();
 
+  // Clean up card name by removing set code and collector number
+  const cleanCardName = (cardName: string): string => {
+    // Remove anything in parentheses and any numbers/characters that follow
+    return cardName.replace(/\s*\([^)]*\)\s*\d*.*$/, '').trim();
+  };
+
   // Handle file selection
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -39,13 +45,13 @@ const DeckImportExport: React.FC<DeckImportExportProps> = ({ deck, onImport }) =
             format: jsonData.format || 'Standard',
             cards: jsonData.cards.map((card: any, index: number) => ({
               id: `imported-card-${index}`,
-              name: card.name,
+              name: cleanCardName(card.name),
               quantity: card.quantity || 1,
               imageUrl: card.imageUrl
             })),
             sideboardCards: jsonData.sideboardCards?.map((card: any, index: number) => ({
               id: `imported-sideboard-${index}`,
-              name: card.name,
+              name: cleanCardName(card.name),
               quantity: card.quantity || 1,
               imageUrl: card.imageUrl
             }))
@@ -104,14 +110,14 @@ const DeckImportExport: React.FC<DeckImportExportProps> = ({ deck, onImport }) =
           if (match) {
             mainCards.push({
               id: `imported-card-${i}`,
-              name: match[3].trim(),
+              name: cleanCardName(match[3].trim()),
               quantity: parseInt(match[1], 10)
             });
           } else {
             // If no quantity specified, assume 1
             mainCards.push({
               id: `imported-card-${i}`,
-              name: line,
+              name: cleanCardName(line),
               quantity: 1
             });
           }
@@ -129,14 +135,14 @@ const DeckImportExport: React.FC<DeckImportExportProps> = ({ deck, onImport }) =
             if (match) {
               sideboardCards.push({
                 id: `imported-sideboard-${i}`,
-                name: match[3].trim(),
+                name: cleanCardName(match[3].trim()),
                 quantity: parseInt(match[1], 10)
               });
             } else {
               // If no quantity specified, assume 1
               sideboardCards.push({
                 id: `imported-sideboard-${i}`,
-                name: line,
+                name: cleanCardName(line),
                 quantity: 1
               });
             }

@@ -44,20 +44,32 @@ const BASIC_LAND_IMAGES = {
 };
 
 /**
+ * Clean up card name by removing set code and collector number
+ * Example: "Caves of Koilos (DSC) 268" -> "Caves of Koilos"
+ */
+const cleanCardName = (cardName: string): string => {
+  // Remove anything in parentheses and any numbers/characters that follow
+  return cardName.replace(/\s*\([^)]*\)\s*\d*.*$/, '').trim();
+}
+
+/**
  * Search for cards by name using Scryfall API
  */
 export const searchCardByName = async (cardName: string): Promise<ScryfallCard[]> => {
   if (!cardName || cardName.trim().length < 2) {
     return [];
   }
-    
-  const encodedName = encodeURIComponent(cardName.trim());
-  console.log(`Searching for card: "${cardName.trim()}"`);
-    
+  
+  // Clean up the card name first
+  const cleanedName = cleanCardName(cardName);
+  
+  const encodedName = encodeURIComponent(cleanedName);
+  console.log(`Searching for card: "${cleanedName}" (original: "${cardName}")`);
+  
   // Check if it's a basic land
-  if (cardName.trim() === "Plains" || cardName.trim() === "Island" || 
-      cardName.trim() === "Swamp" || cardName.trim() === "Mountain" || 
-      cardName.trim() === "Forest") {
+  if (cleanedName === "Plains" || cleanedName === "Island" || 
+      cleanedName === "Swamp" || cleanedName === "Mountain" || 
+      cleanedName === "Forest") {
     try {
       const response = await fetch(`https://api.scryfall.com/cards/named?exact=${encodedName}`);
       if (response.ok) {
@@ -68,26 +80,19 @@ export const searchCardByName = async (cardName: string): Promise<ScryfallCard[]
       console.error('Error fetching basic land:', error);
     }
   }
-    
-  // Try an autocomplete search first
+  
+  // Try exact match search
   try {
-    const response = await fetch(`https://api.scryfall.com/cards/autocomplete?q=${encodedName}`);
+    const response = await fetch(`https://api.scryfall.com/cards/named?exact=${encodedName}`);
     if (response.ok) {
       const data = await response.json();
-      if (data.data && data.data.length > 0) {
-        const exactName = encodeURIComponent(data.data[0]);
-        const cardResponse = await fetch(`https://api.scryfall.com/cards/named?exact=${exactName}`);
-        if (cardResponse.ok) {
-          const cardData = await cardResponse.json();
-          return [cardData];
-        }
-      }
+      return [data];
     }
   } catch (error) {
-    console.error('Error with autocomplete search:', error);
+    console.error('Error with exact match search:', error);
   }
 
-  // Try direct search
+  // Try fuzzy search if exact match fails
   try {
     const response = await fetch(`https://api.scryfall.com/cards/named?fuzzy=${encodedName}`);
     if (response.ok) {
@@ -95,7 +100,7 @@ export const searchCardByName = async (cardName: string): Promise<ScryfallCard[]
       return [data];
     }
   } catch (error) {
-    console.error('Error with direct search:', error);
+    console.error('Error with fuzzy search:', error);
   }
 
   // Fallback to general search
@@ -116,10 +121,13 @@ export const searchCardByName = async (cardName: string): Promise<ScryfallCard[]
  * Get card image URL based on available card data
  */
 export const getCardImageUrl = (card: {name?: string, set?: string, collector_number?: string, image_uris?: any}, size: 'small' | 'normal' | 'large' = 'normal'): string => {
+  // Extract clean card name if name exists
+  const cardName = card.name ? cleanCardName(card.name) : undefined;
+  
   // For basic lands, use direct API endpoint
-  if (card.name && (card.name === "Plains" || card.name === "Island" || card.name === "Swamp" || 
-      card.name === "Mountain" || card.name === "Forest")) {
-    return BASIC_LAND_IMAGES[card.name as keyof typeof BASIC_LAND_IMAGES];
+  if (cardName && (cardName === "Plains" || cardName === "Island" || 
+      cardName === "Swamp" || cardName === "Mountain" || cardName === "Forest")) {
+    return BASIC_LAND_IMAGES[cardName as keyof typeof BASIC_LAND_IMAGES];
   }
 
   // If we have image_uris, use them directly
@@ -132,14 +140,9 @@ export const getCardImageUrl = (card: {name?: string, set?: string, collector_nu
     return card.card_faces[0].image_uris[size];
   }
 
-  // If we have set and collector number, use the direct API endpoint
-  if (card.set && card.collector_number) {
-    return `https://api.scryfall.com/cards/${card.set}/${card.collector_number}?format=image&version=${size}`;
-  }
-
   // If we have just the name, use the named endpoint
-  if (card.name) {
-    return `https://api.scryfall.com/cards/named?format=image&exact=${encodeURIComponent(card.name)}`;
+  if (cardName) {
+    return `https://api.scryfall.com/cards/named?format=image&exact=${encodeURIComponent(cardName)}`;
   }
 
   // Default to card back
@@ -166,14 +169,23 @@ export const getCardBySetAndNumber = async (set: string, collectorNumber: string
 export const getCardByName = async (name: string): Promise<ScryfallCard | null> => {
   if (!name) return null;
   
+  // Clean card name to remove set and collector number info
+  const cleanedName = cleanCardName(name);
+  
   try {
-    const response = await fetch(`https://api.scryfall.com/cards/named?exact=${encodeURIComponent(name)}`);
-    if (!response.ok) {
-      const fuzzyResponse = await fetch(`https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(name)}`);
-      if (!fuzzyResponse.ok) return null;
+    // Try exact match first
+    const response = await fetch(`https://api.scryfall.com/cards/named?exact=${encodeURIComponent(cleanedName)}`);
+    if (response.ok) {
+      return await response.json();
+    }
+    
+    // Try fuzzy match if exact fails
+    const fuzzyResponse = await fetch(`https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(cleanedName)}`);
+    if (fuzzyResponse.ok) {
       return await fuzzyResponse.json();
     }
-    return await response.json();
+    
+    return null;
   } catch (error) {
     console.error('Error fetching card by name:', error);
     return null;
