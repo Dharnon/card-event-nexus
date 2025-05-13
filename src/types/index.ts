@@ -1,9 +1,12 @@
+
 export interface Card {
   id: string;
   name: string;
   quantity: number;
   imageUrl?: string;
   scryfallId?: string;
+  set?: string;
+  collectorNumber?: string;
 }
 
 export type EventFormat =

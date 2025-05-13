@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -109,7 +108,7 @@ const CardSearchInput: React.FC<CardSearchInputProps> = ({ onCardSelect, placeho
     
     // Extract set and collector number if available
     const newCard: MagicCard = {
-      id: `card-${selectedCard.id}-${Date.now()}`,
+      id: `card-${selectedCard.id || Date.now()}-${Date.now()}`,
       name: selectedCard.name,
       quantity: quantity,
       scryfallId: selectedCard.id,
