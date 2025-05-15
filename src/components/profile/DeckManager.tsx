@@ -16,6 +16,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useCardImage } from '@/hooks/useCardImage';
+import { getCardImageUrl } from '@/services/ScryfallService';
 
 const DeckManager = () => {
   const [isAddingDeck, setIsAddingDeck] = useState(false);
@@ -38,6 +40,26 @@ const DeckManager = () => {
     queryKey: ['userDecks'],
     queryFn: () => getUserDecks()
   });
+  
+  // Get featured card image URL for each deck
+  const getFeaturedCardImage = (deck: Deck) => {
+    if (deck.cardBackgroundUrl) {
+      return deck.cardBackgroundUrl;
+    }
+    
+    // Use the first card in the deck as featured image
+    const firstCard = deck.cards[0];
+    if (firstCard) {
+      return getCardImageUrl({
+        name: firstCard.name,
+        set: firstCard.set,
+        collector_number: firstCard.collectorNumber
+      });
+    }
+    
+    // Default card back if no cards
+    return "https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg";
+  };
   
   const createDeckMutation = useMutation({
     mutationFn: createDeck,
@@ -219,12 +241,12 @@ const DeckManager = () => {
           </div>
         </div>
         
-        <Card className="bg-black/60 border-magic-purple/30">
+        <Card className="bg-card/90 border-border/20">
           <CardHeader className="pb-2">
             <div className="flex flex-col md:flex-row gap-4 items-start">
               {selectedDeck.cardBackgroundUrl && (
                 <div className="md:w-1/4 w-full">
-                  <AspectRatio ratio={488/680} className="rounded-lg overflow-hidden border border-magic-purple/40">
+                  <AspectRatio ratio={488/680} className="rounded-lg overflow-hidden border border-border/20">
                     <img 
                       src={selectedDeck.cardBackgroundUrl} 
                       alt="Deck Featured Card" 
@@ -234,12 +256,12 @@ const DeckManager = () => {
                 </div>
               )}
               <div className={selectedDeck.cardBackgroundUrl ? "md:w-3/4 w-full" : "w-full"}>
-                <CardTitle className="text-2xl text-magic-lightPurple">{selectedDeck.name}</CardTitle>
+                <CardTitle className="text-2xl text-card-foreground">{selectedDeck.name}</CardTitle>
                 <CardDescription className="mt-2 flex flex-wrap gap-2">
-                  <Badge variant="outline" className="border-magic-purple/40 bg-black/40">{selectedDeck.format}</Badge>
-                  <Badge variant="secondary" className="bg-magic-purple/20 text-magic-lightPurple">{selectedDeck.cards.reduce((sum, card) => sum + card.quantity, 0)} main deck cards</Badge>
+                  <Badge variant="outline" className="border-border/40 bg-card/40">{selectedDeck.format}</Badge>
+                  <Badge variant="secondary" className="bg-primary/10">{selectedDeck.cards.reduce((sum, card) => sum + card.quantity, 0)} main deck cards</Badge>
                   {selectedDeck.sideboardCards && selectedDeck.sideboardCards.length > 0 && (
-                    <Badge variant="secondary" className="bg-magic-purple/20 text-magic-lightPurple">{selectedDeck.sideboardCards.reduce((sum, card) => sum + card.quantity, 0)} sideboard cards</Badge>
+                    <Badge variant="secondary" className="bg-primary/10">{selectedDeck.sideboardCards.reduce((sum, card) => sum + card.quantity, 0)} sideboard cards</Badge>
                   )}
                 </CardDescription>
               </div>
@@ -247,45 +269,24 @@ const DeckManager = () => {
           </CardHeader>
           
           <Tabs value={selectedTab} onValueChange={tab => setSelectedTab(tab as any)} className="mt-4">
-            <TabsList className="grid w-full max-w-md grid-cols-4 bg-black/70 border border-magic-purple/30">
-              <TabsTrigger 
-                value="cards"
-                className="data-[state=active]:bg-magic-purple data-[state=active]:text-white"
-              >
-                Cards
-              </TabsTrigger>
-              <TabsTrigger 
-                value="sideboard"
-                className="data-[state=active]:bg-magic-purple data-[state=active]:text-white"
-              >
-                Sideboard
-              </TabsTrigger>
-              <TabsTrigger 
-                value="photos"
-                className="data-[state=active]:bg-magic-purple data-[state=active]:text-white"
-              >
-                Photos
-              </TabsTrigger>
-              <TabsTrigger 
-                value="import-export"
-                className="data-[state=active]:bg-magic-purple data-[state=active]:text-white"
-              >
-                Import/Export
-              </TabsTrigger>
+            <TabsList className="grid w-full max-w-md grid-cols-4 bg-card/50 border border-border/30">
+              <TabsTrigger value="cards">Cards</TabsTrigger>
+              <TabsTrigger value="sideboard">Sideboard</TabsTrigger>
+              <TabsTrigger value="photos">Photos</TabsTrigger>
+              <TabsTrigger value="import-export">Import/Export</TabsTrigger>
             </TabsList>
             
             <TabsContent value="cards">
               <div className="mt-4">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-4">
-                    <h3 className="text-lg font-medium text-magic-lightPurple">
+                    <h3 className="text-lg font-medium">
                       {viewSideboard ? 'Sideboard' : 'Maindeck'}
                     </h3>
                     <Button 
                       variant="outline" 
                       size="sm" 
                       onClick={() => setViewSideboard(!viewSideboard)}
-                      className="border-magic-purple/30 hover:bg-magic-purple/10"
                     >
                       {viewSideboard ? 'View Maindeck' : 'View Sideboard'}
                     </Button>
@@ -305,7 +306,6 @@ const DeckManager = () => {
                         ? !selectedDeck.sideboardCards?.some(card => card.imageUrl) 
                         : !selectedDeck.cards.some(card => card.imageUrl)
                     }
-                    className="border-magic-purple/30 hover:bg-magic-purple/10"
                   >
                     <ImageIcon className="h-4 w-4 mr-2" />
                     Set card as cover
@@ -316,7 +316,7 @@ const DeckManager = () => {
                   selectedDeck.sideboardCards && selectedDeck.sideboardCards.length > 0 ? (
                     <CardList cards={selectedDeck.sideboardCards} />
                   ) : (
-                    <div className="text-center py-8 border border-dashed rounded-lg border-magic-purple/30 bg-black/30">
+                    <div className="text-center py-8 border border-dashed rounded-lg border-border/30 bg-card/30">
                       <p className="text-muted-foreground">No sideboard cards</p>
                     </div>
                   )
@@ -360,7 +360,7 @@ const DeckManager = () => {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center flex-wrap gap-2">
-        <h2 className="text-xl font-medium text-magic-lightPurple">My Decks</h2>
+        <h2 className="text-xl font-medium">My Decks</h2>
         <div className="flex gap-2">
           <Button 
             variant="outline" 
@@ -368,7 +368,7 @@ const DeckManager = () => {
               setIsAddingDeck(false);
               setSelectedTab('import-export');
             }} 
-            className="flex items-center gap-1 border-magic-purple/30 hover:bg-magic-purple/20" 
+            className="flex items-center gap-1" 
             size="sm"
           >
             <Upload className="h-4 w-4" />
@@ -377,7 +377,6 @@ const DeckManager = () => {
           <Button 
             onClick={() => setIsAddingDeck(true)} 
             size="sm"
-            className="bg-magic-purple hover:bg-magic-purple/90"
           >
             <PlusCircle className="mr-2 h-4 w-4" />
             New Deck
@@ -386,13 +385,10 @@ const DeckManager = () => {
       </div>
       
       {decks.length === 0 ? (
-        <div className="text-center py-8 border border-dashed rounded-lg border-magic-purple/30 bg-black/30">
+        <div className="text-center py-8 border border-dashed rounded-lg border-border/30 bg-card/30">
           <p className="text-muted-foreground mb-4">You don't have any decks yet</p>
           <div className="flex flex-col space-y-4 items-center">
-            <Button 
-              onClick={() => setIsAddingDeck(true)}
-              className="bg-magic-purple hover:bg-magic-purple/90"
-            >
+            <Button onClick={() => setIsAddingDeck(true)}>
               <PlusCircle className="mr-2 h-4 w-4" />
               Create your first deck
             </Button>
@@ -401,68 +397,59 @@ const DeckManager = () => {
         </div>
       ) : (
         <div>
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-            {decks.map(deck => (
-              <Card 
-                key={deck.id} 
-                onClick={() => handleSelectDeck(deck)} 
-                className="cursor-pointer transition-all duration-300 overflow-hidden bg-black/60 hover:bg-black/70 border-magic-purple/30 hover:border-magic-purple/60"
-              >
-                <AspectRatio ratio={16/9}>
-                  <div className="relative w-full h-full">
-                    {deck.cardBackgroundUrl ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+            {decks.map(deck => {
+              const featuredImage = getFeaturedCardImage(deck);
+              return (
+                <Card 
+                  key={deck.id} 
+                  onClick={() => handleSelectDeck(deck)} 
+                  className="cursor-pointer transition-all duration-300 overflow-hidden hover:bg-card/70 border-border/30 hover:border-border/60"
+                >
+                  <AspectRatio ratio={16/9}>
+                    <div className="relative w-full h-full bg-black/20">
                       <img 
-                        src={deck.cardBackgroundUrl} 
+                        src={featuredImage}
                         alt={deck.name} 
                         className="object-cover w-full h-full"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = "https://c2.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg";
                         }}
                       />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-black/30">
-                        <File className="h-12 w-12 text-magic-purple/50" />
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent" />
-                  </div>
-                </AspectRatio>
-                
-                <CardHeader className="pt-0 pb-2">
-                  <CardTitle className="text-lg text-magic-lightPurple">{deck.name}</CardTitle>
-                  <CardDescription className="text-gray-400">Format: {deck.format}</CardDescription>
-                </CardHeader>
-                
-                <CardContent className="py-0">
-                  <div className="flex gap-2 flex-wrap">
-                    <Badge 
-                      variant="outline" 
-                      className="bg-magic-purple/20 border-magic-purple/30 text-magic-lightPurple"
-                    >
-                      {deck.cards.reduce((sum, card) => sum + card.quantity, 0)} cards
-                    </Badge>
-                    {deck.sideboardCards && deck.sideboardCards.length > 0 && (
-                      <Badge 
-                        variant="outline"
-                        className="bg-black/40 border-magic-purple/20 text-magic-lightPurple/80"
-                      >
-                        {deck.sideboardCards.reduce((sum, card) => sum + card.quantity, 0)} sideboard
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+                    </div>
+                  </AspectRatio>
+                  
+                  <CardHeader className="pt-0 pb-2">
+                    <CardTitle className="text-lg">{deck.name}</CardTitle>
+                    <CardDescription>Format: {deck.format}</CardDescription>
+                  </CardHeader>
+                  
+                  <CardContent className="py-0">
+                    <div className="flex gap-2 flex-wrap">
+                      <Badge variant="outline">
+                        {deck.cards.reduce((sum, card) => sum + card.quantity, 0)} cards
                       </Badge>
-                    )}
-                  </div>
-                </CardContent>
-                
-                <CardFooter className="text-sm text-muted-foreground pt-2 pb-3">
-                  Updated: {new Date(deck.updatedAt).toLocaleDateString()}
-                </CardFooter>
-              </Card>
-            ))}
+                      {deck.sideboardCards && deck.sideboardCards.length > 0 && (
+                        <Badge variant="outline">
+                          {deck.sideboardCards.reduce((sum, card) => sum + card.quantity, 0)} sideboard
+                        </Badge>
+                      )}
+                    </div>
+                  </CardContent>
+                  
+                  <CardFooter className="text-sm text-muted-foreground pt-2 pb-3">
+                    Updated: {new Date(deck.updatedAt).toLocaleDateString()}
+                  </CardFooter>
+                </Card>
+              );
+            })}
           </div>
           
-          <Separator className="my-4 bg-magic-purple/20" />
+          <Separator className="my-4" />
           
           <div className="mt-4">
-            <h3 className="text-lg font-medium mb-2 text-magic-lightPurple">Import a deck</h3>
+            <h3 className="text-lg font-medium mb-2">Import a deck</h3>
             <DeckImportExport onImport={handleImportDeck} />
           </div>
         </div>

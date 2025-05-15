@@ -26,7 +26,7 @@ export const useCardImage = ({ name, set, collectorNumber, imageUrl }: UseCardIm
       setIsLoading(true);
       setError(false);
     }
-  }, [name, set, collectorNumber, imageUrl]);
+  }, [name, set, collectorNumber, imageUrl, finalImageUrl]);
 
   return {
     imageUrl: finalImageUrl,
