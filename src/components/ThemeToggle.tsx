@@ -12,7 +12,7 @@ const ThemeToggle = () => {
       variant="ghost" 
       size="icon" 
       onClick={toggleTheme} 
-      className="rounded-full relative overflow-hidden group"
+      className="rounded-full relative overflow-hidden group z-10"
       title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
     >
       <span className="sr-only">Toggle theme</span>

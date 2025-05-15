@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import ThemeToggle from "./ThemeToggle"; // Fixed import statement
+import ThemeToggle from "./ThemeToggle";
 import LanguageSelector from "./LanguageSelector";
 import { 
   User, 
@@ -53,7 +53,7 @@ const Navbar = () => {
   return (
     <header className="border-b bg-background sticky top-0 z-40">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <div className="flex items-center gap-10">
+        <div className="flex items-center gap-6 sm:gap-10">
           <Link to="/" className="flex items-center">
             <span className="font-bold text-xl">Tier1Games</span>
           </Link>
@@ -86,9 +86,12 @@ const Navbar = () => {
           </form>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="hidden md:flex items-center gap-2">
-            <ThemeToggle />
+        <div className="flex items-center gap-2 sm:gap-4">
+          {/* Theme toggle visible on all screen sizes */}
+          <ThemeToggle />
+          
+          {/* Language selector hidden on small screens */}
+          <div className="hidden sm:block">
             <LanguageSelector />
           </div>
 
@@ -119,7 +122,7 @@ const Navbar = () => {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => navigate("/profile")}>
                   <User className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
+                  <span>Decks</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/calendar")}>
                   <Calendar className="mr-2 h-4 w-4" />
@@ -127,7 +130,7 @@ const Navbar = () => {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/store")}>
                   <Store className="mr-2 h-4 w-4" />
-                  <span>My Store</span>
+                  <span>Profile</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/events/create")}>
                   <PlusCircle className="mr-2 h-4 w-4" />
