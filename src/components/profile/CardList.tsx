@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card as MagicCard } from '@/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -23,7 +24,7 @@ interface CardListProps {
 }
 
 const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUrl }) => {
-  const [viewMode, setViewMode] = useState<'text' | 'images'>('text');
+  const [viewMode, setViewMode] = useState<'text' | 'images'>('images'); // Default to images on mobile
   const [previewCard, setPreviewCard] = useState<MagicCard | null>(null);
   const [imageStatus, setImageStatus] = useState<Record<string, 'loading' | 'loaded' | 'error'>>({});
   const [expandedView, setExpandedView] = useState(false);
@@ -36,7 +37,12 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
       newStatus[card.id] = 'loading';
     });
     setImageStatus(newStatus);
-  }, [cards]);
+    
+    // Default to images view on mobile
+    if (isMobile && viewMode !== 'images') {
+      setViewMode('images');
+    }
+  }, [cards, isMobile]);
 
   // Group cards by name and sum quantities
   const groupedCards = cards.reduce((acc, card) => {
@@ -70,7 +76,7 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
   // Display a message if there are no cards
   if (sortedCards.length === 0) {
     return (
-      <div className="text-center p-8 border border-dashed rounded-lg">
+      <div className="text-center p-8 border border-dashed rounded-lg border-magic-purple/30 bg-background/50">
         <p className="text-muted-foreground">No cards in this deck</p>
       </div>
     );
@@ -88,9 +94,9 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
           {sortedCards.map((card) => (
             <div 
               key={card.id} 
-              className={`p-3 rounded-md border ${
-                onCardSelect ? 'cursor-pointer hover:bg-muted transition-colors duration-200' : ''
-              } ${selectedCardUrl === getCardImageUrl({name: card.name, set: card.set, collector_number: card.collectorNumber}) ? 'bg-muted ring-1 ring-primary' : ''}`}
+              className={`p-3 rounded-md border border-magic-purple/30 ${
+                onCardSelect ? 'cursor-pointer hover:bg-magic-purple/10 transition-colors duration-200' : ''
+              } ${selectedCardUrl === getCardImageUrl({name: card.name, set: card.set, collector_number: card.collectorNumber}) ? 'bg-magic-purple/20 ring-1 ring-magic-purple' : 'bg-card/50'}`}
               onClick={() => handleCardClick(card)}
             >
               <div className="flex items-center justify-between">
@@ -112,18 +118,18 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
                       <Maximize2 className="h-3 w-3" />
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-xs sm:max-w-md md:max-w-lg p-0 overflow-hidden">
+                  <DialogContent className="max-w-xs sm:max-w-md md:max-w-lg p-0 overflow-hidden bg-black/90 border-magic-purple/30">
                     <AspectRatio ratio={63/88}>
                       <div className="relative h-full w-full">
                         {imageStatus[card.id] === 'loading' && (
-                          <div className="absolute inset-0 flex items-center justify-center bg-muted z-10">
-                            <Loader2 className="h-8 w-8 text-muted-foreground animate-spin" />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
+                            <Loader2 className="h-8 w-8 text-magic-purple animate-spin" />
                           </div>
                         )}
                         {imageStatus[card.id] === 'error' ? (
-                          <div className="h-full w-full flex flex-col items-center justify-center bg-muted">
-                            <AlertCircle className="h-8 w-8 text-muted-foreground mb-2" />
-                            <p className="text-center text-muted-foreground">{card.name}</p>
+                          <div className="h-full w-full flex flex-col items-center justify-center bg-black/50">
+                            <AlertCircle className="h-8 w-8 text-magic-purple mb-2" />
+                            <p className="text-center text-magic-purple">{card.name}</p>
                           </div>
                         ) : (
                           <img 
@@ -136,8 +142,8 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
                         )}
                       </div>
                     </AspectRatio>
-                    <div className="p-4">
-                      <h3 className="font-bold text-lg">{card.name}</h3>
+                    <div className="p-4 bg-black/80">
+                      <h3 className="font-bold text-lg text-magic-lightPurple">{card.name}</h3>
                       <p className="text-muted-foreground">Quantity: {card.quantity}</p>
                       {card.set && (
                         <p className="text-sm text-muted-foreground">Set: {card.set.toUpperCase()}</p>
@@ -152,14 +158,16 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
       );
     } else {
       return (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
           {sortedCards.map((card) => (
             <Dialog key={card.id}>
               <DialogTrigger asChild>
                 <div 
                   className={`rounded-md overflow-hidden border cursor-pointer hover:shadow-md transition-all duration-200 ${
-                    selectedCardUrl === getCardImageUrl({name: card.name, set: card.set, collector_number: card.collectorNumber}) ? 'ring-2 ring-primary' : ''
-                  }`}
+                    selectedCardUrl === getCardImageUrl({name: card.name, set: card.set, collector_number: card.collectorNumber}) 
+                      ? 'ring-2 ring-magic-purple border-magic-purple/50' 
+                      : 'border-magic-purple/20'
+                  } bg-black/40`}
                   onClick={(e) => {
                     e.preventDefault();
                     if (onCardSelect) {
@@ -169,14 +177,14 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
                 >
                   <AspectRatio ratio={63/88} className="relative">
                     {imageStatus[card.id] === 'loading' && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-muted z-10">
-                        <Loader2 className="h-6 w-6 text-muted-foreground animate-spin" />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
+                        <Loader2 className="h-6 w-6 text-magic-purple animate-spin" />
                       </div>
                     )}
                     {imageStatus[card.id] === 'error' ? (
-                      <div className="h-full w-full flex flex-col items-center justify-center bg-muted">
-                        <AlertCircle className="h-6 w-6 text-muted-foreground mb-1" />
-                        <p className="text-center text-xs text-muted-foreground px-2">{card.name}</p>
+                      <div className="h-full w-full flex flex-col items-center justify-center bg-black/50">
+                        <AlertCircle className="h-6 w-6 text-magic-purple mb-1" />
+                        <p className="text-center text-xs text-magic-purple px-2">{card.name}</p>
                       </div>
                     ) : (
                       <img 
@@ -195,18 +203,18 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
                   </AspectRatio>
                 </div>
               </DialogTrigger>
-              <DialogContent className="max-w-xs sm:max-w-md md:max-w-lg p-0 overflow-hidden">
+              <DialogContent className="max-w-xs sm:max-w-md md:max-w-lg p-0 overflow-hidden bg-black/90 border-magic-purple/30">
                 <AspectRatio ratio={63/88}>
                   <div className="relative h-full w-full">
                     {imageStatus[card.id] === 'loading' && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-muted z-10">
-                        <Loader2 className="h-8 w-8 text-muted-foreground animate-spin" />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
+                        <Loader2 className="h-8 w-8 text-magic-purple animate-spin" />
                       </div>
                     )}
                     {imageStatus[card.id] === 'error' ? (
-                      <div className="h-full w-full flex flex-col items-center justify-center bg-muted">
-                        <AlertCircle className="h-10 w-10 text-muted-foreground mb-2" />
-                        <p className="text-center text-muted-foreground">{card.name}</p>
+                      <div className="h-full w-full flex flex-col items-center justify-center bg-black/50">
+                        <AlertCircle className="h-10 w-10 text-magic-purple mb-2" />
+                        <p className="text-center text-magic-purple">{card.name}</p>
                       </div>
                     ) : (
                       <img 
@@ -219,8 +227,8 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
                     )}
                   </div>
                 </AspectRatio>
-                <div className="p-4">
-                  <h3 className="font-bold text-lg">{card.name}</h3>
+                <div className="p-4 bg-black/80">
+                  <h3 className="font-bold text-lg text-magic-lightPurple">{card.name}</h3>
                   <p className="text-muted-foreground">Quantity: {card.quantity}</p>
                   {card.set && (
                     <p className="text-sm text-muted-foreground">Set: {card.set.toUpperCase()}</p>
@@ -240,12 +248,13 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
         <div className="text-sm text-muted-foreground">
           {totalCards} cards • {uniqueCards} unique
         </div>
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2 sm:space-x-4">
           <div className="flex items-center space-x-2">
             <Switch 
               id="expanded-view" 
               checked={expandedView} 
-              onCheckedChange={setExpandedView} 
+              onCheckedChange={setExpandedView}
+              className="data-[state=checked]:bg-magic-purple"
             />
             <Label htmlFor="expanded-view" className="text-sm">
               {expandedView ? "Full View" : "Scrollable View"}
@@ -257,6 +266,7 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
               size="sm"
               onClick={() => setViewMode('text')}
               title="List View"
+              className={viewMode === 'text' ? 'bg-magic-purple hover:bg-magic-lightPurple' : ''}
             >
               <List className="h-4 w-4 mr-1" />
               <span className="hidden sm:inline">List</span>
@@ -266,6 +276,7 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
               size="sm"
               onClick={() => setViewMode('images')}
               title="Grid View"
+              className={viewMode === 'images' ? 'bg-magic-purple hover:bg-magic-lightPurple' : ''}
             >
               <Image className="h-4 w-4 mr-1" />
               <span className="hidden sm:inline">Grid</span>
@@ -276,11 +287,11 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
       
       <div className="flex flex-col md:flex-row gap-4">
         {expandedView ? (
-          <div className="flex-1 rounded-md border p-4 bg-card/50">
+          <div className="flex-1 rounded-md border border-magic-purple/30 p-4 bg-card/30 backdrop-blur-sm">
             {renderCardContent()}
           </div>
         ) : (
-          <ScrollArea className="h-[400px] rounded-md border p-4 flex-1 bg-card/50">
+          <ScrollArea className="h-[400px] rounded-md border border-magic-purple/30 p-4 flex-1 bg-card/30 backdrop-blur-sm">
             {renderCardContent()}
           </ScrollArea>
         )}
@@ -288,17 +299,17 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
         {/* Card preview for desktop */}
         {!isMobile && previewCard && (
           <div className="hidden md:block w-60 shrink-0">
-            <div className="sticky top-4 rounded-md overflow-hidden shadow-lg">
+            <div className="sticky top-4 rounded-md overflow-hidden shadow-lg border border-magic-purple/30">
               <div className="relative w-full">
                 {imageStatus[previewCard.id] === 'loading' && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-muted z-10">
-                    <Loader2 className="h-8 w-8 text-muted-foreground animate-spin" />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
+                    <Loader2 className="h-8 w-8 text-magic-purple animate-spin" />
                   </div>
                 )}
                 {imageStatus[previewCard.id] === 'error' ? (
-                  <div className="w-full h-80 flex flex-col items-center justify-center bg-muted rounded-md">
-                    <AlertCircle className="h-12 w-12 text-muted-foreground mb-2" />
-                    <p className="text-center text-muted-foreground">{previewCard.name}</p>
+                  <div className="w-full h-80 flex flex-col items-center justify-center bg-black/50 rounded-md">
+                    <AlertCircle className="h-12 w-12 text-magic-purple mb-2" />
+                    <p className="text-center text-magic-purple">{previewCard.name}</p>
                   </div>
                 ) : (
                   <img 
@@ -310,8 +321,8 @@ const CardList: React.FC<CardListProps> = ({ cards, onCardSelect, selectedCardUr
                   />
                 )}
               </div>
-              <div className="p-2 bg-card">
-                <div className="font-medium truncate">{previewCard.name}</div>
+              <div className="p-2 bg-black/80">
+                <div className="font-medium truncate text-magic-lightPurple">{previewCard.name}</div>
                 <div className="text-sm text-muted-foreground">Quantity: {previewCard.quantity}</div>
                 {previewCard.set && (
                   <div className="text-xs text-muted-foreground">Set: {previewCard.set.toUpperCase()}</div>
