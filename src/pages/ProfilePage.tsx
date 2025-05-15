@@ -31,7 +31,7 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-background/90">
+    <div className="min-h-screen bg-gradient-to-br from-black to-black/90">
       <div className="container mx-auto py-6 px-4 max-w-6xl">
         <div className="flex flex-col space-y-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -39,7 +39,7 @@ const ProfilePage = () => {
               <h1 className="text-2xl font-bold bg-gradient-to-r from-magic-purple to-magic-blue bg-clip-text text-transparent">
                 Deck Manager
               </h1>
-              <p className="text-muted-foreground mt-1">
+              <p className="text-gray-400">
                 Manage your decks, events and game statistics
               </p>
             </div>
@@ -61,7 +61,7 @@ const ProfilePage = () => {
             onValueChange={setActiveTab} 
             className="w-full"
           >
-            <TabsList className="grid grid-cols-3 w-full max-w-md bg-background/50 border border-magic-purple/20">
+            <TabsList className="grid grid-cols-3 w-full max-w-md bg-black/50 border border-magic-purple/20">
               <TabsTrigger 
                 value="decks" 
                 className="data-[state=active]:bg-magic-purple data-[state=active]:text-white"
