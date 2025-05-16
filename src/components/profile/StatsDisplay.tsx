@@ -3,10 +3,27 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getUserStats, getUserGames, getUserDecks } from '@/services/ProfileService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
-import { EventFormat, Deck, GameResult } from '@/types';
-import { Calendar, Trophy, ChevronDown } from "lucide-react";
+import { 
+  ChartContainer, 
+  ChartTooltip, 
+  ChartTooltipContent 
+} from '@/components/ui/chart';
+import { 
+  PieChart, 
+  Pie, 
+  Cell, 
+  LineChart, 
+  Line,
+  XAxis, 
+  YAxis, 
+  CartesianGrid,
+  Tooltip, 
+  Legend,
+  BarChart,
+  Bar,
+  ResponsiveContainer
+} from 'recharts';
+import { Calendar, Trophy, ChevronDown, BarChart3, LineChart as LineChartIcon, PieChart as PieChartIcon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
@@ -15,11 +32,21 @@ import {
   CollapsibleTrigger 
 } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 
 const StatsDisplay = () => {
   // State for format and deck filters
   const [selectedFormat, setSelectedFormat] = useState<string | null>(null);
   const [selectedDeck, setSelectedDeck] = useState<string | null>(null);
+  const [timeRange, setTimeRange] = useState<string>("all");
 
   // Fetch user stats, games, and decks
   const {
@@ -59,11 +86,38 @@ const StatsDisplay = () => {
   // Get unique formats from games
   const formats = [...new Set(games.map(game => game.opponentDeckFormat))];
 
+  // Filter games by time range
+  const filterGamesByTimeRange = (games) => {
+    if (timeRange === "all") return games;
+    
+    const now = new Date();
+    let startDate = new Date();
+    
+    switch(timeRange) {
+      case "week":
+        startDate.setDate(now.getDate() - 7);
+        break;
+      case "month":
+        startDate.setMonth(now.getMonth() - 1);
+        break;
+      case "quarter":
+        startDate.setMonth(now.getMonth() - 3);
+        break;
+      case "year":
+        startDate.setFullYear(now.getFullYear() - 1);
+        break;
+      default:
+        return games;
+    }
+    
+    return games.filter(game => new Date(game.date) >= startDate);
+  };
+
   // Calculate format-specific deck win rates
   const calculateDeckWinRates = (format: string | null) => {
     const filteredGames = format 
-      ? games.filter(game => game.opponentDeckFormat === format)
-      : games;
+      ? filterGamesByTimeRange(games.filter(game => game.opponentDeckFormat === format))
+      : filterGamesByTimeRange(games);
     
     const deckStats: {[key: string]: {wins: number, total: number, winRate: number}} = {};
     
@@ -90,9 +144,9 @@ const StatsDisplay = () => {
   const calculateMatchupWinRates = (format: string | null, deck: string | null) => {
     if (!format || !deck) return {};
     
-    const filteredGames = games.filter(game => 
+    const filteredGames = filterGamesByTimeRange(games.filter(game => 
       game.opponentDeckFormat === format && game.deckUsed === deck
-    );
+    ));
     
     const matchupStats: {[key: string]: {wins: number, total: number, winRate: number}} = {};
     
@@ -137,15 +191,14 @@ const StatsDisplay = () => {
   }));
 
   // Get recent games
-  const recentGames = [...games].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
+  const recentGames = [...games]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 5);
 
   // Format match score for display
   const formatMatchScore = game => {
     if (!game.matchScore) return '';
-    const {
-      playerWins,
-      opponentWins
-    } = game.matchScore;
+    const { playerWins, opponentWins } = game.matchScore;
     return `${playerWins}-${opponentWins}`;
   };
 
@@ -153,6 +206,56 @@ const StatsDisplay = () => {
   const getDeckName = deckId => {
     const deck = decks.find(d => d.id === deckId);
     return deck ? deck.name : deckId;
+  };
+
+  // Generate time-series data for win rate trends
+  const generateWinRateTrendData = (format = null, deckId = null) => {
+    // Filter games by format and deck if specified
+    let filteredGames = [...games];
+    if (format) filteredGames = filteredGames.filter(g => g.opponentDeckFormat === format);
+    if (deckId) filteredGames = filteredGames.filter(g => g.deckUsed === deckId);
+
+    if (filteredGames.length === 0) return [];
+
+    // Sort games by date (oldest first)
+    filteredGames.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    // Group games by month
+    const gamesByMonth = filteredGames.reduce((acc, game) => {
+      const date = new Date(game.date);
+      const monthYear = `${date.getMonth() + 1}/${date.getFullYear()}`;
+      
+      if (!acc[monthYear]) {
+        acc[monthYear] = {
+          wins: 0,
+          games: 0,
+          date: new Date(date.getFullYear(), date.getMonth(), 1)
+        };
+      }
+      
+      acc[monthYear].games += 1;
+      if (game.win) acc[monthYear].wins += 1;
+      
+      return acc;
+    }, {});
+
+    // Convert to array with running win rate
+    let totalGames = 0;
+    let totalWins = 0;
+    
+    return Object.entries(gamesByMonth).map(([month, data]) => {
+      totalGames += data.games;
+      totalWins += data.wins;
+      
+      return {
+        date: month,
+        fullDate: data.date,
+        monthWinRate: (data.wins / data.games) * 100,
+        overallWinRate: (totalWins / totalGames) * 100,
+        games: data.games,
+        wins: data.wins
+      };
+    });
   };
 
   // Get deck win rates for selected format
@@ -178,7 +281,11 @@ const StatsDisplay = () => {
       ...stats
     }));
 
-  return <div className="space-y-6">
+  // Generate win rate trend data based on filters
+  const winRateTrendData = generateWinRateTrendData(selectedFormat, selectedDeck);
+
+  return (
+    <div className="space-y-6">
       <h2 className="text-2xl font-bold">Mis Estadísticas</h2>
       
       {/* Summary cards */}
@@ -211,33 +318,109 @@ const StatsDisplay = () => {
         </Card>
       </div>
       
-      {/* Format Selector for filtering */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-        <div className="w-full sm:w-[250px]">
-          <Select 
-            value={selectedFormat || ""} 
-            onValueChange={(value) => {
-              setSelectedFormat(value || null);
-              setSelectedDeck(null); // Reset deck selection when format changes
-            }}
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between border-b pb-4">
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+          <div className="w-full sm:w-[250px]">
+            <Select 
+              value={selectedFormat || ""} 
+              onValueChange={(value) => {
+                setSelectedFormat(value || null);
+                setSelectedDeck(null); // Reset deck selection when format changes
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecciona un formato" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Todos los formatos</SelectItem>
+                {formats.map((format) => (
+                  <SelectItem key={format} value={format}>{format}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="text-sm text-muted-foreground">
+            {selectedFormat ? `Mostrando estadísticas para ${selectedFormat}` : "Mostrando estadísticas para todos los formatos"}
+          </div>
+        </div>
+        
+        {/* Time range selector */}
+        <div className="w-full sm:w-auto">
+          <Select
+            value={timeRange}
+            onValueChange={setTimeRange}
           >
-            <SelectTrigger>
-              <SelectValue placeholder="Selecciona un formato" />
+            <SelectTrigger className="w-full sm:w-[200px]">
+              <SelectValue placeholder="Periodo de tiempo" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos los formatos</SelectItem>
-              {formats.map((format) => (
-                <SelectItem key={format} value={format}>{format}</SelectItem>
-              ))}
+              <SelectItem value="all">Todo el tiempo</SelectItem>
+              <SelectItem value="week">Última semana</SelectItem>
+              <SelectItem value="month">Último mes</SelectItem>
+              <SelectItem value="quarter">Últimos 3 meses</SelectItem>
+              <SelectItem value="year">Último año</SelectItem>
             </SelectContent>
           </Select>
         </div>
-        <div className="text-sm text-muted-foreground">
-          {selectedFormat ? `Mostrando estadísticas para ${selectedFormat}` : "Mostrando estadísticas para todos los formatos"}
-        </div>
       </div>
       
-      {/* Deck Win Rates Section */}
+      {/* Win Rate Timeline Chart */}
+      <Card className="magic-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <LineChartIcon className="h-5 w-5" />
+            Evolución del Win Rate en el tiempo
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="h-[350px]">
+          {winRateTrendData.length < 2 ? (
+            <div className="flex items-center justify-center h-full text-muted-foreground">
+              No hay suficientes datos para mostrar la evolución del win rate.
+              Se necesitan partidas de al menos 2 meses diferentes.
+            </div>
+          ) : (
+            <ChartContainer config={{
+              "Ratio mensual": { color: '#7856E3' },
+              "Ratio acumulado": { color: '#0EA5E9' }
+            }}>
+              <LineChart data={winRateTrendData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis 
+                  dataKey="date" 
+                  tickFormatter={(value) => value}
+                />
+                <YAxis 
+                  domain={[0, 100]}
+                  tickFormatter={(value) => `${value}%`}
+                />
+                <Tooltip content={<ChartTooltipContent />} />
+                <Legend />
+                <Line 
+                  type="monotone" 
+                  dataKey="monthWinRate" 
+                  name="Ratio mensual" 
+                  stroke="#7856E3" 
+                  strokeWidth={2} 
+                  dot={{ r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="overallWinRate" 
+                  name="Ratio acumulado" 
+                  stroke="#0EA5E9" 
+                  strokeWidth={2}
+                  dot={{ r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+              </LineChart>
+            </ChartContainer>
+          )}
+        </CardContent>
+      </Card>
+      
+      {/* Deck Win Rates Section with Table UI */}
       <Card className="magic-card">
         <CardHeader>
           <CardTitle>
@@ -252,46 +435,47 @@ const StatsDisplay = () => {
               No hay datos disponibles para este formato
             </div>
           ) : (
-            <div className="space-y-4">
-              {sortedDeckWinRates.map((item) => (
-                <div key={item.deckId} className="border rounded-lg p-4">
-                  <Collapsible>
-                    <CollapsibleTrigger className="flex items-center justify-between w-full">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                        <span className="font-medium text-lg">{item.deckName}</span>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={item.winRate >= 50 ? "success" : "destructive"}>
-                            {item.winRate.toFixed(1)}% win rate
-                          </Badge>
-                          <Badge variant="outline">
-                            {item.wins} W / {item.total - item.wins} L
-                          </Badge>
-                        </div>
-                      </div>
-                      <ChevronDown className="h-4 w-4" />
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="pt-4">
-                      {/* Matchup Analysis Button */}
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Mazo</TableHead>
+                  <TableHead>Win Rate</TableHead>
+                  <TableHead>Victorias</TableHead>
+                  <TableHead>Partidas</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sortedDeckWinRates.map((item) => (
+                  <TableRow key={item.deckId}>
+                    <TableCell className="font-medium">{item.deckName}</TableCell>
+                    <TableCell>
+                      <Badge variant={item.winRate >= 50 ? "success" : "destructive"}>
+                        {item.winRate.toFixed(1)}%
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{item.wins}</TableCell>
+                    <TableCell>{item.total}</TableCell>
+                    <TableCell className="text-right">
                       {selectedFormat && (
-                        <div className="mt-2">
-                          <button
-                            className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md text-sm"
-                            onClick={() => setSelectedDeck(item.deckId)}
-                          >
-                            Ver análisis de enfrentamientos
-                          </button>
-                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedDeck(item.deckId)}
+                        >
+                          Ver enfrentamientos
+                        </Button>
                       )}
-                    </CollapsibleContent>
-                  </Collapsible>
-                </div>
-              ))}
-            </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>
       
-      {/* Matchup Analysis Section */}
+      {/* Matchup Analysis Section with Table UI */}
       {selectedDeck && selectedFormat && (
         <Card className="magic-card">
           <CardHeader>
@@ -305,42 +489,59 @@ const StatsDisplay = () => {
                 No hay datos de enfrentamientos disponibles para este mazo en este formato
               </div>
             ) : (
-              <div className="space-y-4">
-                {sortedMatchupWinRates.map((matchup) => (
-                  <div key={matchup.opponentDeck} className="flex justify-between items-center border-b py-3">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                      <span className="font-medium">{matchup.opponentDeck}</span>
-                      <Badge variant={matchup.winRate >= 50 ? "success" : "destructive"}>
-                        {matchup.winRate.toFixed(1)}%
-                      </Badge>
-                    </div>
-                    <div className="text-muted-foreground">
-                      {matchup.wins} victorias de {matchup.total} partidas
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Mazo Rival</TableHead>
+                    <TableHead>Win Rate</TableHead>
+                    <TableHead>Victorias</TableHead>
+                    <TableHead>Partidas</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sortedMatchupWinRates.map((matchup) => (
+                    <TableRow key={matchup.opponentDeck}>
+                      <TableCell className="font-medium">{matchup.opponentDeck}</TableCell>
+                      <TableCell>
+                        <Badge variant={matchup.winRate >= 50 ? "success" : "destructive"}>
+                          {matchup.winRate.toFixed(1)}%
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{matchup.wins}</TableCell>
+                      <TableCell>{matchup.total}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             )}
           </CardContent>
         </Card>
       )}
       
-      {/* Charts */}
-      <Tabs defaultValue="charts" className="w-full">
+      {/* Advanced Charts Tabs */}
+      <Tabs defaultValue="winloss" className="w-full">
         <TabsList>
-          <TabsTrigger value="charts">Gráficos</TabsTrigger>
-          <TabsTrigger value="recent">Partidas recientes</TabsTrigger>
+          <TabsTrigger value="winloss" className="flex items-center gap-1">
+            <PieChartIcon className="h-4 w-4" />
+            Win/Loss
+          </TabsTrigger>
+          <TabsTrigger value="formats" className="flex items-center gap-1">
+            <BarChart3 className="h-4 w-4" />
+            Formatos
+          </TabsTrigger>
+          <TabsTrigger value="recent" className="flex items-center gap-1">
+            <Calendar className="h-4 w-4" />
+            Partidas recientes
+          </TabsTrigger>
         </TabsList>
         
-        <TabsContent value="charts">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Win/Loss Pie Chart */}
-            <Card className="magic-card">
-              <CardHeader>
-                <CardTitle>Victorias / Derrotas</CardTitle>
-              </CardHeader>
-              <CardContent className="h-[300px] my-0 py-[2px]">
-                <ChartContainer config={{
+        <TabsContent value="winloss">
+          <Card>
+            <CardHeader>
+              <CardTitle>Victorias / Derrotas</CardTitle>
+            </CardHeader>
+            <CardContent className="h-[300px]">
+              <ChartContainer config={{
                 Victorias: {
                   color: '#10B981'
                 },
@@ -348,26 +549,34 @@ const StatsDisplay = () => {
                   color: '#EF4444'
                 }
               }}>
-                  <PieChart>
-                    <Pie data={winLossData} cx="50%" cy="50%" labelLine={false} outerRadius={80} fill="#8884d8" dataKey="value" nameKey="name" label={({
-                    name,
-                    percent
-                  }) => `${name}: ${(percent * 100).toFixed(0)}%`}>
-                      {winLossData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
-                    </Pie>
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                  </PieChart>
-                </ChartContainer>
-              </CardContent>
-            </Card>
-            
-            {/* Format Bar Chart */}
-            <Card className="magic-card">
-              <CardHeader>
-                <CardTitle>Estadísticas por formato</CardTitle>
-              </CardHeader>
-              <CardContent className="h-[300px]">
-                <ChartContainer config={{
+                <PieChart>
+                  <Pie 
+                    data={winLossData} 
+                    cx="50%" 
+                    cy="50%" 
+                    labelLine={false} 
+                    outerRadius={100}
+                    fill="#8884d8" 
+                    dataKey="value" 
+                    nameKey="name" 
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  >
+                    {winLossData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                  </Pie>
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                </PieChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="formats">
+          <Card>
+            <CardHeader>
+              <CardTitle>Estadísticas por formato</CardTitle>
+            </CardHeader>
+            <CardContent className="h-[300px]">
+              <ChartContainer config={{
                 Victorias: {
                   color: '#10B981'
                 },
@@ -375,23 +584,23 @@ const StatsDisplay = () => {
                   color: '#EF4444'
                 }
               }}>
-                  <BarChart data={formatData}>
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip content={<ChartTooltipContent />} />
-                    <Legend />
-                    <Bar dataKey="Victorias" fill="#10B981" />
-                    <Bar dataKey="Derrotas" fill="#EF4444" />
-                  </BarChart>
-                </ChartContainer>
-              </CardContent>
-            </Card>
-          </div>
+                <BarChart data={formatData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip content={<ChartTooltipContent />} />
+                  <Legend />
+                  <Bar dataKey="Victorias" fill="#10B981" />
+                  <Bar dataKey="Derrotas" fill="#EF4444" />
+                </BarChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
         </TabsContent>
         
         <TabsContent value="recent">
           {/* Recent Games */}
-          <Card className="magic-card">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
@@ -399,33 +608,50 @@ const StatsDisplay = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {recentGames.length === 0 ? <div className="text-center py-4 text-muted-foreground">
+              {recentGames.length === 0 ? (
+                <div className="text-center py-4 text-muted-foreground">
                   No hay partidas registradas
-                </div> : <div className="divide-y">
-                  {recentGames.map(game => <div key={game.id} className="py-3 flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${game.win ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                          {game.win ? 'Victoria' : 'Derrota'}
-                          {game.matchScore && <span className="ml-1 flex items-center">
-                              <Trophy className="h-3 w-3 mx-1" /> 
-                              {formatMatchScore(game)}
-                            </span>}
-                        </span>
-                        <span>vs {game.opponentDeckName}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm">{getDeckName(game.deckUsed)}</span>
-                        <span className="text-sm text-muted-foreground">
-                          {new Date(game.date).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </div>)}
-                </div>}
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Resultado</TableHead>
+                      <TableHead>Rival</TableHead>
+                      <TableHead>Mi mazo</TableHead>
+                      <TableHead>Fecha</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {recentGames.map(game => (
+                      <TableRow key={game.id}>
+                        <TableCell>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            game.win ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          }`}>
+                            {game.win ? 'Victoria' : 'Derrota'}
+                            {game.matchScore && (
+                              <span className="ml-1 flex items-center">
+                                <Trophy className="h-3 w-3 mx-1" /> 
+                                {formatMatchScore(game)}
+                              </span>
+                            )}
+                          </span>
+                        </TableCell>
+                        <TableCell>{game.opponentDeckName}</TableCell>
+                        <TableCell>{getDeckName(game.deckUsed)}</TableCell>
+                        <TableCell>{new Date(game.date).toLocaleDateString()}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
-    </div>;
+    </div>
+  );
 };
 
 export default StatsDisplay;
