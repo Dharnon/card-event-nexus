@@ -19,7 +19,7 @@ const LifeHistory = ({ history }: LifeHistoryProps) => {
     <ScrollArea className="h-full w-full rounded-md">
       {history.length === 0 && (
         <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-          No hay cambios de vida aún
+          No life changes yet
         </div>
       )}
       
@@ -30,10 +30,15 @@ const LifeHistory = ({ history }: LifeHistoryProps) => {
             index % 2 === 0 ? 'bg-background/5' : ''
           }`}
         >
-          <span className="text-sm">
-            {change.timestamp} - {change.player === 'player' ? 'Tú' : 'Oponente'}:{' '}
-            {change.amount > 0 ? '+' : ''}{change.amount} ({change.type})
-          </span>
+          <div className="flex flex-col">
+            <span className="text-sm font-medium">
+              {change.player === 'player' ? 'You' : 'Opponent'}:{' '}
+              {change.amount > 0 ? '+' : ''}{change.amount} ({change.type})
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {change.timestamp}
+            </span>
+          </div>
           <span className="text-sm font-bold">
             {change.lifeAfterChange !== undefined ? `→ ${change.lifeAfterChange}` : ''}
           </span>

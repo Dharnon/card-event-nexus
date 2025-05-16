@@ -9,11 +9,29 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { useQuery } from '@tanstack/react-query';
 import { getDeckById } from '@/services/ProfileService';
 import LifeCounter from './game/LifeCounter';
 import LifeHistory from './game/LifeHistory';
 import SideboardGuideComponent from './SideboardGuide';
+import { History, RefreshCw, Settings } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface LifeChange {
   player: 'player' | 'opponent';
@@ -32,6 +50,7 @@ const GameLifeTracker: React.FC<GameLifeTrackerProps> = ({ deckId, onGameEnd }) 
   const [playerLife, setPlayerLife] = useState(20);
   const [opponentLife, setOpponentLife] = useState(20);
   const [lifeHistory, setLifeHistory] = useState<LifeChange[]>([]);
+  const isMobile = useIsMobile();
 
   const { data: deck } = useQuery({
     queryKey: ['deck', deckId],
@@ -60,6 +79,12 @@ const GameLifeTracker: React.FC<GameLifeTrackerProps> = ({ deckId, onGameEnd }) 
     setLifeHistory(prev => [...prev, change]);
   };
 
+  const resetGame = () => {
+    setPlayerLife(20);
+    setOpponentLife(20);
+    setLifeHistory([]);
+  };
+
   return (
     <div className="flex flex-col h-[calc(100vh-6rem)] max-w-md mx-auto">
       <LifeCounter 
@@ -68,52 +93,100 @@ const GameLifeTracker: React.FC<GameLifeTrackerProps> = ({ deckId, onGameEnd }) 
         onDamage={updateLife}
       />
 
-      <Card className="glass-morphism flex-grow mb-4 overflow-hidden">
-        <CardContent className="p-4 h-full">
-          <LifeHistory history={lifeHistory} />
-        </CardContent>
-      </Card>
+      <div className="flex justify-center my-4">
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="outline" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Game Options
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="bottom" className="h-[60vh]">
+            <SheetHeader>
+              <SheetTitle>Game Options</SheetTitle>
+            </SheetHeader>
+            <div className="grid grid-cols-1 gap-4 py-4">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="w-full flex justify-between">
+                    <span>Life History</span>
+                    <History className="h-4 w-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="h-[70vh] sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Life History</DialogTitle>
+                  </DialogHeader>
+                  <div className="h-full overflow-hidden">
+                    <LifeHistory history={lifeHistory} />
+                  </div>
+                </DialogContent>
+              </Dialog>
+              
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="w-full flex justify-between">
+                    <span>Reset Game</span>
+                    <RefreshCw className="h-4 w-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Reset Game</DialogTitle>
+                  </DialogHeader>
+                  <p>Are you sure you want to reset the game? This will set both life totals back to 20 and clear the history.</p>
+                  <DialogFooter className="mt-4">
+                    <DialogClose asChild>
+                      <Button variant="outline">Cancel</Button>
+                    </DialogClose>
+                    <Button 
+                      variant="destructive"
+                      onClick={resetGame}
+                    >
+                      Reset
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              {deck?.sideboardGuide && (
+                <Drawer>
+                  <DrawerTrigger asChild>
+                    <Button variant="outline" className="w-full">
+                      Sideboard Guide
+                    </Button>
+                  </DrawerTrigger>
+                  <DrawerContent>
+                    <DrawerHeader>
+                      <DrawerTitle>Guía de Sideboard</DrawerTitle>
+                    </DrawerHeader>
+                    <div className="px-4 pb-4">
+                      <SideboardGuideComponent
+                        deckId={deckId}
+                        initialGuide={deck.sideboardGuide}
+                        onSave={() => {}} // Read-only mode during game
+                      />
+                    </div>
+                  </DrawerContent>
+                </Drawer>
+              )}
+
+              <Button 
+                variant="default"
+                onClick={onGameEnd}
+              >
+                End Game
+              </Button>
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
 
       <LifeCounter 
         life={playerLife}
         player="player"
         onDamage={updateLife}
       />
-
-      <div className="flex justify-between gap-4 mb-4">
-        <Drawer>
-          <DrawerTrigger asChild>
-            <Button variant="outline" className="flex-1">
-              Sideboard
-            </Button>
-          </DrawerTrigger>
-          <DrawerContent>
-            <DrawerHeader>
-              <DrawerTitle>Guía de Sideboard</DrawerTitle>
-            </DrawerHeader>
-            <div className="px-4 pb-4">
-              {deck?.sideboardGuide ? (
-                <SideboardGuideComponent
-                  deckId={deckId}
-                  initialGuide={deck.sideboardGuide}
-                  onSave={() => {}} // Read-only mode during game
-                />
-              ) : (
-                <p className="text-center text-muted-foreground py-4">
-                  Este mazo no tiene guía de sideboard
-                </p>
-              )}
-            </div>
-          </DrawerContent>
-        </Drawer>
-        <Button 
-          variant="default"
-          className="flex-1"
-          onClick={onGameEnd}
-        >
-          Finalizar
-        </Button>
-      </div>
     </div>
   );
 };
