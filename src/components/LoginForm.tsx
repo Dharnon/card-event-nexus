@@ -16,10 +16,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
-import { UserRole } from '@/types';
 import {
   Dialog,
   DialogContent,
@@ -27,7 +25,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 
 const loginSchema = z.object({
@@ -40,18 +37,10 @@ const registerSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters' }),
   confirmPassword: z.string(),
-  role: z.enum(['user', 'store', 'admin']),
-  adminPassword: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
-}).refine(
-  (data) => !(data.role === 'admin' && !data.adminPassword),
-  {
-    message: "Admin password is required for admin accounts",
-    path: ["adminPassword"],
-  }
-);
+});
 
 const forgotPasswordSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address' }),
@@ -90,8 +79,6 @@ const LoginForm = () => {
       email: '',
       password: '',
       confirmPassword: '',
-      role: 'user',
-      adminPassword: '',
     },
   });
 
@@ -126,7 +113,8 @@ const LoginForm = () => {
   const onRegisterSubmit = async (values: z.infer<typeof registerSchema>) => {
     setIsLoading(true);
     try {
-      await register(values.name, values.email, values.password, values.role, values.adminPassword);
+      // Always register as a 'user' (player) by default
+      await register(values.name, values.email, values.password, 'user');
       toast({
         title: 'Registration successful',
         description: 'Your account has been created',
@@ -235,7 +223,7 @@ const LoginForm = () => {
             <CardHeader>
               <CardTitle>Create an account</CardTitle>
               <CardDescription>
-                Enter your information to create a new account
+                Enter your information to create a new player account
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -293,45 +281,6 @@ const LoginForm = () => {
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={registerForm.control}
-                    name="role"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Account Type</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select your account type" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="user">Player</SelectItem>
-                            <SelectItem value="store">Store</SelectItem>
-                            <SelectItem value="admin">Admin</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  {registerForm.watch('role') === 'admin' && (
-                    <FormField
-                      control={registerForm.control}
-                      name="adminPassword"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Admin Password</FormLabel>
-                          <FormControl>
-                            <Input type="password" placeholder="Enter admin password" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  )}
-                  
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? 'Creating account...' : 'Register'}
                   </Button>

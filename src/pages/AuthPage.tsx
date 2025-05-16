@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,19 +7,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useAuth } from '@/context/AuthContext';
-import { UserRole } from '@/types';
-import { AlertCircle, Loader2, Mail, Lock, User as UserIcon, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { AlertCircle, Loader2, Mail, Lock, User as UserIcon, AlertTriangle } from 'lucide-react';
 
 const AuthPage = () => {
   const [activeTab, setActiveTab] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [role, setRole] = useState<UserRole>('user');
-  const [adminPassword, setAdminPassword] = useState('');
   const [resendEmail, setResendEmail] = useState('');
   const [verificationDialogOpen, setVerificationDialogOpen] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
@@ -66,7 +63,8 @@ const AuthPage = () => {
         await login(email, password);
         navigate('/');
       } else {
-        await register(name, email, password, role, role === 'admin' ? adminPassword : undefined);
+        // Always register as 'user' (player) role by default
+        await register(name, email, password, 'user');
         // The redirect happens inside register function
       }
     } catch (err) {
@@ -277,67 +275,6 @@ const AuthPage = () => {
                     {passwordStrength === 4 && "Strong password"}
                   </p>
                 </div>
-                
-                {/* Account Type */}
-                <div className="space-y-3">
-                  <Label className="flex flex-col gap-2">
-                    Account Type
-                    <span className="font-normal text-xs text-muted-foreground">
-                      Choose what type of account you need
-                    </span>
-                  </Label>
-                  <RadioGroup 
-                    value={role} 
-                    onValueChange={val => setRole(val as UserRole)} 
-                    className="grid grid-cols-3 gap-2"
-                  >
-                    <div className={`flex items-center space-x-2 border rounded-md p-3 cursor-pointer hover:bg-accent ${role === 'user' ? 'border-primary bg-primary/10' : 'border-border'}`}>
-                      <RadioGroupItem value="user" id="player" className="sr-only" />
-                      <Label htmlFor="player" className="cursor-pointer w-full text-center font-medium">
-                        Player
-                      </Label>
-                    </div>
-                    <div className={`flex items-center space-x-2 border rounded-md p-3 cursor-pointer hover:bg-accent ${role === 'store' ? 'border-primary bg-primary/10' : 'border-border'}`}>
-                      <RadioGroupItem value="store" id="store" className="sr-only" />
-                      <Label htmlFor="store" className="cursor-pointer w-full text-center font-medium">
-                        Store Owner
-                      </Label>
-                    </div>
-                    <div className={`flex items-center space-x-2 border rounded-md p-3 cursor-pointer hover:bg-accent ${role === 'admin' ? 'border-primary bg-primary/10' : 'border-border'}`}>
-                      <RadioGroupItem value="admin" id="admin" className="sr-only" />
-                      <Label htmlFor="admin" className="cursor-pointer w-full text-center font-medium">
-                        Admin
-                      </Label>
-                    </div>
-                  </RadioGroup>
-                  
-                  {role === 'store' && (
-                    <p className="text-xs text-muted-foreground">
-                      Store owners can create and manage events
-                    </p>
-                  )}
-                  
-                  {role === 'admin' && (
-                    <div className="space-y-2 mt-2">
-                      <Label htmlFor="admin-password" className="flex items-center gap-2">
-                        <ShieldCheck className="h-4 w-4" />
-                        Admin Password
-                      </Label>
-                      <Input 
-                        id="admin-password" 
-                        type="password" 
-                        placeholder="Enter admin password" 
-                        value={adminPassword} 
-                        onChange={e => setAdminPassword(e.target.value)} 
-                        className="transition-all" 
-                        required={role === 'admin'} 
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Admin password is required for admin registration
-                      </p>
-                    </div>
-                  )}
-                </div>
 
                 {/* Google Registration */}
                 <div className="relative my-6">
@@ -370,7 +307,7 @@ const AuthPage = () => {
                 <Button 
                   type="submit" 
                   className="w-full" 
-                  disabled={isAuthenticating || passwordStrength < 3 || (role === 'admin' && !adminPassword)}
+                  disabled={isAuthenticating || passwordStrength < 3}
                 >
                   {isAuthenticating ? 
                     <>

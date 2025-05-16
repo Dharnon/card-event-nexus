@@ -109,10 +109,9 @@ export const logout = async () => {
 
 export const register = async (name: string, email: string, password: string, role: UserRole = 'user', adminPassword?: string) => {
   try {
-    // Check if admin password is correct if role is 'admin'
-    if (role === 'admin' && adminPassword !== 'mondongo') {
-      throw new Error('Incorrect admin password');
-    }
+    // For security reasons, only admins can create admin or store accounts
+    // Default users will always be created as 'user' (player) role
+    const userRole = 'user'; // Force to 'user' role regardless of what's passed in
     
     // Clean up existing state first
     cleanupAuthState();
@@ -129,7 +128,7 @@ export const register = async (name: string, email: string, password: string, ro
       emailRedirectTo: window.location.origin + '/auth/callback',
       data: {
         name,
-        role,
+        role: userRole,
       }
     };
     
