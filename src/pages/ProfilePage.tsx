@@ -6,11 +6,13 @@ import DeckManager from '@/components/profile/DeckManager';
 import StatsDisplay from '@/components/profile/StatsDisplay';
 import EventTracker from '@/components/profile/EventTracker';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTheme } from '@/context/ThemeContext';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import GameLifeTracker from '@/components/profile/GameLifeTracker';
 
 const ProfilePage = () => {
   const { user } = useAuth();
@@ -18,6 +20,7 @@ const ProfilePage = () => {
   const [activeTab, setActiveTab] = useState("decks");
   const isMobile = useIsMobile();
   const { theme } = useTheme();
+  const [lifeCounterOpen, setLifeCounterOpen] = useState(false);
 
   // Redirect if not logged in
   React.useEffect(() => {
@@ -44,14 +47,25 @@ const ProfilePage = () => {
               </p>
             </div>
             
-            <Button 
-              variant="outline" 
-              onClick={() => navigate('/')} 
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to app
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setLifeCounterOpen(true)}
+                className="flex items-center gap-2"
+              >
+                <Heart className="h-4 w-4 text-red-500" />
+                Life Counter
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                onClick={() => navigate('/')} 
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back to app
+              </Button>
+            </div>
           </div>
           
           <Separator className="my-2" />
@@ -87,6 +101,16 @@ const ProfilePage = () => {
           </Tabs>
         </div>
       </div>
+      
+      {/* Life Counter Dialog */}
+      <Dialog open={lifeCounterOpen} onOpenChange={setLifeCounterOpen}>
+        <DialogContent className="p-0 sm:max-w-[400px] h-[80vh]">
+          <GameLifeTracker
+            deckId="quickaccess"
+            onGameEnd={() => setLifeCounterOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

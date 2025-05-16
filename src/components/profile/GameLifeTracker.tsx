@@ -51,10 +51,14 @@ const GameLifeTracker: React.FC<GameLifeTrackerProps> = ({ deckId, onGameEnd }) 
   const [opponentLife, setOpponentLife] = useState(20);
   const [lifeHistory, setLifeHistory] = useState<LifeChange[]>([]);
   const isMobile = useIsMobile();
+  
+  const isQuickAccess = deckId === "quickaccess";
 
+  // Only fetch deck data if it's not quickaccess mode
   const { data: deck } = useQuery({
     queryKey: ['deck', deckId],
-    queryFn: () => getDeckById(deckId),
+    queryFn: () => isQuickAccess ? null : getDeckById(deckId),
+    enabled: !isQuickAccess
   });
 
   const updateLife = (player: 'player' | 'opponent', amount: number, type: 'fetch' | 'creature' | 'spell' | 'gain' | 'generic') => {
@@ -86,7 +90,7 @@ const GameLifeTracker: React.FC<GameLifeTrackerProps> = ({ deckId, onGameEnd }) 
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-6rem)] max-w-md mx-auto">
+    <div className="flex flex-col h-full max-w-md mx-auto">
       <LifeCounter 
         life={opponentLife}
         player="opponent"
@@ -149,7 +153,7 @@ const GameLifeTracker: React.FC<GameLifeTrackerProps> = ({ deckId, onGameEnd }) 
                 </DialogContent>
               </Dialog>
 
-              {deck?.sideboardGuide && (
+              {!isQuickAccess && deck?.sideboardGuide && (
                 <Drawer>
                   <DrawerTrigger asChild>
                     <Button variant="outline" className="w-full">
