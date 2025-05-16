@@ -110,9 +110,9 @@ const GameResultForm: React.FC<GameResultFormProps> = ({ eventId, onSubmit, onCa
               </SelectTrigger>
               <SelectContent>
                 {isLoading ? (
-                  <SelectItem value="" disabled>Cargando mazos...</SelectItem>
+                  <SelectItem value="loading" disabled>Cargando mazos...</SelectItem>
                 ) : decks.length === 0 ? (
-                  <SelectItem value="" disabled>No tienes mazos</SelectItem>
+                  <SelectItem value="no-decks" disabled>No tienes mazos</SelectItem>
                 ) : (
                   decks.map((deck) => (
                     <SelectItem key={deck.id} value={deck.id}>

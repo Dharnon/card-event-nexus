@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -108,7 +107,7 @@ const AuthPage = () => {
         return "bg-gray-200 dark:bg-gray-700";
     }
   };
-
+  
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background via-background to-background/80 px-4">
       <Card className="w-full max-w-md shadow-xl border-opacity-50 backdrop-blur-sm">
