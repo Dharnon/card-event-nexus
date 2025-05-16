@@ -1,11 +1,11 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowDown, Skull, Zap } from 'lucide-react';
+import { ArrowDown, ArrowUp, Heart, Skull, Zap, Plus, Minus } from 'lucide-react';
 
 interface DamageButtonsProps {
   player: 'player' | 'opponent';
-  onDamage: (player: 'player' | 'opponent', amount: number, type: 'fetch' | 'creature' | 'spell') => void;
+  onDamage: (player: 'player' | 'opponent', amount: number, type: 'fetch' | 'creature' | 'spell' | 'gain' | 'generic') => void;
 }
 
 const DamageButtons = ({ player, onDamage }: DamageButtonsProps) => {
@@ -67,6 +67,40 @@ const DamageButtons = ({ player, onDamage }: DamageButtonsProps) => {
           -3
         </Button>
       </div>
+      <Button 
+        variant="outline"
+        onClick={() => onDamage(player, -1, 'generic')}
+        className="h-12"
+      >
+        <Minus className="h-4 w-4 mr-1" />
+        -1
+      </Button>
+      <div className="flex flex-col gap-2 col-span-1">
+        <Button 
+          variant="outline"
+          onClick={() => onDamage(player, 3, 'gain')}
+          className="h-12"
+        >
+          <Heart className="h-4 w-4 mr-1" />
+          +3
+        </Button>
+        <Button 
+          variant="outline"
+          onClick={() => onDamage(player, 4, 'gain')}
+          className="h-12"
+        >
+          <Heart className="h-4 w-4 mr-1" />
+          +4
+        </Button>
+      </div>
+      <Button 
+        variant="outline"
+        onClick={() => onDamage(player, 1, 'generic')}
+        className="h-12"
+      >
+        <Plus className="h-4 w-4 mr-1" />
+        +1
+      </Button>
     </div>
   );
 };

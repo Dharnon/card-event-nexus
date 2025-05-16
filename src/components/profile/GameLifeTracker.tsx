@@ -18,8 +18,9 @@ import SideboardGuideComponent from './SideboardGuide';
 interface LifeChange {
   player: 'player' | 'opponent';
   amount: number;
-  type: 'fetch' | 'creature' | 'spell';
+  type: 'fetch' | 'creature' | 'spell' | 'gain' | 'generic';
   timestamp: string;
+  lifeAfterChange: number;
 }
 
 interface GameLifeTrackerProps {
@@ -37,21 +38,26 @@ const GameLifeTracker: React.FC<GameLifeTrackerProps> = ({ deckId, onGameEnd }) 
     queryFn: () => getDeckById(deckId),
   });
 
-  const updateLife = (player: 'player' | 'opponent', amount: number, type: 'fetch' | 'creature' | 'spell') => {
+  const updateLife = (player: 'player' | 'opponent', amount: number, type: 'fetch' | 'creature' | 'spell' | 'gain' | 'generic') => {
+    let newLife: number;
+    
+    if (player === 'player') {
+      newLife = playerLife + amount;
+      setPlayerLife(newLife);
+    } else {
+      newLife = opponentLife + amount;
+      setOpponentLife(newLife);
+    }
+    
     const change: LifeChange = {
       player,
       amount,
       type,
-      timestamp: new Date().toLocaleTimeString()
+      timestamp: new Date().toLocaleTimeString(),
+      lifeAfterChange: newLife
     };
     
     setLifeHistory(prev => [...prev, change]);
-    
-    if (player === 'player') {
-      setPlayerLife(prev => prev + amount);
-    } else {
-      setOpponentLife(prev => prev + amount);
-    }
   };
 
   return (
