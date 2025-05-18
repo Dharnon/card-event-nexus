@@ -42,6 +42,37 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 
+// Define interfaces for our data structures
+interface WinRateTrendDataPoint {
+  date: string;
+  fullDate: Date;
+  monthWinRate: number;
+  overallWinRate: number;
+  games: number;
+  wins: number;
+}
+
+interface MonthlyGameData {
+  wins: number;
+  games: number;
+  date: Date;
+}
+
+interface DeckWinRateStats {
+  deckId: string;
+  deckName: string;
+  wins: number;
+  total: number;
+  winRate: number;
+}
+
+interface MatchupWinRateStats {
+  opponentDeck: string;
+  wins: number;
+  total: number;
+  winRate: number;
+}
+
 const StatsDisplay = () => {
   // State for format and deck filters
   const [selectedFormat, setSelectedFormat] = useState<string | null>(null);
@@ -209,7 +240,7 @@ const StatsDisplay = () => {
   };
 
   // Generate time-series data for win rate trends
-  const generateWinRateTrendData = (format = null, deckId = null) => {
+  const generateWinRateTrendData = (format = null, deckId = null): WinRateTrendDataPoint[] => {
     // Filter games by format and deck if specified
     let filteredGames = [...games];
     if (format) filteredGames = filteredGames.filter(g => g.opponentDeckFormat === format);
@@ -221,7 +252,7 @@ const StatsDisplay = () => {
     filteredGames.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     // Group games by month
-    const gamesByMonth = filteredGames.reduce((acc, game) => {
+    const gamesByMonth: Record<string, MonthlyGameData> = filteredGames.reduce((acc, game) => {
       const date = new Date(game.date);
       const monthYear = `${date.getMonth() + 1}/${date.getFullYear()}`;
       
@@ -237,7 +268,7 @@ const StatsDisplay = () => {
       if (game.win) acc[monthYear].wins += 1;
       
       return acc;
-    }, {});
+    }, {} as Record<string, MonthlyGameData>);
 
     // Convert to array with running win rate
     let totalGames = 0;
@@ -265,7 +296,7 @@ const StatsDisplay = () => {
   const matchupWinRates = calculateMatchupWinRates(selectedFormat, selectedDeck);
 
   // Sort decks by win rate
-  const sortedDeckWinRates = Object.entries(deckWinRates)
+  const sortedDeckWinRates: DeckWinRateStats[] = Object.entries(deckWinRates)
     .sort((a, b) => b[1].winRate - a[1].winRate)
     .map(([deckId, stats]) => ({
       deckId,
@@ -274,7 +305,7 @@ const StatsDisplay = () => {
     }));
 
   // Sort matchups by win rate
-  const sortedMatchupWinRates = Object.entries(matchupWinRates)
+  const sortedMatchupWinRates: MatchupWinRateStats[] = Object.entries(matchupWinRates)
     .sort((a, b) => b[1].winRate - a[1].winRate)
     .map(([opponentDeck, stats]) => ({
       opponentDeck,
@@ -450,7 +481,7 @@ const StatsDisplay = () => {
                   <TableRow key={item.deckId}>
                     <TableCell className="font-medium">{item.deckName}</TableCell>
                     <TableCell>
-                      <Badge variant={item.winRate >= 50 ? "success" : "destructive"}>
+                      <Badge variant={item.winRate >= 50 ? "outline" : "destructive"} className={item.winRate >= 50 ? "bg-green-100 text-green-800 hover:bg-green-200" : ""}>
                         {item.winRate.toFixed(1)}%
                       </Badge>
                     </TableCell>
@@ -503,7 +534,7 @@ const StatsDisplay = () => {
                     <TableRow key={matchup.opponentDeck}>
                       <TableCell className="font-medium">{matchup.opponentDeck}</TableCell>
                       <TableCell>
-                        <Badge variant={matchup.winRate >= 50 ? "success" : "destructive"}>
+                        <Badge variant={matchup.winRate >= 50 ? "outline" : "destructive"} className={matchup.winRate >= 50 ? "bg-green-100 text-green-800 hover:bg-green-200" : ""}>
                           {matchup.winRate.toFixed(1)}%
                         </Badge>
                       </TableCell>
